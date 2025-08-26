@@ -257,13 +257,36 @@ function checkAbusePatterns(videoId: string): { allowed: boolean; error?: string
 }
 
 /**
- * Validate App Check token
+ * Validate App Check token properly
  */
 async function validateAppCheck(appCheckToken: string): Promise<boolean> {
   try {
-    // In production, verify the App Check token
-    // For now, just check that it exists and is not empty
-    return Boolean(appCheckToken && appCheckToken.length > 0);
+    if (!appCheckToken || appCheckToken.length === 0) {
+      return false;
+    }
+
+    // In production, verify the App Check token with Firebase Admin SDK
+    try {
+      const appCheckClaims = await admin.appCheck().verifyToken(appCheckToken);
+      
+      // Verify the token is for the correct app
+      if (appCheckClaims.appId !== process.env.FIREBASE_PROJECT_ID) {
+        logger.warn('App Check token app ID mismatch');
+        return false;
+      }
+
+      // Check if token is not expired
+      const now = Math.floor(Date.now() / 1000);
+      if (appCheckClaims.exp && appCheckClaims.exp < now) {
+        logger.warn('App Check token expired');
+        return false;
+      }
+
+      return true;
+    } catch (verifyError) {
+      logger.error('App Check token verification failed:', verifyError);
+      return false;
+    }
   } catch (error) {
     logger.error('App Check validation failed:', error);
     return false;
