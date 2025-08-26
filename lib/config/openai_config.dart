@@ -10,6 +10,8 @@ class OpenAIConfig {
   static const String apiEndpoint =
       'https://api.openai.com/v1/chat/completions';
   static const String model = 'gpt-4o-mini';
+  static const String defaultModel = 'gpt-4o-mini';
+  static const double defaultTemperature = 0.7;
 
   // Rate limiting configuration
   static const int maxRequestsPerMinute = 20;
@@ -19,6 +21,7 @@ class OpenAIConfig {
   // Timeout configuration
   static const Duration requestTimeout = Duration(seconds: 30);
   static const Duration connectionTimeout = Duration(seconds: 10);
+  static const int requestTimeoutSeconds = 30;
 
   // Validation
   static bool get isConfigured => EnvironmentConfig.isConfigured;
