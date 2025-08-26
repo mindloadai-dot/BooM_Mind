@@ -2,30 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>method</key>
-	<string>app-store</string>
-	<key>teamID</key>
-	<string>YOUR_TEAM_ID</string>
-	<key>uploadBitcode</key>
-	<false/>
-	<key>uploadSymbols</key>
-	<true/>
-	<key>compileBitcode</key>
-	<false/>
-	<key>destination</key>
-	<string>upload</string>
-	<key>signingStyle</key>
-	<string>automatic</string>
-	<key>provisioningProfiles</key>
-	<dict>
-		<key>com.example.cogniflow</key>
-		<string>match AppStore com.example.cogniflow</string>
-	</dict>
-	<key>signingCertificate</key>
-	<string>iOS Distribution</string>
-	<key>stripSwiftSymbols</key>
-	<true/>
-	<key>thinning</key>
-	<string>&lt;none&gt;</string>
+    <key>method</key>
+    <string>app-store</string>
+    <key>teamID</key>
+    <string>$(DEVELOPMENT_TEAM)</string>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>compileBitcode</key>
+    <false/>
+    <key>destination</key>
+    <string>upload</string>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
 </dict>
 </plist>

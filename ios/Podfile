@@ -40,42 +40,46 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # Fix deployment target warnings for all pods
     target.build_configurations.each do |config|
-      # Ensure all pods use iOS 15.0+ deployment target
+      # ===== 2025 iOS BUILD RULES COMPLIANCE =====
+      
+      # 1. Force iOS 15.0+ deployment target for ALL pods
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       
-      # Fix Swift optimization level warnings for ALL pods
-      # Set to -Onone for debug builds to enable previews and debugging
+      # 2. Force Swift 5.0 for ALL pods (eliminates Swift version warnings)
+      config.build_settings['SWIFT_VERSION'] = '5.0'
+      
+      # 3. Fix Swift optimization levels (eliminates preview warnings)
       if config.name == 'Debug'
         config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
       else
-        # For Release/Profile builds, use optimized compilation
+        # Release and Profile builds use optimized compilation
         config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-O'
       end
       
-      # Fix specific pod deployment target issues
-      case target.name
-      when 'DKPhotoGallery', 'DKPhotoGallery-DKPhotoGallery'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-      when 'DKImagePickerController', 'DKImagePickerController-DKImagePickerController'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-      when 'BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-        # Fix BoringSSL build script issue
-        config.build_settings['ENABLE_BITCODE'] = 'NO'
-      end
-      
-      # Additional fixes for common build issues
+      # 4. Modern iOS build settings for 2025
       config.build_settings['ENABLE_BITCODE'] = 'NO'
       config.build_settings['VALID_ARCHS'] = 'arm64'
       config.build_settings['ARCHS'] = 'arm64'
       
-      # Fix build script phase warnings by adding output dependencies
+      # 5. Fix specific problematic pods
+      case target.name
+      when 'BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['ENABLE_BITCODE'] = 'NO'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'Firebase', 'GoogleUtilities', 'GoogleDataTransport', 'FirebaseCore', 'FirebaseAuth', 'FirebaseFirestore'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'abseil', 'abseil-xcprivacy'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      end
+      
+      # 6. Fix build script phase warnings
       target.build_phases.each do |phase|
         if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
           if phase.name == 'Create Symlinks to Header Folders'
-            # Add output file to prevent running on every build
             phase.output_paths = ['$(DERIVED_FILE_DIR)/symlinks_created']
           end
         end
