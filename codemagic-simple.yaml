@@ -1,0 +1,61 @@
+# Simplified Codemagic configuration for MindLoad
+# This is a minimal setup for quick deployment
+
+workflows:
+  mindload-build:
+    name: MindLoad Build & Deploy
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    
+    environment:
+      vars:
+        # App configuration
+        BUNDLE_ID: "com.MindLoad.ios"
+        PACKAGE_NAME: "com.MindLoad.android"
+        
+        # Set these in Codemagic UI Environment Variables
+        FIREBASE_PROJECT_ID: Encrypted(...)
+        OPENAI_API_KEY: Encrypted(...)
+        YOUTUBE_API_KEY: Encrypted(...)
+        
+      flutter: stable
+      xcode: "15.4"
+      cocoapods: default
+      
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+          
+      - name: Clean and reinstall CocoaPods
+        script: |
+          echo "🧹 Cleaning CocoaPods..."
+          cd ios
+          rm -rf Pods Podfile.lock
+          pod install --repo-update
+          cd ..
+          echo "✅ CocoaPods ready"
+          
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+          
+      - name: Build iOS
+        script: |
+          flutter build ios --release --no-codesign
+          
+      - name: Build Android
+        script: |
+          flutter build appbundle --release
+          
+    artifacts:
+      - build/**/outputs/**/*.aab
+      - build/ios/ipa/*.ipa
+      
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true

@@ -1,0 +1,220 @@
+workflows:
+  mindload-ios-android:
+    name: MindLoad iOS & Android Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        # Flutter configuration
+        FLUTTER_VERSION: "3.35.0"
+        XCODE_VERSION: "15.4"
+        
+        # App configuration
+        APP_NAME: "MindLoad"
+        BUNDLE_ID: "com.MindLoad.ios"
+        PACKAGE_NAME: "com.MindLoad.android"
+        
+        # Build configuration
+        BUILD_MODE: "release"
+        
+        # Firebase configuration (set these in Codemagic UI)
+        FIREBASE_PROJECT_ID: Encrypted(...) # Set in Codemagic UI
+        FIREBASE_API_KEY: Encrypted(...) # Set in Codemagic UI
+        
+        # API Keys (set these in Codemagic UI)
+        OPENAI_API_KEY: Encrypted(...) # Set in Codemagic UI
+        YOUTUBE_API_KEY: Encrypted(...) # Set in Codemagic UI
+        
+        # Apple Developer configuration (set these in Codemagic UI)
+        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...) # Set in Codemagic UI
+        APP_STORE_CONNECT_KEY_IDENTIFIER: Encrypted(...) # Set in Codemagic UI
+        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...) # Set in Codemagic UI
+        CERTIFICATE_PRIVATE_KEY: Encrypted(...) # Set in Codemagic UI
+        
+        # Google Play configuration (set these in Codemagic UI)
+        GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS: Encrypted(...) # Set in Codemagic UI
+        
+      flutter: stable
+      xcode: "15.4"
+      cocoapods: default
+      
+    scripts:
+      - name: Set up keychain to be used for codesigning
+        script: |
+          keychain initialize
+          
+      - name: Set up signing certificate
+        script: |
+          # Add the certificate to keychain
+          app-store-install --certificate "$CERTIFICATE_PRIVATE_KEY" --certificate-password "$CERTIFICATE_PASSWORD"
+          
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+          
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+          
+      - name: Install CocoaPods dependencies
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+          
+      - name: Clean and reinstall CocoaPods (fix build issues)
+        script: |
+          echo "🧹 Cleaning CocoaPods cache and reinstalling..."
+          cd ios
+          rm -rf Pods
+          rm -rf Podfile.lock
+          rm -rf ~/Library/Caches/CocoaPods
+          pod cache clean --all
+          pod repo update
+          pod install --repo-update --verbose
+          cd ..
+          echo "✅ CocoaPods clean reinstall completed"
+          
+      - name: Flutter analyze
+        script: |
+          flutter analyze --fatal-infos
+          
+      - name: Flutter unit tests
+        script: |
+          flutter test
+          
+      - name: Build iOS
+        script: |
+          flutter build ios --release --no-codesign
+          
+      - name: Build Android
+        script: |
+          flutter build appbundle --release
+          
+      - name: Build iOS IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner \
+            --archive-flags="-allowProvisioningUpdates"
+            
+    artifacts:
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+      
+    publishing:
+      app_store_connect:
+        auth: integration
+        
+        # Configuration for App Store Connect
+        submit_to_testflight: true
+        submit_to_app_store: false
+        
+        # Optional: TestFlight groups
+        beta_groups:
+          - "Internal Testing"
+          
+      google_play:
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+        
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+          
+      slack:
+        channel: '#builds'
+        notify:
+          success: true
+          failure: true
+
+  # Separate workflow for development builds
+  mindload-dev-build:
+    name: MindLoad Development Build
+    max_build_duration: 45
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        FLUTTER_VERSION: "3.35.0"
+        XCODE_VERSION: "15.4"
+        APP_NAME: "MindLoad Dev"
+        BUNDLE_ID: "com.MindLoad.ios.dev"
+        PACKAGE_NAME: "com.MindLoad.android.dev"
+        BUILD_MODE: "debug"
+      flutter: stable
+      xcode: "15.4"
+      cocoapods: default
+      
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+          
+      - name: Clean and reinstall CocoaPods
+        script: |
+          echo "🧹 Cleaning CocoaPods for development build..."
+          cd ios
+          rm -rf Pods
+          rm -rf Podfile.lock
+          pod install --repo-update
+          cd ..
+          
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+          
+      - name: Build iOS Debug
+        script: |
+          flutter build ios --debug --no-codesign
+          
+      - name: Build Android Debug
+        script: |
+          flutter build apk --debug
+          
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/ios/iphoneos/*.app
+      
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+
+  # Workflow for Firebase Functions deployment
+  mindload-firebase-deploy:
+    name: MindLoad Firebase Functions Deploy
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        FIREBASE_PROJECT_ID: Encrypted(...) # Set in Codemagic UI
+        FIREBASE_TOKEN: Encrypted(...) # Set in Codemagic UI
+      node: "18"
+      
+    scripts:
+      - name: Install Firebase CLI
+        script: |
+          npm install -g firebase-tools
+          
+      - name: Deploy Firebase Functions
+        script: |
+          cd functions
+          npm install
+          firebase deploy --only functions --project $FIREBASE_PROJECT_ID --token $FIREBASE_TOKEN
+          
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
