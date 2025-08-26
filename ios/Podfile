@@ -45,9 +45,13 @@ post_install do |installer|
       # Ensure all pods use iOS 15.0+ deployment target
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       
-      # Fix Swift optimization level warnings for Firebase and Google pods
-      if target.name.include?('Firebase') || target.name.include?('Google') || target.name.include?('AppAuth')
+      # Fix Swift optimization level warnings for ALL pods
+      # Set to -Onone for debug builds to enable previews and debugging
+      if config.name == 'Debug'
         config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
+      else
+        # For Release/Profile builds, use optimized compilation
+        config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-O'
       end
       
       # Fix specific pod deployment target issues
@@ -66,6 +70,16 @@ post_install do |installer|
       config.build_settings['ENABLE_BITCODE'] = 'NO'
       config.build_settings['VALID_ARCHS'] = 'arm64'
       config.build_settings['ARCHS'] = 'arm64'
+      
+      # Fix build script phase warnings by adding output dependencies
+      target.build_phases.each do |phase|
+        if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+          if phase.name == 'Create Symlinks to Header Folders'
+            # Add output file to prevent running on every build
+            phase.output_paths = ['$(DERIVED_FILE_DIR)/symlinks_created']
+          end
+        end
+      end
     end
   end
 end
