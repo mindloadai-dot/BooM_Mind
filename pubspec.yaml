@@ -70,7 +70,7 @@ dependencies:
   
   # Internationalization
   intl: ^0.20.2
-  image_picker: ^1.2.0
+  image_picker: ^1.0.7
   image: ^4.5.4
 
 dependency_overrides:

@@ -39,5 +39,33 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    
+    # Fix deployment target warnings for all pods
+    target.build_configurations.each do |config|
+      # Ensure all pods use iOS 15.0+ deployment target
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      
+      # Fix Swift optimization level warnings for Firebase and Google pods
+      if target.name.include?('Firebase') || target.name.include?('Google') || target.name.include?('AppAuth')
+        config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
+      end
+      
+      # Fix specific pod deployment target issues
+      case target.name
+      when 'DKPhotoGallery', 'DKPhotoGallery-DKPhotoGallery'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      when 'DKImagePickerController', 'DKImagePickerController-DKImagePickerController'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      when 'BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        # Fix BoringSSL build script issue
+        config.build_settings['ENABLE_BITCODE'] = 'NO'
+      end
+      
+      # Additional fixes for common build issues
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      config.build_settings['VALID_ARCHS'] = 'arm64'
+      config.build_settings['ARCHS'] = 'arm64'
+    end
   end
 end
