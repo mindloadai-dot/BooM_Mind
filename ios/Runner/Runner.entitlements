@@ -21,8 +21,8 @@
 	<!-- Background App Refresh -->
 	<key>com.apple.developer.background-tasks</key>
 	<array>
-		<string>com.example.cogniflow.background-processing</string>
-		<string>com.example.cogniflow.background-refresh</string>
+		<string>com.MindLoad.ios.background-processing</string>
+		<string>com.MindLoad.ios.background-refresh</string>
 	</array>
 
 	<!-- Time Sensitive Notifications -->

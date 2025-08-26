@@ -70,13 +70,11 @@
 	<key>SKPaymentTransactionObserverClass</key>
 	<string>$(PRODUCT_MODULE_NAME).PaymentObserver</string>
 	
-	<!-- IAP Capabilities -->
+	<!-- Background Modes for Audio Playback -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
-		<string>background-processing</string>
 		<string>remote-notification</string>
-		<string>background-fetch</string>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
