@@ -7,7 +7,7 @@
 #### **1. App Configuration**
 - ✅ **App Name**: Mindload
 - ✅ **Bundle ID**: `com.MindLoad.ios`
-- ✅ **Minimum iOS Version**: iOS 13.0+
+- ✅ **Minimum iOS Version**: iOS 15.0+
 - ✅ **App Category**: Education
 - ✅ **Export Compliance**: No encryption (ITSAppUsesNonExemptEncryption = false)
 
@@ -143,7 +143,7 @@ open ios/Runner.xcworkspace
 ## 🔧 **TECHNICAL SPECIFICATIONS**
 
 - **Flutter Version**: Latest stable
-- **iOS Deployment Target**: 13.0+
+- **iOS Deployment Target**: 15.0+
 - **Architecture**: Universal (arm64, x86_64 for simulator)
 - **Size**: < 100MB (estimated)
 - **Dependencies**: Firebase, OpenAI API, Face ID, Notifications

@@ -11,7 +11,7 @@ Your **Mindload** app is now **100% READY** for iOS App Store submission!
 - ✅ **Version**: 1.0.0 (ready for first release)
 
 ### **iOS Requirements**
-- ✅ **Minimum iOS**: 13.0+ (broad device compatibility)
+- ✅ **Minimum iOS**: 15.0+ (Firebase compatibility)
 - ✅ **Universal Build**: iPhone + iPad support
 - ✅ **Modern Swift**: Version 5.0
 - ✅ **Xcode**: Latest version compatibility

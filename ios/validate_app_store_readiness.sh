@@ -24,10 +24,10 @@ else
 fi
 
 # Check iOS Deployment Target
-if grep -q "IPHONEOS_DEPLOYMENT_TARGET = 13.0" ios/Runner.xcodeproj/project.pbxproj; then
-    echo -e "✅ ${GREEN}iOS Deployment Target set to 13.0+${NC}"
+if grep -q "IPHONEOS_DEPLOYMENT_TARGET = 15.0" ios/Runner.xcodeproj/project.pbxproj; then
+    echo -e "✅ ${GREEN}iOS Deployment Target set to 15.0+${NC}"
 else
-    echo -e "❌ ${RED}iOS Deployment Target should be 13.0 or higher${NC}"
+    echo -e "❌ ${RED}iOS Deployment Target should be 15.0 or higher${NC}"
     ((VALIDATION_ERRORS++))
 fi
 
