@@ -138,20 +138,15 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
     // This is a placeholder - replace with actual OpenAI service call
     final openAIService = OpenAIService.instance;
     
-    // Use efficient model if in savings mode
-    final model = useEfficientModel ? 'gpt-4o-mini' : 'gpt-4o';
-    
     // Generate study set content
     final flashcards = await openAIService.generateFlashcards(
       content,
       count: flashcardsCount,
-      model: model,
     );
     
     final quizQuestions = await openAIService.generateQuiz(
       content,
       count: quizCount,
-      model: model,
     );
 
     // Create study set

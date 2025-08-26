@@ -20,5 +20,12 @@
     <true/>
     <key>thinning</key>
     <string>&lt;none&gt;</string>
+    <!-- App Store Optimization -->
+    <key>manageAppVersionAndBuildNumber</key>
+    <true/>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>uploadBitcode</key>
+    <false/>
 </dict>
 </plist>

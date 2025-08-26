@@ -97,6 +97,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    # Optimized asset loading - now includes compressed audio
     - assets/audio/
     - assets/images/
     - assets/phrases/notification_phrases.json

@@ -1,0 +1,39 @@
+// Optimized build configuration for App Store
+// This reduces IPA size and improves upload reliability
+
+// Enable optimization
+GCC_OPTIMIZATION_LEVEL = 3
+SWIFT_OPTIMIZATION_LEVEL = -O
+
+// Strip debug symbols
+STRIP_INSTALLED_PRODUCT = YES
+SEPARATE_STRIP = YES
+COPY_PHASE_STRIP = YES
+
+// Reduce binary size
+DEAD_CODE_STRIPPING = YES
+STRIP_STYLE = all
+
+// Optimize for App Store
+VALIDATE_PRODUCT = YES
+SKIP_INSTALL = NO
+
+// Reduce framework size
+ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO
+EMBEDDED_CONTENT_CONTAINS_SWIFT = NO
+
+// Optimize asset catalogs
+ASSETCATALOG_COMPILER_OPTIMIZATION = time
+
+// Reduce debug information
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+GCC_GENERATE_DEBUGGING_SYMBOLS = YES
+
+// App Store specific optimizations
+IPHONEOS_DEPLOYMENT_TARGET = 15.0
+TARGETED_DEVICE_FAMILY = 1,2
+
+// Code signing optimizations
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = $(DEVELOPMENT_TEAM)
+PRODUCT_BUNDLE_IDENTIFIER = com.MindLoad.ios
