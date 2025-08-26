@@ -1,0 +1,162 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidUserData() {
+      return request.resource.data.uid == request.auth.uid;
+    }
+    
+    function hasValidTimestamp() {
+      return request.resource.data.keys().hasAny(['createdAt', 'updatedAt']);
+    }
+    
+    // Users collection - users can only access their own profile
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) && isValidUserData();
+      allow create: if isAuthenticated() && isValidUserData() && hasValidTimestamp();
+      allow update: if isOwner(userId) && isValidUserData();
+    }
+    
+    // Study sets - users can only access their own study materials
+    match /study_sets/{studySetId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.isPublic == true
+      );
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid &&
+        hasValidTimestamp();
+      allow update, delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Quiz results - strictly user-specific
+    match /quiz_results/{resultId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow write: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid &&
+        hasValidTimestamp();
+    }
+    
+    // User progress - one document per user
+    match /user_progress/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidTimestamp();
+    }
+    
+    // Credit usage - users can only see their own credit history
+    match /credit_usage/{usageId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid &&
+        hasValidTimestamp();
+    }
+    
+    // Notification preferences - users can manage their own notifications
+    match /notifications/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidTimestamp();
+    }
+    
+    // Comprehensive notification preferences
+    match /notification_preferences/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isOwner(userId) && 
+        request.resource.data.uid == request.auth.uid &&
+        hasValidTimestamp();
+    }
+    
+    // Notification records - users can see their notification history
+    match /notification_records/{recordId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.uid == request.auth.uid &&
+        hasValidTimestamp();
+      // Only system can update notification records (e.g., mark as opened)
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+    
+    // Notification schedules - read-only for users, system managed
+    match /notification_schedules/{userId} {
+      allow read: if isOwner(userId);
+      // Schedule updates are managed by cloud functions/admin
+    }
+    
+    // Schedule recompute flags - system managed
+    match /schedule_recompute/{userId} {
+      allow read: if isOwner(userId);
+      // Recompute flags are managed by cloud functions/admin
+    }
+    
+    // IAP-related collections - Following exact specification
+    
+    // users/{uid} - Enhanced with IAP fields (server-side verification only)
+    // Note: users collection rules updated above to handle new IAP fields
+    
+    // entitlements/{uid} - User can read their own, server writes only
+    match /entitlements/{userId} {
+      allow read: if isOwner(userId);
+      // Only server-side functions can write entitlements after verification
+      allow write: if false;
+    }
+    
+    // iapEvents/{eventId} - Server-only for idempotency and processing
+    match /iapEvents/{eventId} {
+      allow read, write: if false; // Server-only via admin SDK
+    }
+    
+    // creditLedger/{uid}/{entryId} - User can read their own audit trail
+    match /creditLedger/{userId}/{entryId} {
+      allow read: if isOwner(userId);
+      // Only server can write credit ledger entries
+      allow write: if false;
+    }
+    
+    // receipts/{uid}/{platform}_{transactionId} - User can read their own
+    match /receipts/{userId}/{receiptId} {
+      allow read: if isOwner(userId);
+      // Only server can write receipts after verification
+      allow write: if false;
+    }
+    
+    // telemetry - Non-PII analytics (server-managed)
+    match /telemetry/{telemetryId} {
+      // Users can write telemetry events for their sessions
+      allow create: if isAuthenticated() && 
+        request.resource.data.uid == request.auth.uid &&
+        hasValidTimestamp();
+      // No read access - analytics only
+      allow read: if false;
+    }
+    
+    // Admin-only collections (if needed for future admin features)
+    match /admin/{document=**} {
+      allow read, write: if false; // Restrict all access - use admin SDK
+    }
+    
+    // System collections for analytics (if needed)
+    match /system/{document=**} {
+      allow read, write: if false; // System-only access
+    }
+    
+    // Catch-all rule for any other collections
+    match /{document=**} {
+      allow read, write: if false; // Explicitly deny access to undefined collections
+    }
+  }
+}

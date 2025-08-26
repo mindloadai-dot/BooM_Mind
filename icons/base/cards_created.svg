@@ -1,0 +1,11 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="var(--fgPrimary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Stack of cards -->
+    <rect x="24" y="34" width="40" height="28" rx="6" fill="none"/>
+    <rect x="30" y="28" width="40" height="28" rx="6" fill="none"/>
+    <!-- Plus badge -->
+    <circle cx="66" cy="34" r="8" fill="var(--accent)"/>
+    <path d="M66 30 L66 38 M62 34 L70 34" stroke="var(--fgPrimary)"/>
+  </g>
+</svg>
+

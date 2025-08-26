@@ -1,0 +1,25 @@
+{
+  "color": {
+    "icon": {
+      "primary": "var(--fgPrimary)",
+      "accent": "var(--accent)"
+    },
+    "tier": {
+      "bronze": "var(--tierBronze)",
+      "silver": "var(--tierSilver)",
+      "gold": "var(--tierGold)",
+      "platinum": "var(--tierPlatinum)",
+      "legendary": "var(--tierLegendary)"
+    }
+  },
+  "gradient": {
+    "accent": {
+      "from": "var(--accentA)",
+      "to": "var(--accentB)"
+    }
+  },
+  "halo": {
+    "soft": "var(--haloSoft)"
+  }
+}
+

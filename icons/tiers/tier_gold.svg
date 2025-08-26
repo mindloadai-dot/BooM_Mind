@@ -1,0 +1,10 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <!-- Corner overlay area 24x24 (top-right) -->
+    <g transform="translate(72,0)">
+      <circle cx="12" cy="12" r="10" fill="var(--color-tier-gold)"/>
+      <path d="M6 13 L8.5 10.5 L11 13 L15 8" stroke="var(--color-icon-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>
+

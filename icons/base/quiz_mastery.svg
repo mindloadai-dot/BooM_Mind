@@ -1,0 +1,17 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="haloSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="var(--halo-soft)" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round" filter="url(#haloSoft)">
+    <!-- Shield -->
+    <path d="M48 18 L68 26 V44 C68 56 60 66 48 72 C36 66 28 56 28 44 V26 Z" stroke="var(--color-icon-primary)" fill="none"/>
+    <!-- Check -->
+    <path d="M38 44 L46 52 L60 36" stroke="var(--color-icon-accent)"/>
+    <!-- Star cluster -->
+    <circle cx="56" cy="26" r="2" fill="var(--color-icon-accent)"/>
+    <circle cx="36" cy="28" r="1.5" fill="var(--color-icon-accent)"/>
+  </g>
+</svg>
+

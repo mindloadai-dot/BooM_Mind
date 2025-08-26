@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- User preferences and study data should be backed up -->
+        <include domain="sharedpref" path="." />
+        <include domain="database" path="app_flutter" />
+        <!-- Exclude sensitive authentication data -->
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+        <exclude domain="sharedpref" path="biometric_keys.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <!-- Include essential user data for device transfer -->
+        <include domain="sharedpref" path="." />
+        <include domain="database" path="app_flutter" />
+        <!-- Exclude authentication tokens -->
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+        <exclude domain="sharedpref" path="biometric_keys.xml" />
+    </device-transfer>
+</data-extraction-rules>

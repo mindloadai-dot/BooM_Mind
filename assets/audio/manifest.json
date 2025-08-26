@@ -1,0 +1,80 @@
+{
+  "tracks": [
+    {
+      "key": "focus_alpha",
+      "filename": "Alpha.mp3",
+      "lengthSec": 600,
+      "sampleRate": 44100,
+      "channels": 2,
+      "title": "Alpha Focus",
+      "description": "Alpha wave binaural beats (10Hz) for enhanced focus and concentration"
+    },
+    {
+      "key": "deep_delta",
+      "filename": "Theta6.mp3",
+      "lengthSec": 900,
+      "sampleRate": 44100,
+      "channels": 2,
+      "title": "Deep Delta",
+      "description": "Deep delta waves (6Hz) for relaxation and memory consolidation"
+    },
+    {
+      "key": "gamma_concentration",
+      "filename": "Gamma.mp3",
+      "lengthSec": 720,
+      "sampleRate": 44100,
+      "channels": 2,
+      "title": "Gamma Concentration",
+      "description": "Gamma waves (40Hz) for peak concentration and cognitive performance"
+    },
+    {
+      "key": "beta_productivity",
+      "filename": "Beta.mp3",
+      "lengthSec": 800,
+      "sampleRate": 44100,
+      "channels": 2,
+      "title": "Beta Productivity",
+      "description": "Beta waves (15-30Hz) for enhanced productivity and alertness"
+    },
+    {
+      "key": "theta_creativity",
+      "filename": "Theta.mp3",
+      "lengthSec": 660,
+      "sampleRate": 44100,
+      "channels": 2,
+      "title": "Theta Creativity",
+      "description": "Theta waves (4-8Hz) for creative thinking and inspiration"
+    },
+    {
+      "key": "alpha_calm",
+      "filename": "Alpha10.mp3",
+      "lengthSec": 540,
+      "sampleRate": 44100,
+      "channels": 2,
+      "title": "Alpha Calm",
+      "description": "Calm alpha waves (10Hz) for relaxed awareness and stress relief"
+    },
+    {
+      "key": "alpha_theta_memory",
+      "filename": "AlphaTheta.mp3",
+      "lengthSec": 720,
+      "sampleRate": 44100,
+      "channels": 2,
+      "title": "Alpha-Theta Memory",
+      "description": "Alpha-theta bridge waves for enhanced memory retention and learning"
+    }
+  ],
+  "defaultOrder": [
+    "focus_alpha",
+    "gamma_concentration",
+    "beta_productivity"
+  ],
+  "metadata": {
+    "version": "2.0.0",
+    "created": "2025-01-14T00:00:00Z",
+    "description": "Ultra Mode binaural beats collection for enhanced learning and focus",
+    "crossfadeSupported": true,
+    "loopingSupported": true
+  },
+  "description": "Ultra Mode binaural beats collection for enhanced learning and focus"
+}

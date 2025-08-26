@@ -1,0 +1,7 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(72,0)">
+    <circle cx="12" cy="12" r="10" fill="var(--tierPlatinum)"/>
+    <path d="M7 14 L12 9 L17 14" stroke="var(--fgPrimary)" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>
+

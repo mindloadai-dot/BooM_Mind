@@ -1,0 +1,8 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <!-- Progress ring 60% with dashed gap -->
+    <circle cx="48" cy="48" r="34" stroke="var(--accent)" stroke-width="2" stroke-dasharray="128 64" transform="rotate(-90 48 48)" fill="none"/>
+    <circle cx="48" cy="48" r="34" stroke="var(--fgPrimary)" stroke-width="2" opacity="0.2" fill="none"/>
+  </g>
+</svg>
+

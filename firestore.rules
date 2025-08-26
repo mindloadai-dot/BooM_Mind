@@ -1,0 +1,104 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // User token account rules
+    match /user_token_accounts/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Token action logging rules
+    match /token_actions/{actionId} {
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && 
+                  (request.auth.uid == resource.data.userId || 
+                   request.auth.token.email == 'admin@mindload.test');
+    }
+
+    // Atomic ledger rules
+    match /token_ledger/{userId}/entries/{entryId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Purchase receipts rules
+    match /purchase_receipts/{receiptId} {
+      allow read, write: if isAuthenticated() && 
+                         (request.auth.uid == resource.data.userId ||
+                          request.auth.token.email == 'admin@mindload.test');
+    }
+
+    // Purchase cache rules
+    match /purchase_cache/{cacheId} {
+      allow read, write: if isAuthenticated() && 
+                         cacheId.matches(request.auth.uid + '_.*');
+    }
+
+    // Ledger reconciliation rules
+    match /ledger_reconciliations/{reconciliationId} {
+      allow read, write: if isAuthenticated() && 
+                         (request.auth.uid == resource.data.userId ||
+                          request.auth.token.email == 'admin@mindload.test');
+    }
+
+    // Telemetry events rules
+    match /telemetry_events/{eventId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && 
+                  (request.auth.token.email == 'admin@mindload.test');
+    }
+
+    // Device flags rules (admin only)
+    match /device_flags/{flagId} {
+      allow read, write: if isAuthenticated() && 
+                         request.auth.token.email == 'admin@mindload.test';
+    }
+
+    // Abuse logs rules (admin only)
+    match /abuse_logs/{logId} {
+      allow read, write: if isAuthenticated() && 
+                         request.auth.token.email == 'admin@mindload.test';
+    }
+
+    // Action logs rules
+    match /action_logs/{logId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && 
+                  (request.auth.uid == resource.data.userId ||
+                   request.auth.token.email == 'admin@mindload.test');
+    }
+
+    // Existing rules for other collections
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /mindload_economy/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /user_entitlements/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /user_preferences/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /study_sets/{setId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated() && 
+                                     request.auth.uid == resource.data.userId;
+    }
+  }
+}

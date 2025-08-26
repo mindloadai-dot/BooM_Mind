@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include user preferences and study data -->
+    <include domain="sharedpref" path="." />
+    <include domain="database" path="app_flutter" />
+    <!-- Exclude sensitive data -->
+    <exclude domain="sharedpref" path="auth_tokens.xml" />
+    <exclude domain="sharedpref" path="biometric_keys.xml" />
+</full-backup-content>

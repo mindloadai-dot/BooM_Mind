@@ -1,0 +1,434 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+
+import 'package:mindload/config/app_check_config.dart';
+import 'package:mindload/services/notification_manager.dart';
+import 'package:mindload/services/enhanced_onboarding_service.dart';
+import 'package:mindload/services/mandatory_onboarding_service.dart';
+import 'package:mindload/services/auth_service.dart';
+import 'package:mindload/services/mindload_economy_service.dart';
+import 'package:mindload/services/haptic_feedback_service.dart';
+import 'package:mindload/services/ultra_audio_controller.dart';
+import 'package:mindload/services/user_profile_service.dart';
+import 'package:mindload/services/local_image_storage_service.dart';
+import 'package:mindload/firebase_options.dart';
+import 'package:mindload/config/environment_config.dart';
+
+import 'package:mindload/screens/social_auth_screen.dart';
+import 'package:mindload/screens/home_screen.dart';
+import 'package:mindload/screens/mandatory_onboarding_screen.dart';
+import 'package:mindload/screens/logic_packs_screen.dart';
+import 'package:mindload/screens/my_plan_screen.dart';
+import 'package:mindload/screens/achievements_screen.dart';
+import 'package:mindload/screens/settings_screen.dart';
+import 'package:mindload/screens/profile_screen.dart';
+import 'package:mindload/theme.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Validate API configuration
+  try {
+    EnvironmentConfig.validateConfiguration();
+    print('API configuration validated successfully');
+  } catch (e) {
+    debugPrint('API Configuration Error: $e');
+    // In development, continue with fallbacks
+    if (!EnvironmentConfig.isDevelopment) {
+      rethrow;
+    }
+  }
+
+  try {
+    // Initialize Firebase with proper configuration options
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
+
+    // Verify Firebase is ready by checking if we can access it
+    try {
+      // This will throw an error if Firebase isn't ready
+      await Future.delayed(const Duration(milliseconds: 100));
+      print('Firebase verification successful');
+    } catch (verifyError) {
+      print('Firebase verification failed: $verifyError');
+    }
+  } catch (e) {
+    print('Firebase initialization failed: $e');
+    // Continue without Firebase - app can still run with limited functionality
+  }
+
+  try {
+    // Initialize Firebase App Check (non-blocking)
+    if (kDebugMode && AppCheckConfig.shouldSkipAppCheck) {
+      await AppCheckConfig.disableAppCheck();
+    } else {
+      await AppCheckConfig.initialize();
+    }
+  } catch (e) {
+    print('App Check initialization failed: $e');
+    // Continue without App Check - app can still run
+  }
+
+  try {
+    // Initialize Notification Manager
+    await NotificationManager.instance.initialize();
+  } catch (e) {
+    print('Notification Manager initialization failed: $e');
+    // Continue without notifications
+  }
+
+  try {
+    // Initialize Enhanced Onboarding Service
+    await EnhancedOnboardingService.initialize();
+  } catch (e) {
+    print('Enhanced Onboarding Service initialization failed: $e');
+    // Continue without enhanced onboarding
+  }
+
+  try {
+    // Initialize Mandatory Onboarding Service
+    await MandatoryOnboardingService.instance.initialize();
+    print('Mandatory Onboarding Service initialized successfully');
+  } catch (e) {
+    print('Mandatory Onboarding Service initialization failed: $e');
+    // Continue without mandatory onboarding
+  }
+
+  try {
+    // Initialize Theme Manager
+    await ThemeManager.instance.loadTheme();
+  } catch (e) {
+    print('Theme Manager initialization failed: $e');
+    // Continue with default theme
+  }
+
+  // Wait a moment to ensure Firebase is fully ready
+  await Future.delayed(const Duration(milliseconds: 500));
+
+  try {
+    // Initialize Mindload Economy Service
+    await MindloadEconomyService.instance.initialize();
+  } catch (e) {
+    print('Mindload Economy Service initialization failed: $e');
+    // Continue without economy service
+  }
+
+  try {
+    // Initialize Haptic Feedback Service
+    await HapticFeedbackService().initialize();
+  } catch (e) {
+    print('Haptic Feedback Service initialization failed: $e');
+    // Continue without haptic feedback
+  }
+
+  try {
+    // Initialize User Profile Service
+    await UserProfileService.instance.initialize();
+    print('User Profile Service initialized successfully');
+  } catch (e) {
+    print('User Profile Service initialization failed: $e');
+    // Continue without user profile service
+  }
+
+  try {
+    // Initialize Local Image Storage Service
+    await LocalImageStorageService.instance
+        .getStorageInfo(); // This will create directories if needed
+    print('Local Image Storage Service initialized successfully');
+  } catch (e) {
+    print('Local Image Storage Service initialization failed: $e');
+    // Continue without local image storage
+  }
+
+  try {
+    // Initialize Ultra Audio Controller for binaural beats
+    await UltraAudioController.instance.initialize();
+    print('Ultra Audio Controller initialized successfully');
+  } catch (e) {
+    print('Ultra Audio Controller initialization failed: $e');
+    // Continue without ultra audio - app can still run
+  }
+
+  runApp(const MindLoadApp());
+}
+
+class MindLoadApp extends StatelessWidget {
+  const MindLoadApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ThemeManager>.value(
+          value: ThemeManager.instance,
+        ),
+        ChangeNotifierProvider<AuthService>.value(
+          value: AuthService.instance,
+        ),
+        ChangeNotifierProvider<MindloadEconomyService>.value(
+          value: MindloadEconomyService.instance,
+        ),
+        ChangeNotifierProvider<UserProfileService>.value(
+          value: UserProfileService.instance,
+        ),
+        ChangeNotifierProvider<LocalImageStorageService>.value(
+          value: LocalImageStorageService.instance,
+        ),
+        ChangeNotifierProvider<MandatoryOnboardingService>.value(
+          value: MandatoryOnboardingService.instance,
+        ),
+      ],
+      child: Consumer<ThemeManager>(
+        builder: (context, themeManager, child) {
+          return MaterialApp(
+            title: 'MindLoad',
+            theme: themeManager.lightTheme,
+            darkTheme: themeManager.darkTheme,
+            themeMode: ThemeMode.system,
+            home: const _AppInitializationScreen(),
+            debugShowCheckedModeBanner: false,
+            routes: {
+              '/home': (context) => const HomeScreen(),
+              '/logic-packs': (context) => const LogicPacksScreen(),
+              '/my-plan': (context) => const MyPlanScreen(),
+              '/achievements': (context) => const AchievementsScreen(),
+              '/settings': (context) => const SettingsScreen(),
+              '/profile': (context) => const ProfileScreen(),
+            },
+            onGenerateRoute: (settings) {
+              // Handle dynamic routes if needed
+              switch (settings.name) {
+                case '/logic-packs':
+                  return MaterialPageRoute(
+                    builder: (context) => const LogicPacksScreen(),
+                  );
+                case '/my-plan':
+                  return MaterialPageRoute(
+                    builder: (context) => const MyPlanScreen(),
+                  );
+                case '/achievements':
+                  return MaterialPageRoute(
+                    builder: (context) => const AchievementsScreen(),
+                  );
+                case '/settings':
+                  return MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  );
+                case '/profile':
+                  return MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  );
+                default:
+                  return MaterialPageRoute(
+                    builder: (context) => const Scaffold(
+                      body: Center(
+                        child: Text('Page not found'),
+                      ),
+                    ),
+                  );
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AppInitializationScreen extends StatefulWidget {
+  const _AppInitializationScreen();
+
+  @override
+  State<_AppInitializationScreen> createState() =>
+      _AppInitializationScreenState();
+}
+
+class _AppInitializationScreenState extends State<_AppInitializationScreen> {
+  bool _isInitialized = false;
+  bool _hasError = false;
+  String _statusMessage = 'Initializing...';
+  Timer? _safetyTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+
+    // Safety timeout - force app to continue after 15 seconds
+    _safetyTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted && !_isInitialized) {
+        setState(() {
+          _statusMessage = 'Safety timeout reached - continuing...';
+          _isInitialized = true;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _safetyTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initializeApp() async {
+    try {
+      // Initialize App Check if not in debug mode
+      if (!kDebugMode || !AppCheckConfig.shouldSkipAppCheck) {
+        setState(() => _statusMessage = 'Verifying app security...');
+
+        try {
+          await AppCheckConfig.verifyAppCheckToken();
+          setState(() => _statusMessage = 'Security verified');
+        } catch (e) {
+          // Continue without App Check verification
+          setState(() => _statusMessage = 'Security check skipped');
+        }
+      } else {
+        setState(() =>
+            _statusMessage = 'Debug mode: Skipping security verification');
+      }
+
+      // Wait a moment for user to see status
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      setState(() => _isInitialized = true);
+    } catch (e) {
+      setState(() {
+        _hasError = true;
+        _statusMessage = 'Initialization error: $e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isInitialized) {
+      return FutureBuilder<AuthUser?>(
+        future: _getAuthState(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          final user = snapshot.data;
+          if (user != null) {
+            // Check if user needs to complete mandatory onboarding
+            return Consumer<MandatoryOnboardingService>(
+              builder: (context, onboardingService, child) {
+                if (onboardingService.needsOnboarding) {
+                  return const MandatoryOnboardingScreen();
+                } else {
+                  return const HomeScreen();
+                }
+              },
+            );
+          } else {
+            return const SocialAuthScreen();
+          }
+        },
+      );
+    }
+
+    final tokens = ThemeManager.instance.currentTokens;
+    return Scaffold(
+      backgroundColor: tokens.bg,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // App Logo/Icon
+              Image.asset(
+                'assets/images/Brain_logo.png',
+                width: 80,
+                height: 80,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 24),
+
+              // App Title
+              Text(
+                'MindLoad',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: tokens.brandTitle,
+                    ),
+              ),
+              const SizedBox(height: 16),
+
+              // Status Message
+              Text(
+                _statusMessage,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: tokens.textMuted,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+
+              // Progress Indicator
+              if (!_hasError) ...[
+                const CircularProgressIndicator(),
+                const SizedBox(height: 24),
+              ],
+
+              // Error Display
+              if (_hasError) ...[
+                Icon(
+                  Icons.error_outline,
+                  color: tokens.error,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _hasError = false;
+                      _statusMessage = 'Retrying...';
+                    });
+                    _initializeApp();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+
+              // Skip Button (only show after delay)
+              if (!_isInitialized && !_hasError) ...[
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: () {
+                    setState(() => _isInitialized = true);
+                  },
+                  child: const Text('Skip Verification & Continue'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<AuthUser?> _getAuthState() async {
+    try {
+      if (AuthService.instance == null) {
+        return null;
+      }
+
+      final user = AuthService.instance.currentUser;
+      return user;
+    } catch (e) {
+      return null;
+    }
+  }
+}

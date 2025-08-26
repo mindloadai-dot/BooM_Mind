@@ -1,0 +1,15 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="var(--fgPrimary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="26" y="34" width="32" height="24" rx="6" fill="none"/>
+    <rect x="38" y="38" width="32" height="24" rx="6" fill="none"/>
+    <!-- Review loop arrows -->
+    <path d="M32 30 C28 30, 26 32, 26 36" fill="none"/>
+    <path d="M26 36 L24 34"/>
+    <path d="M70 66 C74 66, 76 64, 76 60" fill="none"/>
+    <path d="M76 60 L78 62"/>
+    <!-- Accent loop markers -->
+    <circle cx="26" cy="36" r="1.8" fill="var(--accent)"/>
+    <circle cx="76" cy="60" r="1.8" fill="var(--accent)"/>
+  </g>
+</svg>
+

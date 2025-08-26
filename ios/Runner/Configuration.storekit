@@ -1,0 +1,138 @@
+{
+  "identifier" : "Mindload_StoreKit_Configuration",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "starter_pack_100",
+      "localizations" : [
+        {
+          "description" : "Get 5 ML Tokens immediately for generating study materials",
+          "displayName" : "Starter Pack",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "mindload_starter_pack_100",
+      "referenceName" : "Starter Pack",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "mindload_app",
+    "_developerTeamID" : "TBD",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "name" : "Verification"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "mindload_pro",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited AI-powered study features",
+          "displayName" : "Mindload Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Mindload Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "5.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "pro_monthly",
+          "introductoryOffer" : {
+            "internalID" : "intro_monthly",
+            "localizations" : [
+              {
+                "description" : "Try Pro features for just $2.99",
+                "displayName" : "Intro Offer",
+                "locale" : "en_US"
+              }
+            ],
+            "numberOfPeriods" : 1,
+            "paymentMode" : "payAsYouGo",
+            "subscriptionPeriod" : "P1M"
+          },
+          "localizations" : [
+            {
+              "description" : "Unlimited AI generations, 15 ML Tokens/month, priority features",
+              "displayName" : "Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "mindload_pro_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Pro Monthly",
+          "subscriptionGroupID" : "mindload_pro",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "49.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "pro_annual",
+          "introductoryOffer" : {
+            "internalID" : "intro_annual",
+            "localizations" : [
+              {
+                "description" : "Save 28% with annual billing",
+                "displayName" : "Annual Savings",
+                "locale" : "en_US"
+              }
+            ],
+            "numberOfPeriods" : 1,
+            "paymentMode" : "payUpFront",
+            "subscriptionPeriod" : "P1Y"
+          },
+          "localizations" : [
+            {
+              "description" : "Best value: 30 ML Tokens/month, rollover credits, annual savings",
+              "displayName" : "Pro Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "mindload_pro_annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro Annual",
+          "subscriptionGroupID" : "mindload_pro",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
