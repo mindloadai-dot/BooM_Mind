@@ -104,17 +104,15 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
       
-    publishing:
-      app_store_connect:
-        auth: integration
-        
-        # Configuration for App Store Connect
-        submit_to_testflight: true
-        submit_to_app_store: false
-        
-        # Optional: TestFlight groups
-        beta_groups:
-          - "Internal Testing"
+     publishing:
+       app_store_connect:
+         # Configuration for App Store Connect
+         submit_to_testflight: true
+         submit_to_app_store: false
+         
+         # Optional: TestFlight groups
+         beta_groups:
+           - "Internal Testing"
           
       google_play:
         credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
