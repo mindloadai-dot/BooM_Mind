@@ -62,21 +62,56 @@ post_install do |installer|
       config.build_settings['VALID_ARCHS'] = 'arm64'
       config.build_settings['ARCHS'] = 'arm64'
       
-      # 5. Fix specific problematic pods
+      # 5. Fix specific problematic pods - comprehensive list
       case target.name
       when 'BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['ENABLE_BITCODE'] = 'NO'
         config.build_settings['SWIFT_VERSION'] = '5.0'
-      when 'Firebase', 'GoogleUtilities', 'GoogleDataTransport', 'FirebaseCore', 'FirebaseAuth', 'FirebaseFirestore'
+      when 'Firebase', 'FirebaseCore', 'FirebaseAuth', 'FirebaseFirestore', 'FirebaseFunctions', 'FirebaseStorage', 'FirebaseMessaging', 'FirebaseRemoteConfig', 'FirebaseInstallations', 'FirebaseAppCheck', 'FirebaseABTesting'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'FirebaseCore-FirebaseCore_Privacy', 'FirebaseAuth-FirebaseAuth_Privacy', 'FirebaseFirestore-FirebaseFirestore_Privacy', 'FirebaseMessaging-FirebaseMessaging_Privacy', 'FirebaseRemoteConfig-FirebaseRemoteConfig_Privacy', 'FirebaseInstallations-FirebaseInstallations_Privacy', 'FirebaseABTesting-FirebaseABTesting_Privacy'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'FirebaseCoreInternal', 'FirebaseCoreInternal-FirebaseCoreInternal_Privacy', 'FirebaseCoreExtension', 'FirebaseCoreExtension-FirebaseCoreExtension_Privacy', 'FirebaseFirestoreInternal', 'FirebaseFirestoreInternal-FirebaseFirestoreInternal_Privacy'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'FirebaseAuthInterop', 'FirebaseMessagingInterop', 'FirebaseRemoteConfigInterop', 'FirebaseAppCheckInterop'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'FirebaseSharedSwift'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'GoogleUtilities', 'GoogleDataTransport', 'GTMSessionFetcher', 'GTMSessionFetcher-GTMSessionFetcher_Core_Privacy'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'GTMAppAuth', 'GTMAppAuth-GTMAppAuth_Privacy'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'AppAuth', 'AppAuth-AppAuthCore_Privacy', 'AppCheckCore'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'DKPhotoGallery', 'DKPhotoGallery-DKPhotoGallery', 'DKImagePickerController', 'DKImagePickerController-DKImagePickerController'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'abseil', 'abseil-xcprivacy'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'Flutter'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
       end
       
-      # 6. Fix build script phase warnings
+      # 6. AGGRESSIVE FIX: Force Swift optimization level for ALL pods
+      # This ensures no pod is left behind with incorrect optimization settings
+      if config.name == 'Debug'
+        config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
+      else
+        config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-O'
+      end
+      
+      # 7. Fix build script phase warnings
       target.build_phases.each do |phase|
         if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
           if phase.name == 'Create Symlinks to Header Folders'
