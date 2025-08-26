@@ -1,6 +1,6 @@
 workflows:
-  mindload-ios-android:
-    name: MindLoad iOS & Android Build
+  mindload-ios:
+    name: MindLoad iOS Build
     max_build_duration: 60
     instance_type: mac_mini_m1
     integrations:
@@ -14,7 +14,6 @@ workflows:
         # App configuration
         APP_NAME: "MindLoad"
         BUNDLE_ID: "com.MindLoad.ios"
-        PACKAGE_NAME: "com.MindLoad.android"
         
         # Build configuration
         BUILD_MODE: "release"
@@ -33,8 +32,7 @@ workflows:
         APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...) # Set in Codemagic UI
         CERTIFICATE_PRIVATE_KEY: Encrypted(...) # Set in Codemagic UI
         
-        # Google Play configuration (set these in Codemagic UI)
-        GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS: Encrypted(...) # Set in Codemagic UI
+
         
       flutter: stable
       xcode: "15.4"
@@ -87,21 +85,17 @@ workflows:
         script: |
           flutter build ios --release --no-codesign
           
-      - name: Build Android
-        script: |
-          flutter build appbundle --release
+
           
-      - name: Build iOS IPA
+      - name: Build iOS IPA for App Store
         script: |
           xcode-project build-ipa \
             --workspace ios/Runner.xcworkspace \
             --scheme Runner \
-            --archive-flags="-allowProvisioningUpdates"
+            --archive-flags="-allowProvisioningUpdates" \
+            --export-options-plist ios/ExportOptions.plist
             
     artifacts:
-      - build/**/outputs/**/*.aab
-      - build/**/outputs/**/mapping.txt
-      - flutter_drive.log
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
@@ -115,14 +109,15 @@ workflows:
         submit_to_testflight: true
         submit_to_app_store: false
         
-        # Optional: TestFlight groups
+        # App Store distribution settings
+        bundle_id: com.MindLoad.ios
+        distribution_type: app-store
+        
+        # TestFlight groups
         beta_groups:
           - "Internal Testing"
           
-      google_play:
-        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
-        submit_as_draft: true
+
         
       email:
         recipients:
@@ -139,7 +134,7 @@ workflows:
 
   # Separate workflow for development builds
   mindload-dev-build:
-    name: MindLoad Development Build
+    name: MindLoad iOS Development Build
     max_build_duration: 45
     instance_type: mac_mini_m1
     environment:
@@ -148,7 +143,6 @@ workflows:
         XCODE_VERSION: "15.4"
         APP_NAME: "MindLoad Dev"
         BUNDLE_ID: "com.MindLoad.ios.dev"
-        PACKAGE_NAME: "com.MindLoad.android.dev"
         BUILD_MODE: "debug"
       flutter: stable
       xcode: "15.4"
@@ -176,12 +170,9 @@ workflows:
         script: |
           flutter build ios --debug --no-codesign
           
-      - name: Build Android Debug
-        script: |
-          flutter build apk --debug
+
           
     artifacts:
-      - build/**/outputs/**/*.apk
       - build/ios/iphoneos/*.app
       
     publishing:
