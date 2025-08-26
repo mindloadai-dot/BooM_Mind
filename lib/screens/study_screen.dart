@@ -796,13 +796,8 @@ class _StudyScreenState extends State<StudyScreen>
       HapticFeedbackService().heavyImpact();
 
       // Generate new flashcards and quizzes using the original content
-      final futures = await Future.wait([
-        openAIService.generateFlashcards(_currentStudySet.content, count: 10),
-        openAIService.generateQuiz(_currentStudySet.content, count: 10),
-      ]);
-
-      final newFlashcards = futures[0] as List<Flashcard>;
-      final newQuizQuestions = futures[1] as List<QuizQuestion>;
+      final newFlashcards = await openAIService.generateFlashcards(_currentStudySet.content, count: 10);
+      final newQuizQuestions = await openAIService.generateQuiz(_currentStudySet.content, count: 10);
 
       // Create a Quiz from the quiz questions
       final newQuiz = Quiz(

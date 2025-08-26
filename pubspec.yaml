@@ -40,7 +40,7 @@ dependencies:
   shared_preferences: ^2.3.3
   file_picker: ^10.3.1
   path_provider: ^2.1.4
-  syncfusion_flutter_pdf: ^30.0.0
+  syncfusion_flutter_pdf: ^30.2.7
   archive: ^4.0.7
   xml: ^6.5.0
   
@@ -50,7 +50,7 @@ dependencies:
   cached_network_image: ^3.3.1
   
   # Notifications - Stable Versions
-  flutter_local_notifications: ^19.4.0
+  flutter_local_notifications: ^19.4.1
   # Replace flutter_native_timezone (package-level manifest causes AGP errors) with flutter_timezone
   flutter_timezone: ^4.1.1
   timezone: ^0.10.1
@@ -70,7 +70,7 @@ dependencies:
   
   # Internationalization
   intl: ^0.20.2
-  image_picker: ^1.1.2
+  image_picker: ^1.2.0
   image: ^4.5.4
 
 dependency_overrides:

@@ -28,7 +28,7 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks!
+  use_frameworks! :linkage => :static
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
@@ -37,6 +37,7 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  # Apply settings to Runner target as well
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
@@ -62,7 +63,12 @@ post_install do |installer|
       config.build_settings['VALID_ARCHS'] = 'arm64'
       config.build_settings['ARCHS'] = 'arm64'
       
-      # 5. Fix specific problematic pods - comprehensive list
+      # 5. Additional 2025 compliance settings
+      config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+      config.build_settings['SUPPORTED_PLATFORMS'] = 'iphoneos'
+      config.build_settings['SUPPORTS_MACCATALYST'] = 'NO'
+      
+      # 6. Fix specific problematic pods - comprehensive list
       case target.name
       when 'BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
@@ -83,7 +89,7 @@ post_install do |installer|
       when 'FirebaseSharedSwift'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
-      when 'GoogleUtilities', 'GoogleDataTransport', 'GTMSessionFetcher', 'GTMSessionFetcher-GTMSessionFetcher_Core_Privacy'
+      when 'GoogleUtilities', 'GoogleDataTransport', 'GTMSessionFetcher', 'GTMSessionFetcher-GTMSessionFetcher_Core_Privacy', 'GoogleAppMeasurement', 'GoogleAdsOnDeviceConversion', 'FirebaseAnalytics'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'GTMAppAuth', 'GTMAppAuth-GTMAppAuth_Privacy'
@@ -93,17 +99,30 @@ post_install do |installer|
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'DKPhotoGallery', 'DKPhotoGallery-DKPhotoGallery', 'DKImagePickerController', 'DKImagePickerController-DKImagePickerController'
+        # Force these legacy pods to iOS 15.0+ and disable them if possible
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
+        config.build_settings['ENABLE_BITCODE'] = 'NO'
+        # Try to suppress deprecated API warnings
+        config.build_settings['GCC_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
+        config.build_settings['CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
       when 'abseil', 'abseil-xcprivacy'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'Flutter'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
+      when 'SDWebImage', 'SDWebImage-SDWebImage', 'SwiftyGif', 'SwiftyGif-SwiftyGif'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+        config.build_settings['ENABLE_BITCODE'] = 'NO'
+      when 'gRPC-Core', 'gRPC-Core-grpc', 'gRPC-C++', 'gRPC-C++-grpcpp', 'gRPC-C++-gRPCCertificates-Cpp'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+        config.build_settings['ENABLE_BITCODE'] = 'NO'
       end
       
-      # 6. AGGRESSIVE FIX: Force Swift optimization level for ALL pods
+      # 7. AGGRESSIVE FIX: Force Swift optimization level for ALL pods
       # This ensures no pod is left behind with incorrect optimization settings
       if config.name == 'Debug'
         config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
@@ -111,11 +130,35 @@ post_install do |installer|
         config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-O'
       end
       
-      # 7. Fix build script phase warnings
+      # 8. Fix build script phase warnings
       target.build_phases.each do |phase|
         if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
           if phase.name == 'Create Symlinks to Header Folders'
             phase.output_paths = ['$(DERIVED_FILE_DIR)/symlinks_created']
+          end
+        end
+      end
+    end
+  end
+  
+  # Apply same settings to Runner target
+  installer.aggregate_targets.each do |aggregate_target|
+    aggregate_target.user_project.targets.each do |target|
+      if target.name == 'Runner'
+        target.build_configurations.each do |config|
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+          config.build_settings['SWIFT_VERSION'] = '5.0'
+          config.build_settings['ENABLE_BITCODE'] = 'NO'
+          config.build_settings['VALID_ARCHS'] = 'arm64'
+          config.build_settings['ARCHS'] = 'arm64'
+          config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+          config.build_settings['SUPPORTED_PLATFORMS'] = 'iphoneos'
+          config.build_settings['SUPPORTS_MACCATALYST'] = 'NO'
+          
+          if config.name == 'Debug'
+            config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
+          else
+            config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-O'
           end
         end
       end

@@ -52,9 +52,6 @@ class OpenAIService {
                 question: data['question']?.toString() ?? 'Question not available',
                 answer: data['answer']?.toString() ?? 'Answer not available',
                 difficulty: _parseDifficulty(data['difficulty']?.toString() ?? difficulty),
-                isCorrect: null,
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
               );
             }).toList();
           }
@@ -89,6 +86,31 @@ class OpenAIService {
     }
   }
 
+  // Legacy method name for compatibility
+  Future<List<QuizQuestion>> generateQuizQuestionsFromContent(
+    String content,
+    int count,
+    String difficulty,
+  ) async {
+    return generateQuizQuestions(content, count, difficulty);
+  }
+
+  // Legacy method name for compatibility
+  Future<List<Flashcard>> generateFlashcards(
+    String content, {
+    required int count,
+  }) async {
+    return generateFlashcardsFromContent(content, count, 'medium');
+  }
+
+  // Legacy method name for compatibility
+  Future<List<QuizQuestion>> generateQuiz(
+    String content, {
+    required int count,
+  }) async {
+    return generateQuizQuestions(content, count, 'medium');
+  }
+
   // Generate quiz questions from content
   Future<List<QuizQuestion>> generateQuizQuestions(
     String content,
@@ -121,10 +143,7 @@ class OpenAIService {
                 question: data['question']?.toString() ?? 'Question not available',
                 options: List<String>.from(data['options'] ?? []),
                 correctAnswer: data['correctAnswer']?.toString() ?? '',
-                explanation: data['explanation']?.toString() ?? '',
-                difficulty: _parseDifficulty(data['difficulty']?.toString() ?? difficulty),
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
+                type: QuizType.multipleChoice, // Default to multiple choice
               );
             }).toList();
           }

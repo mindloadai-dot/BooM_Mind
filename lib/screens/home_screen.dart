@@ -1846,14 +1846,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       HapticFeedbackService().heavyImpact();
 
       // Generate new flashcards and quizzes using the original content
-      final futures = await Future.wait([
-        OpenAIService.instance
-            .generateFlashcards(studySet.content, count: flashcardCount),
-        OpenAIService.instance.generateQuiz(studySet.content, count: quizCount),
-      ]);
-
-      final newFlashcards = futures[0] as List<Flashcard>;
-      final newQuizQuestions = futures[1] as List<QuizQuestion>;
+      final newFlashcards = await OpenAIService.instance
+          .generateFlashcards(studySet.content, count: flashcardCount);
+      final newQuizQuestions = await OpenAIService.instance
+          .generateQuiz(studySet.content, count: quizCount);
 
       // Credits are already managed by MindloadEconomyService
 
