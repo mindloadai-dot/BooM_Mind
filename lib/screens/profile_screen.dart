@@ -771,14 +771,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              '${userEconomy.creditsRemaining} tokens remaining',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: context.tokens.textSecondary,
-                                  ),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Remaining Tokens',
+                                '${userEconomy.creditsRemaining}',
+                                Icons.account_balance_wallet,
+                                context.tokens.success,
+                              ),
                             ),
                           ],
                         );
@@ -874,10 +873,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildStatCard(
-                        'Rollover',
-                        '${userEconomy.rolloverCredits}',
-                        Icons.savings,
-                        context.tokens.secondary,
+                        'Remaining Tokens',
+                        '${userEconomy.creditsRemaining}',
+                        Icons.account_balance_wallet,
+                        context.tokens.success,
                       ),
                     ),
                   ],
