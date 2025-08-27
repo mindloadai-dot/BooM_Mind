@@ -807,68 +807,7 @@ class WorkingNotificationService {
     }
   }
 
-  /// Send test notification with enhanced debugging
-  Future<bool> sendTestNotification() async {
-    try {
-      if (!_isInitialized) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Service not initialized, initializing now...');
-        }
-        await initialize();
-      }
 
-      // Check permissions first
-      final permissions = await checkNotificationPermissions();
-      if (kDebugMode) {
-        debugPrint('🔍 Permission check before test notification: $permissions');
-      }
-
-      // Create notification details
-      final notificationDetails = NotificationDetails(
-        android: AndroidNotificationDetails(
-          _generalChannel,
-          'Test Notifications',
-          channelDescription: 'Test notifications for debugging',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
-          enableLights: true,
-          color: const Color(0xFF2196F3),
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          sound: 'default',
-          badgeNumber: 1,
-          categoryIdentifier: 'test_notification',
-          threadIdentifier: 'test_thread',
-          // Add iOS-specific settings for better compatibility
-          interruptionLevel: InterruptionLevel.timeSensitive,
-        ),
-      );
-
-      // Show the notification
-      await _flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch,
-        '🧪 Test Notification',
-        'This is a test notification to verify the system is working.',
-        notificationDetails,
-        payload: 'test_notification',
-      );
-
-      if (kDebugMode) {
-        debugPrint('✅ Test notification sent successfully');
-      }
-      return true;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Test notification failed: $e');
-      }
-      return false;
-    }
-  }
 
   /// Get system status
   Map<String, dynamic> getSystemStatus() {

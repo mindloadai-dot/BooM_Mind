@@ -1720,26 +1720,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: TextStyle(color: tokens.primary),
               ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await WorkingNotificationService.instance.sendTestNotification();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Test notification sent!'),
-                      backgroundColor: tokens.success,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: tokens.primary),
-              child: Text(
-                'Send Test Notification',
-                style: TextStyle(color: tokens.onPrimary),
-              ),
-            ),
+
           ],
         );
       },
@@ -1921,30 +1902,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // Quick actions
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    HapticFeedbackService().mediumImpact();
-                    Navigator.pop(context);
-                    await WorkingNotificationService.instance.sendTestNotification();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Test notification sent!'),
-                        backgroundColor: tokens.success,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.send, size: 18),
-                  label: const Text('TEST'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: tokens.surface,
-                    foregroundColor: tokens.primary,
-                    side: BorderSide(color: tokens.primary),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
+
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
@@ -2615,16 +2573,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               color: tokens.surface,
               onSelected: (value) async {
                 switch (value) {
-                  case 'test':
-                    await WorkingNotificationService.instance.sendTestNotification();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Test notification sent!'),
-                        backgroundColor: tokens.success,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    break;
+
                   case 'status':
                     final status = WorkingNotificationService.instance.getSystemStatus();
                     if (mounted) {
@@ -2648,20 +2597,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 }
               },
               itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'test',
-                  child: Row(
-                    children: [
-                      Icon(Icons.notification_add,
-                          color: tokens.success, size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Send Test Notification',
-                        style: TextStyle(color: tokens.textPrimary),
-                      ),
-                    ],
-                  ),
-                ),
+
                 PopupMenuItem(
                   value: 'status',
                   child: Row(

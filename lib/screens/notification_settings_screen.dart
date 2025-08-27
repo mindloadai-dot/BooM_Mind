@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mindload/services/working_notification_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
@@ -8,13 +7,14 @@ class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
   final UserProfileService _userProfile = UserProfileService.instance;
-  final WorkingNotificationService _notificationService = WorkingNotificationService.instance;
-  
+
   // Notification category preferences
   final Map<String, bool> _categoryPreferences = {
     'Study Reminders': true,
@@ -27,8 +27,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<SemanticTokensExtension>()?.tokens ?? 
-                 ThemeManager.instance.currentTokens;
+    final tokens =
+        Theme.of(context).extension<SemanticTokensExtension>()?.tokens ??
+            ThemeManager.instance.currentTokens;
 
     return Scaffold(
       appBar: const MindloadAppBar(title: 'Notification Settings'),
@@ -41,23 +42,19 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             // Header
             _buildHeader(tokens),
             const SizedBox(height: 24),
-            
+
             // Notification Style
             _buildNotificationStyleSection(tokens),
             const SizedBox(height: 24),
-            
+
             // Notification Categories
             _buildNotificationCategoriesSection(tokens),
             const SizedBox(height: 24),
-            
+
             // Permission Status
             _buildPermissionStatusSection(tokens),
             const SizedBox(height: 24),
-            
-            // Test Notifications
-            _buildTestNotificationsSection(tokens),
-            const SizedBox(height: 24),
-            
+
             // Save Button
             _buildSaveButton(tokens),
           ],
@@ -148,7 +145,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     );
   }
 
-  Widget _buildStyleOption(SemanticTokens tokens, String style, bool isSelected) {
+  Widget _buildStyleOption(
+      SemanticTokens tokens, String style, bool isSelected) {
     final styleInfo = _userProfile.getStyleInfo(style);
     final emoji = styleInfo['emoji'] as String;
     final name = styleInfo['name'] as String;
@@ -172,7 +170,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: isSelected ? tokens.primary : tokens.outline.withOpacity(0.1),
+                color: isSelected
+                    ? tokens.primary
+                    : tokens.outline.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Center(
@@ -239,22 +239,29 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             ),
           ),
           const SizedBox(height: 20),
-
-          _buildCategoryToggle('Study Reminders', 'Study session notifications', Icons.school, 'Study Reminders'),
-          _buildCategoryToggle('Streak Alerts', 'Daily streak maintenance', Icons.local_fire_department, 'Streak Alerts'),
-          _buildCategoryToggle('Exam Deadlines', 'Important exam reminders', Icons.event, 'Exam Deadlines'),
-          _buildCategoryToggle('Inactivity Nudges', 'Gentle reminders to study', Icons.notifications_active, 'Inactivity Nudges'),
-          _buildCategoryToggle('Event Triggers', 'Special event notifications', Icons.celebration, 'Event Triggers'),
-          _buildCategoryToggle('Promotional', 'App updates and features', Icons.campaign, 'Promotional'),
+          _buildCategoryToggle('Study Reminders', 'Study session notifications',
+              Icons.school, 'Study Reminders'),
+          _buildCategoryToggle('Streak Alerts', 'Daily streak maintenance',
+              Icons.local_fire_department, 'Streak Alerts'),
+          _buildCategoryToggle('Exam Deadlines', 'Important exam reminders',
+              Icons.event, 'Exam Deadlines'),
+          _buildCategoryToggle('Inactivity Nudges', 'Gentle reminders to study',
+              Icons.notifications_active, 'Inactivity Nudges'),
+          _buildCategoryToggle('Event Triggers', 'Special event notifications',
+              Icons.celebration, 'Event Triggers'),
+          _buildCategoryToggle('Promotional', 'App updates and features',
+              Icons.campaign, 'Promotional'),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryToggle(String title, String description, IconData icon, String categoryKey) {
-    final tokens = Theme.of(context).extension<SemanticTokensExtension>()?.tokens ?? 
-                 ThemeManager.instance.currentTokens;
-    
+  Widget _buildCategoryToggle(
+      String title, String description, IconData icon, String categoryKey) {
+    final tokens =
+        Theme.of(context).extension<SemanticTokensExtension>()?.tokens ??
+            ThemeManager.instance.currentTokens;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -325,18 +332,21 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             ),
           ),
           const SizedBox(height: 20),
-
-          _buildStatusRow(tokens, 'Notification Permissions', 'GRANTED', Icons.notifications, tokens.success),
+          _buildStatusRow(tokens, 'Notification Permissions', 'GRANTED',
+              Icons.notifications, tokens.success),
           const SizedBox(height: 12),
-          _buildStatusRow(tokens, 'Background Processing', 'ENABLED', Icons.schedule, tokens.success),
+          _buildStatusRow(tokens, 'Background Processing', 'ENABLED',
+              Icons.schedule, tokens.success),
           const SizedBox(height: 12),
-          _buildStatusRow(tokens, 'WorkingNotificationService', 'ACTIVE', Icons.check_circle, tokens.success),
+          _buildStatusRow(tokens, 'WorkingNotificationService', 'ACTIVE',
+              Icons.check_circle, tokens.success),
         ],
       ),
     );
   }
 
-  Widget _buildStatusRow(SemanticTokens tokens, String label, String status, IconData icon, Color statusColor) {
+  Widget _buildStatusRow(SemanticTokens tokens, String label, String status,
+      IconData icon, Color statusColor) {
     return Row(
       children: [
         Icon(icon, color: tokens.primary, size: 20),
@@ -369,80 +379,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     );
   }
 
-  Widget _buildTestNotificationsSection(SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.outline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Test Notifications',
-            style: TextStyle(
-              color: tokens.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Test different notification types to ensure everything is working',
-            style: TextStyle(
-              color: tokens.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _testStudyNotification(tokens),
-                  icon: const Icon(Icons.school, size: 18),
-                  label: const Text('Study'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: tokens.primary,
-                    foregroundColor: tokens.onPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _testDeadlineNotification(tokens),
-                  icon: const Icon(Icons.event, size: 18),
-                  label: const Text('Deadline'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: tokens.primary,
-                    foregroundColor: tokens.onPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _testAchievementNotification(tokens),
-              icon: const Icon(Icons.emoji_events, size: 18),
-              label: const Text('Achievement'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: tokens.primary,
-                foregroundColor: tokens.onPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSaveButton(SemanticTokens tokens) {
     return SizedBox(
       width: double.infinity,
@@ -468,12 +404,17 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     try {
       await _userProfile.updateNotificationStyle(newStyle);
       setState(() {});
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Notification style updated to: ${_userProfile.getStyleDisplayName(newStyle)}'),
-            backgroundColor: Theme.of(context).extension<SemanticTokensExtension>()?.tokens.success ?? Colors.green,
+            content: Text(
+                'Notification style updated to: ${_userProfile.getStyleDisplayName(newStyle)}'),
+            backgroundColor: Theme.of(context)
+                    .extension<SemanticTokensExtension>()
+                    ?.tokens
+                    .success ??
+                Colors.green,
           ),
         );
       }
@@ -482,97 +423,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update notification style: $e'),
-            backgroundColor: Theme.of(context).extension<SemanticTokensExtension>()?.tokens.error ?? Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _testStudyNotification(SemanticTokens tokens) async {
-    try {
-      await _notificationService.showNotificationNow(
-        title: '📚 Study Session Ready',
-        body: 'Time to review your flashcards!',
-        payload: 'test_study',
-        isHighPriority: false,
-        channelType: 'study_reminders',
-      );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Study notification sent!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send notification: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _testDeadlineNotification(SemanticTokens tokens) async {
-    try {
-      await _notificationService.showNotificationNow(
-        title: '⏰ Deadline Approaching',
-        body: 'Your exam is tomorrow!',
-        payload: 'test_deadline',
-        isHighPriority: true,
-        channelType: 'deadlines',
-      );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Deadline notification sent!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send notification: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _testAchievementNotification(SemanticTokens tokens) async {
-    try {
-      await _notificationService.showNotificationNow(
-        title: '🏆 Achievement Unlocked!',
-        body: 'Congratulations! You\'ve earned a new badge!',
-        payload: 'test_achievement',
-        isHighPriority: false,
-        channelType: 'achievements',
-      );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Achievement notification sent!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send notification: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context)
+                    .extension<SemanticTokensExtension>()
+                    ?.tokens
+                    .error ??
+                Colors.red,
           ),
         );
       }
