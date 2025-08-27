@@ -131,8 +131,9 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     });
 
-    // Try to load cached user
-    await _loadUserData();
+    // Don't automatically load cached user data - only rely on Firebase auth state
+    // This prevents authentication bypass when the app is restarted
+    // await _loadUserData();
   }
 
   // ---- Modernized Public API (kept additive so UI remains intact) ----

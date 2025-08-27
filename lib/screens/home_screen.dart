@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:mindload/models/study_data.dart';
 
 import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/auth_service.dart';
 
 import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/services/document_processor.dart';
@@ -87,8 +88,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _scanController, curve: Curves.linear),
     );
 
+    _checkAuthentication();
     _initializeData();
     _checkOnboarding();
+  }
+
+  void _checkAuthentication() {
+    // Ensure user is properly authenticated before accessing HomeScreen
+    final authService = AuthService.instance;
+    if (!authService.isAuthenticated) {
+      // Redirect to authentication screen if not authenticated
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/auth');
+      });
+      return;
+    }
   }
 
   Future<void> _checkOnboarding() async {

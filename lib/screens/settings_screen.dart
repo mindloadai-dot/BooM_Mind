@@ -35,8 +35,21 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void initState() {
     super.initState();
+    _checkAuthentication();
     _initializeAnimations();
     _startAnimations();
+  }
+
+  void _checkAuthentication() {
+    // Ensure user is properly authenticated before accessing SettingsScreen
+    final authService = AuthService.instance;
+    if (!authService.isAuthenticated) {
+      // Redirect to authentication screen if not authenticated
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/auth');
+      });
+      return;
+    }
   }
 
   @override

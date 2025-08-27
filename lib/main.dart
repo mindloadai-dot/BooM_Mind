@@ -200,6 +200,7 @@ class MindLoadApp extends StatelessWidget {
             home: const _AppInitializationScreen(),
             debugShowCheckedModeBanner: false,
             routes: {
+              '/auth': (context) => const SocialAuthScreen(),
               '/home': (context) => const HomeScreen(),
               '/logic-packs': (context) => const LogicPacksScreen(),
               '/my-plan': (context) => const MyPlanScreen(),

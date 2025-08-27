@@ -88,11 +88,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _checkAuthentication() async {
-    final bool isAuthenticated =
-        await StorageService.instance.isAuthenticated();
-    if (isAuthenticated) {
-      _navigateToHome();
-    }
+    // Don't automatically check cached authentication state
+    // This prevents authentication bypass when the app is restarted
+    // Users must go through the proper authentication flow each time
+    
+    // Only check if user is already authenticated with Firebase
+    // final bool isAuthenticated = await StorageService.instance.isAuthenticated();
+    // if (isAuthenticated) {
+    //   _navigateToHome();
+    // }
   }
 
   Future<void> _authenticate() async {
