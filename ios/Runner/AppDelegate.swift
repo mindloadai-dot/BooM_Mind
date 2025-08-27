@@ -18,6 +18,21 @@ import UserNotifications
     // Configure notifications
     UNUserNotificationCenter.current().delegate = self
     
+    // Request notification permissions immediately for iOS
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().requestAuthorization(
+        options: [.alert, .badge, .sound]
+      ) { granted, error in
+        print("iOS Notification permission granted: \(granted)")
+        if let error = error {
+          print("iOS Notification permission error: \(error)")
+        }
+      }
+    }
+    
+    // Register for remote notifications
+    application.registerForRemoteNotifications()
+    
     // Register Flutter plugins
     GeneratedPluginRegistrant.register(with: self)
     
@@ -51,5 +66,21 @@ import UserNotifications
     performFetchWithCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
     completionHandler(.noData)
+  }
+  
+  // Handle successful registration for remote notifications
+  override func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    print("Successfully registered for remote notifications with token")
+  }
+  
+  // Handle failed registration for remote notifications
+  override func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    print("Failed to register for remote notifications: \(error)")
   }
 }

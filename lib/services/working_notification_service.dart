@@ -38,12 +38,16 @@ class WorkingNotificationService {
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      // Initialize settings for iOS
+      // Initialize settings for iOS with explicit permission request
       const DarwinInitializationSettings initializationSettingsIOS =
           DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
+        requestCriticalPermission: false,
+        defaultPresentAlert: true,
+        defaultPresentBadge: true,
+        defaultPresentSound: true,
       );
 
       // Combine initialization settings
@@ -61,6 +65,11 @@ class WorkingNotificationService {
 
       // Create notification channels
       await _createNotificationChannels();
+      
+      // Request iOS permissions explicitly after initialization
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await _requestIOSPermissions();
+      }
 
       _isInitialized = true;
 
@@ -70,6 +79,32 @@ class WorkingNotificationService {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Failed to initialize WorkingNotificationService: $e');
+      }
+    }
+  }
+
+  /// Request iOS permissions explicitly
+  Future<void> _requestIOSPermissions() async {
+    try {
+      final IOSFlutterLocalNotificationsPlugin? iosPlugin =
+          _flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+      
+      if (iosPlugin != null) {
+        final bool? granted = await iosPlugin.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+          critical: false,
+        );
+        
+        if (kDebugMode) {
+          debugPrint('📱 iOS notification permissions requested: ${granted ?? false}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to request iOS permissions: $e');
       }
     }
   }
@@ -272,6 +307,7 @@ class WorkingNotificationService {
           badgeNumber: 1,
           categoryIdentifier: 'mindload_notifications',
           threadIdentifier: 'mindload_thread',
+          interruptionLevel: InterruptionLevel.timeSensitive,
         ),
       );
 
@@ -376,6 +412,7 @@ class WorkingNotificationService {
           badgeNumber: 1,
           categoryIdentifier: 'mindload_notifications',
           threadIdentifier: 'mindload_thread',
+          interruptionLevel: InterruptionLevel.timeSensitive,
         ),
       );
 

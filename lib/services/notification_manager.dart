@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mindload/models/notification_models.dart';
 import 'package:mindload/services/unified_notification_service.dart';
+import 'package:mindload/services/working_notification_service.dart';
 import 'package:mindload/services/notification_event_bus.dart';
 import 'package:mindload/services/send_time_optimization_service.dart';
 import 'package:mindload/services/auth_service.dart';
@@ -48,6 +49,10 @@ class NotificationManager {
 
     try {
       debugPrint('🔔 Initializing Notification Manager...');
+      
+      // Initialize the WorkingNotificationService first (this is the actual notification handler)
+      await WorkingNotificationService.instance.initialize();
+      debugPrint('✅ WorkingNotificationService initialized');
       
       // Initialize core notification service
       await _notificationService.initialize();

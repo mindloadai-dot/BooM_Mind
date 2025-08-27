@@ -74,11 +74,13 @@
 	<key>SKPaymentTransactionObserverClass</key>
 	<string>$(PRODUCT_MODULE_NAME).PaymentObserver</string>
 	
-	<!-- Background Modes for Audio Playback -->
+	<!-- Background Modes for Audio Playback and Notifications -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 		<string>remote-notification</string>
+		<string>fetch</string>
+		<string>processing</string>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
