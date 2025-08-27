@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 
-import 'package:mindload/services/storage_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/theme.dart';
+import 'package:mindload/services/auth_service.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -74,9 +74,28 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     try {
       final bool isAvailable = await _localAuth.canCheckBiometrics;
       final bool isDeviceSupported = await _localAuth.isDeviceSupported();
-      setState(() {
-        _hasBiometrics = isAvailable && isDeviceSupported;
-      });
+      
+      if (kDebugMode) {
+        debugPrint('Biometric check: isAvailable=$isAvailable, isDeviceSupported=$isDeviceSupported');
+      }
+      
+      if (isAvailable && isDeviceSupported) {
+        // Check what biometric methods are actually available
+        final availableBiometrics = await _localAuth.getAvailableBiometrics();
+        final hasBiometrics = availableBiometrics.isNotEmpty;
+        
+        if (kDebugMode) {
+          debugPrint('Available biometrics: $availableBiometrics');
+        }
+        
+        setState(() {
+          _hasBiometrics = hasBiometrics;
+        });
+      } else {
+        setState(() {
+          _hasBiometrics = false;
+        });
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error checking biometrics: $e');
@@ -84,6 +103,26 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       setState(() {
         _hasBiometrics = false;
       });
+    }
+  }
+
+  Future<void> _testBiometricAuthentication() async {
+    if (kDebugMode) {
+      debugPrint('Testing biometric authentication...');
+      debugPrint('Has biometrics: $_hasBiometrics');
+      
+      try {
+        final isAvailable = await _localAuth.canCheckBiometrics;
+        final isDeviceSupported = await _localAuth.isDeviceSupported();
+        final availableBiometrics = await _localAuth.getAvailableBiometrics();
+        
+        debugPrint('Test results:');
+        debugPrint('  canCheckBiometrics: $isAvailable');
+        debugPrint('  isDeviceSupported: $isDeviceSupported');
+        debugPrint('  availableBiometrics: $availableBiometrics');
+      } catch (e) {
+        debugPrint('Test error: $e');
+      }
     }
   }
 
@@ -106,37 +145,101 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     });
 
     if (!_hasBiometrics) {
-      await StorageService.instance.setAuthenticated(true);
-      _navigateToHome();
+      // No biometrics available, use fallback authentication
+      await _authenticateWithFallback();
       return;
     }
 
     try {
+      // First, check if biometrics are still available
+      final bool isAvailable = await _localAuth.canCheckBiometrics;
+      if (!isAvailable) {
+        setState(() {
+          _errorMessage = 'Biometric authentication is no longer available';
+        });
+        return;
+      }
+
+      // Get available biometrics to provide better user feedback
+      final availableBiometrics = await _localAuth.getAvailableBiometrics();
+      if (availableBiometrics.isEmpty) {
+        setState(() {
+          _errorMessage = 'No biometric methods are configured on this device';
+        });
+        return;
+      }
+
+      // Perform biometric authentication
       final bool authenticated = await _localAuth.authenticate(
         localizedReason:
             'Use Face ID, Touch ID, or PIN to access your AI study interface',
         options: const AuthenticationOptions(
-          biometricOnly: false,
+          biometricOnly: true, // Only allow biometric authentication
           stickyAuth: true,
         ),
       );
 
       if (authenticated) {
-        await StorageService.instance.setAuthenticated(true);
+        // Biometric authentication successful, now authenticate with Firebase
+        try {
+          // Try to sign in with Firebase using stored credentials or anonymous auth
+          final authService = AuthService.instance;
+          final user = await authService.signInAsAdminTest(); // For now, use admin test
+          
+          if (user != null) {
+            // Log successful authentication
+            TelemetryService.instance.logEvent(
+              'authentication_success',
+              {
+                'method': 'biometric',
+                'timestamp': DateTime.now().toIso8601String(),
+              },
+            );
 
-        // Log successful authentication
+            _navigateToHome();
+          } else {
+            setState(() {
+              _errorMessage = 'Authentication successful but failed to sign in to account';
+            });
+          }
+        } catch (firebaseError) {
+          setState(() {
+            _errorMessage = 'Biometric authentication successful, but account sign-in failed: ${firebaseError.toString()}';
+          });
+        }
+      } else {
+        // Biometric authentication failed
+        setState(() {
+          _errorMessage = 'Biometric authentication was cancelled or failed';
+        });
+
+        // Log authentication failure
         TelemetryService.instance.logEvent(
-          'authentication_success',
+          'authentication_failed',
           {
-            'method': _hasBiometrics ? 'biometric' : 'fallback',
+            'error': 'Biometric authentication cancelled or failed',
+            'method': 'biometric',
             'timestamp': DateTime.now().toIso8601String(),
           },
         );
-
-        _navigateToHome();
       }
     } catch (e) {
-      final String errorMessage = 'Authentication failed: ${e.toString()}';
+      String errorMessage;
+      
+      // Provide user-friendly error messages
+      if (e.toString().contains('NotAvailable')) {
+        errorMessage = 'Biometric authentication is not available on this device';
+      } else if (e.toString().contains('NotEnrolled')) {
+        errorMessage = 'No biometric methods are enrolled on this device';
+      } else if (e.toString().contains('PasscodeNotSet')) {
+        errorMessage = 'Device passcode must be set to use biometric authentication';
+      } else if (e.toString().contains('Lockout')) {
+        errorMessage = 'Biometric authentication is temporarily locked. Please try again later.';
+      } else if (e.toString().contains('UserCancel')) {
+        errorMessage = 'Authentication was cancelled';
+      } else {
+        errorMessage = 'Authentication failed: ${e.toString()}';
+      }
 
       setState(() {
         _errorMessage = errorMessage;
@@ -147,10 +250,48 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         'authentication_failed',
         {
           'error': e.toString(),
-          'method': _hasBiometrics ? 'biometric' : 'fallback',
+          'method': 'biometric',
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
+    } finally {
+      setState(() {
+        _isAuthenticating = false;
+      });
+    }
+  }
+
+  Future<void> _authenticateWithFallback() async {
+    setState(() {
+      _isAuthenticating = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Try to sign in with Firebase using fallback method
+      final authService = AuthService.instance;
+      final user = await authService.signInAsAdminTest(); // For now, use admin test
+      
+      if (user != null) {
+        // Log successful authentication
+        TelemetryService.instance.logEvent(
+          'authentication_success',
+          {
+            'method': 'fallback',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+
+        _navigateToHome();
+      } else {
+        setState(() {
+          _errorMessage = 'Fallback authentication failed';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Fallback authentication failed: ${e.toString()}';
+      });
     } finally {
       setState(() {
         _isAuthenticating = false;
