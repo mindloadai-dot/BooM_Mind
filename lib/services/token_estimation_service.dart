@@ -276,7 +276,7 @@ class TokenEstimationService {
           'Large text input (${_formatNumber(words)} words) - consider splitting into smaller sections');
     }
 
-    if (chars > 100000) {
+    if (chars > 500000) {
       warnings.add(
           'Very long content (${_formatNumber(chars)} characters) - processing may take longer');
     }
@@ -321,7 +321,7 @@ class TokenEstimationService {
           'Large PDF (${_formatNumber(pageCount)} pages) - consider processing in sections');
     }
 
-    if (totalWords > 100000) {
+    if (totalWords > 500000) {
       warnings.add(
           'Very long content (${_formatNumber(totalWords)} words) - processing may take longer');
     }
@@ -344,12 +344,12 @@ class TokenEstimationService {
           'Large file (${fileSizeMB.toStringAsFixed(1)} MB) - processing may take longer');
     }
 
-    if (estimatedWords > 100000) {
+    if (estimatedWords > 500000) {
       warnings.add(
           'Very long content (${_formatNumber(estimatedWords)} words) - consider splitting');
     }
 
-    if (depth == 'deep' && estimatedWords > 100000) {
+    if (depth == 'deep' && estimatedWords > 500000) {
       warnings.add('Deep analysis on large document will use more tokens');
     }
 

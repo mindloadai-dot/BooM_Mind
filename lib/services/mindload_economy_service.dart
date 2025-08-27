@@ -150,7 +150,7 @@ class MindloadEconomyService extends ChangeNotifier {
       // Check paste cap - be more lenient
       final pasteLimit = _userEconomy!.getPasteCharLimit(budgetState);
       if (request.sourceCharCount > pasteLimit) {
-        // For small overages, allow with warning (now 5% since we have 100k limit)
+        // For small overages, allow with warning (now 5% since we have 500k limit)
         if (request.sourceCharCount <= pasteLimit * 1.05) {
           // Allow 5% overage
           print(
@@ -430,7 +430,7 @@ class MindloadEconomyService extends ChangeNotifier {
 
   /// Calculate credits needed for auto-split based on content size
   int calculateAutoSplitCredits(int totalCharCount) {
-    final pasteLimit = _userEconomy?.getPasteCharLimit(budgetState) ?? 100000;
+          final pasteLimit = _userEconomy?.getPasteCharLimit(budgetState) ?? 500000;
     if (totalCharCount <= pasteLimit) return 0;
 
     // Calculate how many chunks we need

@@ -11,7 +11,8 @@ This document summarizes the complete implementation of device-side study-set st
 - **Constants**: All required storage limits and thresholds
   - `STORAGE_BUDGET_MB = 250` - Device cache budget
   - `MAX_LOCAL_SETS = 500` - Absolute cap per device
-  - `MAX_LOCAL_ITEMS = 100,000` - Total cards+questions cap
+  - `MAX_LOCAL_ITEMS = 100,000` - Total cards+questions cap (unchanged)
+  - `PASTE_CHAR_LIMIT = 500,000` - Character limit for pasted content (increased from 100,000)
   - `STALE_DAYS = 120` - Auto-evict if unopened for 120 days
   - `EVICT_BATCH = 50` - Evict in chunks to avoid jank
   - `WARN_AT_USAGE = 0.80` - Show "storage almost full" banner at 80%

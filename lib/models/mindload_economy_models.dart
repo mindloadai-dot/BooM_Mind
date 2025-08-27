@@ -105,7 +105,7 @@ class MindloadEconomyConfig {
       monthlyExports: 1,
       flashcardsPerToken: 50, // Free tier gets basic features
       quizPerToken: 30, // Free tier gets basic features
-      pasteCharCaps: 100000, // Increased from 1000 to 100,000
+      pasteCharCaps: 500000, // Increased from 100,000 to 500,000
       pdfPageCaps: 30, // Increased from 2 to 30 pages
       activeSetLimits: 3,
       rolloverLimits: 0,
@@ -119,7 +119,7 @@ class MindloadEconomyConfig {
       monthlyExports: 5,
       flashcardsPerToken: 50,
       quizPerToken: 30,
-      pasteCharCaps: 100000, // Increased from 5000 to 100,000
+      pasteCharCaps: 500000, // Increased from 100,000 to 500,000
       pdfPageCaps: 50, // Increased from 10 to 50 pages
       activeSetLimits: 10,
       rolloverLimits: 60,
@@ -133,7 +133,7 @@ class MindloadEconomyConfig {
       monthlyExports: 15,
       flashcardsPerToken: 50,
       quizPerToken: 30,
-      pasteCharCaps: 100000,
+      pasteCharCaps: 500000,
       pdfPageCaps: 50,
       activeSetLimits: 25,
       rolloverLimits: 160,
@@ -147,7 +147,7 @@ class MindloadEconomyConfig {
       monthlyExports: 30,
       flashcardsPerToken: 50,
       quizPerToken: 30,
-      pasteCharCaps: 100000,
+      pasteCharCaps: 500000,
       pdfPageCaps: 50,
       activeSetLimits: 50,
       rolloverLimits: 375,
@@ -161,7 +161,7 @@ class MindloadEconomyConfig {
       monthlyExports: 50,
       flashcardsPerToken: 50,
       quizPerToken: 30,
-      pasteCharCaps: 100000,
+      pasteCharCaps: 500000,
       pdfPageCaps: 100,
       activeSetLimits: 100,
       rolloverLimits: 800,
@@ -177,7 +177,7 @@ class MindloadEconomyConfig {
       monthlyExports: 10,
       flashcardsPerToken: 50,
       quizPerToken: 30,
-      pasteCharCaps: 100000,
+      pasteCharCaps: 500000,
       pdfPageCaps: 15,
       activeSetLimits: 15,
       rolloverLimits: 100,

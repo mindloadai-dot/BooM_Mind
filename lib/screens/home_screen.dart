@@ -3698,7 +3698,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 TextField(
                   controller: textController,
                   maxLines: 8,
-                  maxLength: 100000,
+                  maxLength: 500000,
                   decoration: InputDecoration(
                     hintText:
                         'Paste your text here...\n\n• Lecture notes\n• Textbook chapters\n• Articles\n• Course materials\n• YouTube video links (youtube.com / youtu.be)',
@@ -3716,7 +3716,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${textController.text.length}/100,000 characters',
+                  '${textController.text.length}/500,000 characters',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: tokens.textMuted,
                       ),

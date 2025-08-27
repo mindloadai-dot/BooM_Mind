@@ -11,7 +11,7 @@ import 'package:mindload/models/mindload_economy_models.dart';
 class DocumentProcessor {
   // Constants
   static const int maxTextLength =
-      100000; // Increased from 10,000 to 100,000 characters
+      500000; // Increased from 100,000 to 500,000 characters
   static const List<String> supportedExtensions = [
     'txt',
     'rtf',

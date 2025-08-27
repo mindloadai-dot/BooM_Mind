@@ -2036,7 +2036,7 @@ class _CreateScreenState extends State<CreateScreen> {
   void _handlePasteFromClipboard() {
     // Handle clipboard paste
     _contentController.text =
-        'This is sample pasted content for demonstration. In a real implementation, this would paste from the system clipboard.\n\nThis content is long enough to demonstrate the character counter and potential paste cap issues when content exceeds the tier limits.\n\nFor example, the Neuron (free) tier has a 1,000 character limit, while Synapse has 5,000 and Cortex has 10,000 characters.';
+        'This is sample pasted content for demonstration. In a real implementation, this would paste from the system clipboard.\n\nThis content is long enough to demonstrate the character counter and potential paste cap issues when content exceeds the tier limits.\n\nFor example, all tiers now have a 500,000 character limit for pasted content.';
     // Clear instruction field when new content is pasted
     _instructionController.clear();
     setState(() {});
@@ -2051,7 +2051,7 @@ class _CreateScreenState extends State<CreateScreen> {
   void _handleTrimContent() {
     final economy = context.read<MindloadEconomyService>();
     final limit =
-        economy.userEconomy?.getPasteCharLimit(economy.budgetState) ?? 100000;
+        economy.userEconomy?.getPasteCharLimit(economy.budgetState) ?? 500000;
 
     if (_contentController.text.length > limit) {
       _contentController.text = _contentController.text.substring(0, limit);
