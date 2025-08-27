@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mindload/config/app_check_config.dart';
-import 'package:mindload/services/notification_manager.dart';
+import 'package:mindload/services/working_notification_service.dart';
 import 'package:mindload/services/enhanced_onboarding_service.dart';
 import 'package:mindload/services/mandatory_onboarding_service.dart';
 import 'package:mindload/services/auth_service.dart';
@@ -69,10 +69,11 @@ void main() async {
   }
 
   try {
-    // Initialize Notification Manager
-    await NotificationManager.instance.initialize();
+    // Initialize WorkingNotificationService directly (eliminates conflicts)
+    await WorkingNotificationService.instance.initialize();
+    print('Unified Notification Service initialized successfully');
   } catch (e) {
-    print('Notification Manager initialization failed: $e');
+    print('Unified Notification Service initialization failed: $e');
     // Continue without notifications
   }
 
@@ -450,5 +451,4 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
       ),
     );
   }
-
 }

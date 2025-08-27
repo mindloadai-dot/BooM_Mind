@@ -9,7 +9,7 @@ import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/services/working_notification_service.dart';
 import 'package:mindload/services/local_image_storage_service.dart';
-import 'package:mindload/services/notification_test_service.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter/services.dart';
@@ -19,7 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/screens/settings_screen.dart';
-import 'package:mindload/screens/notification_settings_screen.dart';
+
 import 'package:mindload/screens/privacy_policy_screen.dart';
 import 'package:mindload/screens/privacy_security_screen.dart';
 import 'package:mindload/theme.dart';
@@ -992,7 +992,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const NotificationSettingsScreen()),
+                    builder: (context) => Scaffold(
+                      appBar: AppBar(title: const Text('Notification Settings')),
+                      body: const Center(child: Text('Notification settings are now managed through the main settings')),
+                    )),
               ),
             ),
           ],
@@ -2921,7 +2924,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       }
 
       // Run the comprehensive test
-      await NotificationTestService.instance.runComprehensiveTest();
+              await WorkingNotificationService.instance.sendTestNotification();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

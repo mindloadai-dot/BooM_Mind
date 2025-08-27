@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/models/study_data.dart';
-import 'package:mindload/services/notification_service.dart';
+import 'package:mindload/services/working_notification_service.dart';
 
 class DeadlineService {
   static final DeadlineService _instance = DeadlineService._();
@@ -33,8 +33,7 @@ class DeadlineService {
       
       // Only schedule if the notification time is in the future
       if (notificationTime.isAfter(now)) {
-        await NotificationService.scheduleStudyReminder(
-          studySetId: '${studySetId}_deadline_${entry.key.inHours}h',
+        await WorkingNotificationService.instance.scheduleNotification(
           title: 'Study Deadline Approaching',
           body: entry.value,
           scheduledTime: notificationTime,
@@ -69,8 +68,7 @@ class DeadlineService {
       motivationMessage = '"$title" deadline passed $daysPast days ago. Time for focused catch-up! 🔥';
     }
     
-    await NotificationService.scheduleStudyReminder(
-      studySetId: '${studySet.id}_motivation',
+    await WorkingNotificationService.instance.scheduleNotification(
       title: '🎯 Study Plan Update',
       body: motivationMessage,
       scheduledTime: DateTime.now().add(const Duration(seconds: 3)),
@@ -196,8 +194,7 @@ class DeadlineService {
       
       message += 'Open Mindload to stay on track!';
       
-      await NotificationService.scheduleStudyReminder(
-        studySetId: 'deadline_summary_${DateTime.now().millisecondsSinceEpoch}',
+      await WorkingNotificationService.instance.scheduleNotification(
         title: 'Deadline Summary',
         body: message.trim(),
         scheduledTime: DateTime.now().add(const Duration(seconds: 1)),

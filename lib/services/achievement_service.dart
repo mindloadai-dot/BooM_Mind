@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindload/models/achievement_models.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
-import 'package:mindload/services/notification_event_bus.dart';
+
 
 /// Achievement System Service - Fully Local
 /// Handles achievement tracking, rewards, and progress calculation
@@ -241,13 +241,8 @@ class AchievementService extends ChangeNotifier {
   /// Trigger achievement notification automatically
   Future<void> _triggerAchievementNotification(AchievementCatalog achievement) async {
     try {
-      // Use the notification event bus to avoid circular dependencies
-      NotificationEventBus.instance.emitAchievementUnlocked(
-        achievementId: achievement.id,
-        achievementTitle: achievement.title,
-        category: achievement.category.id,
-        tier: achievement.tier.id,
-      );
+      // Achievement unlocked - event bus removed for unified notification system
+      // Notifications are now handled directly by WorkingNotificationService
       
       developer.log('✅ Achievement notification event emitted: ${achievement.title}', name: 'AchievementService');
     } catch (e) {

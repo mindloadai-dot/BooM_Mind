@@ -6,7 +6,7 @@ import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/widgets/notification_settings_dialog.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/pdf_export_models.dart';
-import 'package:mindload/services/notification_service.dart';
+import 'package:mindload/services/working_notification_service.dart';
 // Removed import: study_set_notification_service - service removed
 import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/theme.dart';
@@ -660,7 +660,7 @@ class _StudyScreenState extends State<StudyScreen>
 
     try {
       // Cancel any scheduled notifications
-      await NotificationService.instance.cancelAllNotifications();
+              await WorkingNotificationService.instance.cancelAllNotifications();
 
       // Delete from storage
       await EnhancedStorageService.instance.deleteStudySet(_currentStudySet.id);

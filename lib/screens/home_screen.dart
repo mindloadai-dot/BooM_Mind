@@ -30,8 +30,8 @@ import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
-import 'package:mindload/services/notification_service.dart';
-import 'package:mindload/screens/notification_settings_screen.dart';
+import 'package:mindload/services/working_notification_service.dart';
+
 import 'package:mindload/screens/create_screen.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
 import 'package:mindload/screens/subscription_settings_screen.dart';
@@ -1723,7 +1723,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                await NotificationService.sendTestNotification();
+                await WorkingNotificationService.instance.sendTestNotification();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -1888,11 +1888,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Send test notification if enabled
                     if (value) {
-                      await NotificationService.scheduleStudyReminder(
-                        studySetId: studySet.id,
+                      await WorkingNotificationService.instance.scheduleNotification(
                         title: 'Study Reminder: ${studySet.title}',
                         body:
                             'Time to review your ${studySet.flashcards.length} flashcards!',
+                        scheduledTime: DateTime.now().add(const Duration(seconds: 3)),
                       );
 
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1926,7 +1926,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onPressed: () async {
                     HapticFeedbackService().mediumImpact();
                     Navigator.pop(context);
-                    await NotificationService.sendTestNotification();
+                    await WorkingNotificationService.instance.sendTestNotification();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Test notification sent!'),
@@ -1950,16 +1950,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onPressed: () {
                     HapticFeedbackService().mediumImpact();
                     Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const NotificationSettingsScreen(),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Notification settings are now managed through the main settings'),
+                        backgroundColor: tokens.primary,
+                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
                   icon: const Icon(Icons.settings, size: 18),
-                  label: const Text('ALL SETTINGS'),
+                  label: const Text('SETTINGS'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: tokens.primary,
                     foregroundColor: tokens.onPrimary,
@@ -2270,7 +2270,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     try {
       // Cancel any scheduled notifications
-      await NotificationService.instance.cancelAllNotifications();
+              await WorkingNotificationService.instance.cancelAllNotifications();
 
       // Delete from storage
       await EnhancedStorageService.instance.deleteStudySet(studySet.id);
@@ -2616,7 +2616,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               onSelected: (value) async {
                 switch (value) {
                   case 'test':
-                    await NotificationService.sendTestNotification();
+                    await WorkingNotificationService.instance.sendTestNotification();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text('Test notification sent!'),
@@ -2626,7 +2626,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     );
                     break;
                   case 'status':
-                    final status = await NotificationService.checkNotificationStatus();
+                    final status = WorkingNotificationService.instance.getSystemStatus();
                     if (mounted) {
                       _showNotificationStatusDialog(status);
                     }
