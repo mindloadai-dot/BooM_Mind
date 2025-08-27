@@ -162,6 +162,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+
+
   void _applySearchAndFilters() {
     List<StudySet> filtered = List.from(_studySets);
 
