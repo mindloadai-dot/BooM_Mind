@@ -55,10 +55,10 @@ class TierLimits {
   // Pack-A tier limits
   static const Map<SubscriptionTier, TierLimits> limits = {
     SubscriptionTier.free: TierLimits(
-      dailyQuizQuestions: 5,
-      dailyFlashcards: 10,
-      dailyPdfPages: 2,
-      dailyUploads: 1,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-3.5-turbo',
       priorityProcessing: false,
       monthlyTokens: 0,
@@ -69,10 +69,10 @@ class TierLimits {
       maxYouTubeDurationMinutes: 0, // No YouTube access
     ),
     SubscriptionTier.axon: TierLimits(
-      dailyQuizQuestions: 30,
-      dailyFlashcards: 50,
-      dailyPdfPages: 10,
-      dailyUploads: 5,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-4o',
       priorityProcessing: true,
       monthlyTokens: 120,
@@ -83,10 +83,10 @@ class TierLimits {
       maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.neuron: TierLimits(
-      dailyQuizQuestions: 100,
-      dailyFlashcards: 200,
-      dailyPdfPages: 25,
-      dailyUploads: 15,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-4-turbo',
       priorityProcessing: true,
       monthlyTokens: 300,
@@ -97,10 +97,10 @@ class TierLimits {
       maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.synapse: TierLimits(
-      dailyQuizQuestions: 150,
-      dailyFlashcards: 300,
-      dailyPdfPages: 35,
-      dailyUploads: 20,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-4-turbo',
       priorityProcessing: true,
       monthlyTokens: 500,
@@ -111,10 +111,10 @@ class TierLimits {
       maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.cortex: TierLimits(
-      dailyQuizQuestions: 250,
-      dailyFlashcards: 500,
-      dailyPdfPages: 50,
-      dailyUploads: 30,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-4-turbo',
       priorityProcessing: true,
       monthlyTokens: 750,
@@ -125,10 +125,10 @@ class TierLimits {
       maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.singularity: TierLimits(
-      dailyQuizQuestions: 500,
-      dailyFlashcards: 1000,
-      dailyPdfPages: 100,
-      dailyUploads: 50,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-4-turbo',
       priorityProcessing: true,
       monthlyTokens: 1500,
@@ -141,10 +141,10 @@ class TierLimits {
 
     // Legacy tier limits (for backward compatibility during transition)
     SubscriptionTier.pro: TierLimits(
-      dailyQuizQuestions: 50,
-      dailyFlashcards: 100,
-      dailyPdfPages: 15,
-      dailyUploads: 10,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-4o',
       priorityProcessing: true,
       monthlyTokens: 125, // Convert credits to tokens
@@ -155,10 +155,10 @@ class TierLimits {
       maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.admin: TierLimits(
-      dailyQuizQuestions: 1000,
-      dailyFlashcards: 2000,
-      dailyPdfPages: 200,
-      dailyUploads: 100,
+      dailyQuizQuestions: 999999, // Unlimited - token-based
+      dailyFlashcards: 999999, // Unlimited - token-based
+      dailyPdfPages: 999999, // Unlimited - token-based
+      dailyUploads: 999999, // Unlimited - token-based
       aiModel: 'gpt-4-turbo',
       priorityProcessing: true,
       monthlyTokens: 5000,
