@@ -9,13 +9,20 @@ import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
 
 class DocumentProcessor {
-  static const int maxTextLength = 10000; // Limit text extraction for performance
+  // Constants
+  static const int maxTextLength =
+      100000; // Increased from 10,000 to 100,000 characters
+  static const List<String> supportedExtensions = [
+    'txt',
+    'rtf',
+    'pdf',
+    'docx',
+    'epub',
+    'odt'
+  ];
 
   static Future<String> extractTextFromFile(
-    Uint8List bytes, 
-    String extension, 
-    String fileName
-  ) async {
+      Uint8List bytes, String extension, String fileName) async {
     try {
       switch (extension.toLowerCase()) {
         case 'txt':
@@ -47,17 +54,18 @@ class DocumentProcessor {
 
       // Use MindloadEconomyService for validation
       final economyService = MindloadEconomyService.instance;
-      
+
       // Check if user can afford this PDF processing
       final request = GenerationRequest(
         sourceContent: 'PDF upload',
         sourceCharCount: pageCount * 500, // Estimate 500 chars per page
         pdfPageCount: pageCount,
       );
-      
+
       final enforcementResult = economyService.canGenerateContent(request);
       if (!enforcementResult.canProceed) {
-        throw Exception(enforcementResult.blockReason ?? 'Cannot process this PDF');
+        throw Exception(
+            enforcementResult.blockReason ?? 'Cannot process this PDF');
       }
 
       // Check page limits based on user's tier
@@ -65,7 +73,8 @@ class DocumentProcessor {
       if (userEconomy != null) {
         final maxPages = userEconomy.pdfPageLimit;
         if (pageCount > maxPages) {
-          throw Exception('PDF has $pageCount pages, but your plan allows max $maxPages pages');
+          throw Exception(
+              'PDF has $pageCount pages, but your plan allows max $maxPages pages');
         }
       }
     } catch (e) {
@@ -81,7 +90,8 @@ class DocumentProcessor {
     final image = PdfBitmap(imageBytes);
     page.graphics.drawImage(
       image,
-      Rect.fromLTWH(0, 0, page.getClientSize().width, page.getClientSize().height),
+      Rect.fromLTWH(
+          0, 0, page.getClientSize().width, page.getClientSize().height),
     );
     final output = document.saveSync();
     document.dispose();
@@ -91,7 +101,7 @@ class DocumentProcessor {
   static String _extractFromTxt(Uint8List bytes) {
     try {
       final text = utf8.decode(bytes);
-      return text.length > maxTextLength 
+      return text.length > maxTextLength
           ? '${text.substring(0, maxTextLength)}\n\n[Text truncated for performance]'
           : text;
     } catch (e) {
@@ -108,8 +118,8 @@ class DocumentProcessor {
           .replaceAll(RegExp(r'\{|\}'), '') // Remove braces
           .replaceAll(RegExp(r'\\'), '') // Remove backslashes
           .trim();
-      
-      return cleanText.length > maxTextLength 
+
+      return cleanText.length > maxTextLength
           ? '${cleanText.substring(0, maxTextLength)}\n\n[Text truncated for performance]'
           : cleanText;
     } catch (e) {
@@ -117,39 +127,43 @@ class DocumentProcessor {
     }
   }
 
-  static Future<String> _extractFromPdf(Uint8List bytes, String fileName) async {
+  static Future<String> _extractFromPdf(
+      Uint8List bytes, String fileName) async {
     try {
       final document = PdfDocument(inputBytes: bytes);
       final textExtractor = PdfTextExtractor(document);
-      
+
       String extractedText = '';
       for (int i = 0; i < document.pages.count; i++) {
-        final pageText = textExtractor.extractText(startPageIndex: i, endPageIndex: i);
+        final pageText =
+            textExtractor.extractText(startPageIndex: i, endPageIndex: i);
         extractedText += pageText;
-        
+
         // Limit extraction for performance
         if (extractedText.length > maxTextLength) {
-          extractedText = '${extractedText.substring(0, maxTextLength)}\n\n[PDF content truncated for performance]';
+          extractedText =
+              '${extractedText.substring(0, maxTextLength)}\n\n[PDF content truncated for performance]';
           break;
         }
       }
-      
+
       document.dispose();
-      
+
       if (extractedText.trim().isEmpty) {
         throw Exception('No text content found in PDF');
       }
-      
+
       return extractedText;
     } catch (e) {
       throw Exception('Failed to extract text from PDF: ${e.toString()}');
     }
   }
 
-  static Future<String> _extractFromDocx(Uint8List bytes, String fileName) async {
+  static Future<String> _extractFromDocx(
+      Uint8List bytes, String fileName) async {
     try {
       final archive = ZipDecoder().decodeBytes(bytes);
-      
+
       // Find document.xml in the DOCX archive
       ArchiveFile? documentXml;
       for (final file in archive) {
@@ -158,72 +172,74 @@ class DocumentProcessor {
           break;
         }
       }
-      
+
       if (documentXml == null) {
         throw Exception('Invalid DOCX file: document.xml not found');
       }
-      
+
       final xmlContent = utf8.decode(documentXml.content as List<int>);
       final document = XmlDocument.parse(xmlContent);
-      
+
       // Extract text from all text nodes
       String extractedText = '';
       final textNodes = document.findAllElements('w:t');
-      
+
       for (final node in textNodes) {
         final text = node.innerText;
         extractedText += '$text ';
-        
+
         // Limit extraction for performance
         if (extractedText.length > maxTextLength) {
-          extractedText = '${extractedText.substring(0, maxTextLength)}\n\n[DOCX content truncated for performance]';
+          extractedText =
+              '${extractedText.substring(0, maxTextLength)}\n\n[DOCX content truncated for performance]';
           break;
         }
       }
-      
+
       if (extractedText.trim().isEmpty) {
         throw Exception('No text content found in DOCX file');
       }
-      
+
       return extractedText.trim();
     } catch (e) {
       throw Exception('Failed to extract text from DOCX: ${e.toString()}');
     }
   }
 
-  static Future<String> _extractFromEpub(Uint8List bytes, String fileName) async {
+  static Future<String> _extractFromEpub(
+      Uint8List bytes, String fileName) async {
     try {
       final archive = ZipDecoder().decodeBytes(bytes);
       String extractedText = '';
-      
+
       // Extract text from XHTML/HTML files in the EPUB
       for (final file in archive) {
-        if (file.name.endsWith('.xhtml') || 
-            file.name.endsWith('.html') || 
+        if (file.name.endsWith('.xhtml') ||
+            file.name.endsWith('.html') ||
             file.name.contains('chapter') ||
             file.name.contains('content')) {
-          
           try {
             final htmlContent = utf8.decode(file.content as List<int>);
-            
+
             // Parse XML/HTML and extract text
             final document = XmlDocument.parse(htmlContent);
             final bodyElements = document.findAllElements('body');
-            
+
             if (bodyElements.isNotEmpty) {
               final bodyText = bodyElements.first.innerText;
               final cleanText = bodyText
                   .replaceAll(RegExp(r'\s+'), ' ') // Normalize whitespace
                   .trim();
-              
+
               if (cleanText.isNotEmpty) {
                 extractedText += '$cleanText\n\n';
               }
             }
-            
+
             // Limit extraction for performance
             if (extractedText.length > maxTextLength) {
-              extractedText = '${extractedText.substring(0, maxTextLength)}\n\n[EPUB content truncated for performance]';
+              extractedText =
+                  '${extractedText.substring(0, maxTextLength)}\n\n[EPUB content truncated for performance]';
               break;
             }
           } catch (e) {
@@ -232,21 +248,22 @@ class DocumentProcessor {
           }
         }
       }
-      
+
       if (extractedText.trim().isEmpty) {
         throw Exception('No readable text content found in EPUB file');
       }
-      
+
       return extractedText.trim();
     } catch (e) {
       throw Exception('Failed to extract text from EPUB: ${e.toString()}');
     }
   }
 
-  static Future<String> _extractFromOdt(Uint8List bytes, String fileName) async {
+  static Future<String> _extractFromOdt(
+      Uint8List bytes, String fileName) async {
     try {
       final archive = ZipDecoder().decodeBytes(bytes);
-      
+
       // Find content.xml in the ODT archive
       ArchiveFile? contentXml;
       for (final file in archive) {
@@ -255,35 +272,36 @@ class DocumentProcessor {
           break;
         }
       }
-      
+
       if (contentXml == null) {
         throw Exception('Invalid ODT file: content.xml not found');
       }
-      
+
       final xmlContent = utf8.decode(contentXml.content as List<int>);
       final document = XmlDocument.parse(xmlContent);
-      
+
       // Extract text from paragraph elements
       String extractedText = '';
       final paragraphs = document.findAllElements('text:p');
-      
+
       for (final paragraph in paragraphs) {
         final text = paragraph.innerText;
         if (text.trim().isNotEmpty) {
           extractedText += '$text\n\n';
         }
-        
+
         // Limit extraction for performance
         if (extractedText.length > maxTextLength) {
-          extractedText = '${extractedText.substring(0, maxTextLength)}\n\n[ODT content truncated for performance]';
+          extractedText =
+              '${extractedText.substring(0, maxTextLength)}\n\n[ODT content truncated for performance]';
           break;
         }
       }
-      
+
       if (extractedText.trim().isEmpty) {
         throw Exception('No text content found in ODT file');
       }
-      
+
       return extractedText.trim();
     } catch (e) {
       throw Exception('Failed to extract text from ODT: ${e.toString()}');
@@ -296,14 +314,22 @@ class DocumentProcessor {
 
   static String getFormatDisplayName(String extension) {
     switch (extension.toLowerCase()) {
-      case 'txt': return 'Text Document';
-      case 'rtf': return 'Rich Text Format';
-      case 'pdf': return 'PDF Document';
-      case 'doc': return 'Word Document (Legacy)';
-      case 'docx': return 'Word Document';
-      case 'epub': return 'EPUB Ebook';
-      case 'odt': return 'OpenDocument Text';
-      default: return 'Unknown Format';
+      case 'txt':
+        return 'Text Document';
+      case 'rtf':
+        return 'Rich Text Format';
+      case 'pdf':
+        return 'PDF Document';
+      case 'doc':
+        return 'Word Document (Legacy)';
+      case 'docx':
+        return 'Word Document';
+      case 'epub':
+        return 'EPUB Ebook';
+      case 'odt':
+        return 'OpenDocument Text';
+      default:
+        return 'Unknown Format';
     }
   }
 }

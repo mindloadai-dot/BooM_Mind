@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:mindload/services/auth_service.dart';
+import 'package:mindload/services/local_ai_fallback_service.dart';
 
 class OpenAIService {
   static OpenAIService? _instance;
@@ -25,8 +26,14 @@ class OpenAIService {
     String difficulty,
   ) async {
     try {
-      // Get App Check token for security
-      final appCheckToken = await FirebaseAppCheck.instance.getToken();
+      // Get App Check token for security (with fallback)
+      String? appCheckToken;
+      try {
+        appCheckToken = await FirebaseAppCheck.instance.getToken();
+      } catch (e) {
+        debugPrint('App Check token failed: $e');
+        appCheckToken = null; // Continue without token
+      }
 
       // Call Cloud Function for secure API access
       final result = await _functions.httpsCallable('generateFlashcards').call({
@@ -48,9 +55,11 @@ class OpenAIService {
               // Create a Flashcard with generated ID and safe parsing
               return Flashcard(
                 id: 'generated_${DateTime.now().millisecondsSinceEpoch}_$index',
-                question: data['question']?.toString() ?? 'Question not available',
+                question:
+                    data['question']?.toString() ?? 'Question not available',
                 answer: data['answer']?.toString() ?? 'Answer not available',
-                difficulty: _parseDifficulty(data['difficulty']?.toString() ?? difficulty),
+                difficulty: _parseDifficulty(
+                    data['difficulty']?.toString() ?? difficulty),
               );
             }).toList();
           }
@@ -63,7 +72,16 @@ class OpenAIService {
       return [];
     } catch (e) {
       debugPrint('Error generating flashcards: $e');
-      return [];
+      debugPrint('🔄 Attempting local fallback for flashcards...');
+
+      // Try local fallback when Cloud Functions fail
+      try {
+        return await LocalAIFallbackService.instance
+            .generateFlashcards(content, count, difficulty);
+      } catch (fallbackError) {
+        debugPrint('❌ Local fallback also failed: $fallbackError');
+        return [];
+      }
     }
   }
 
@@ -117,34 +135,44 @@ class OpenAIService {
     String difficulty,
   ) async {
     try {
-      // Get App Check token for security
-      final appCheckToken = await FirebaseAppCheck.instance.getToken();
+      // Get App Check token for security (with fallback)
+      String? appCheckToken;
+      try {
+        appCheckToken = await FirebaseAppCheck.instance.getToken();
+      } catch (e) {
+        debugPrint('App Check token failed: $e');
+        appCheckToken = null; // Continue without token
+      }
 
       // Call Cloud Function for secure API access
-      final result = await _functions.httpsCallable('generateQuizQuestions').call({
+      final result = await _functions.httpsCallable('generateQuiz').call({
         'content': content,
-        'count': count,
-        'difficulty': difficulty,
+        'questionCount': count,
+        'type': 'multipleChoice',
         'appCheckToken': appCheckToken,
       });
 
       if (result.data != null) {
         try {
           final responseData = result.data as Map<String, dynamic>;
-          if (responseData.containsKey('questions')) {
-            final questionsList = responseData['questions'] as List;
-            return questionsList.asMap().entries.map((entry) {
-              final index = entry.key;
-              final data = entry.value as Map<String, dynamic>;
+          if (responseData.containsKey('quiz')) {
+            final quizData = responseData['quiz'] as Map<String, dynamic>;
+            if (quizData.containsKey('questions')) {
+              final questionsList = quizData['questions'] as List;
+              return questionsList.asMap().entries.map((entry) {
+                final index = entry.key;
+                final data = entry.value as Map<String, dynamic>;
 
-              return QuizQuestion(
-                id: 'generated_${DateTime.now().millisecondsSinceEpoch}_$index',
-                question: data['question']?.toString() ?? 'Question not available',
-                options: List<String>.from(data['options'] ?? []),
-                correctAnswer: data['correctAnswer']?.toString() ?? '',
-                type: QuizType.multipleChoice, // Default to multiple choice
-              );
-            }).toList();
+                return QuizQuestion(
+                  id: 'generated_${DateTime.now().millisecondsSinceEpoch}_$index',
+                  question:
+                      data['question']?.toString() ?? 'Question not available',
+                  options: List<String>.from(data['options'] ?? []),
+                  correctAnswer: data['correctAnswer']?.toString() ?? '',
+                  type: QuizType.multipleChoice, // Default to multiple choice
+                );
+              }).toList();
+            }
           }
         } catch (parseError) {
           debugPrint('Error parsing quiz questions response: $parseError');
@@ -155,14 +183,23 @@ class OpenAIService {
       return [];
     } catch (e) {
       debugPrint('Error generating quiz questions: $e');
-      return [];
+      debugPrint('🔄 Attempting local fallback for quiz questions...');
+
+      // Try local fallback when Cloud Functions fail
+      try {
+        return await LocalAIFallbackService.instance
+            .generateQuizQuestions(content, count, difficulty);
+      } catch (fallbackError) {
+        debugPrint('❌ Local fallback also failed: $fallbackError');
+        return [];
+      }
     }
   }
 
   // Check rate limiting
   bool _checkRateLimit() {
     final now = DateTime.now();
-    
+
     if (_lastRequestTime == null) {
       _lastRequestTime = now;
       _requestCount = 1;
@@ -170,7 +207,7 @@ class OpenAIService {
     }
 
     final timeDiff = now.difference(_lastRequestTime!);
-    
+
     if (timeDiff.inMinutes >= 1) {
       // Reset counter after 1 minute
       _lastRequestTime = now;
@@ -192,11 +229,18 @@ class OpenAIService {
     required String difficulty,
   }) async {
     try {
-      // Get App Check token for security
-      final appCheckToken = await FirebaseAppCheck.instance.getToken();
+      // Get App Check token for security (with fallback)
+      String? appCheckToken;
+      try {
+        appCheckToken = await FirebaseAppCheck.instance.getToken();
+      } catch (e) {
+        debugPrint('App Check token failed: $e');
+        appCheckToken = null; // Continue without token
+      }
 
       // Call Cloud Function for secure API access
-      final result = await _functions.httpsCallable('generateStudyMaterial').call({
+      final result =
+          await _functions.httpsCallable('generateStudyMaterial').call({
         'content': content,
         'materialType': materialType,
         'difficulty': difficulty,

@@ -105,8 +105,8 @@ class MindloadEconomyConfig {
       monthlyExports: 1,
       flashcardsPerToken: 50, // Free tier gets basic features
       quizPerToken: 30, // Free tier gets basic features
-      pasteCharCaps: 1000,
-      pdfPageCaps: 2,
+      pasteCharCaps: 100000, // Increased from 1000 to 100,000
+      pdfPageCaps: 30, // Increased from 2 to 30 pages
       activeSetLimits: 3,
       rolloverLimits: 0,
       tierPrice: 0.0,
@@ -119,8 +119,8 @@ class MindloadEconomyConfig {
       monthlyExports: 5,
       flashcardsPerToken: 50,
       quizPerToken: 30,
-      pasteCharCaps: 5000,
-      pdfPageCaps: 10,
+      pasteCharCaps: 100000, // Increased from 5000 to 100,000
+      pdfPageCaps: 50, // Increased from 10 to 50 pages
       activeSetLimits: 10,
       rolloverLimits: 60,
       tierPrice: ProductConstants.axonMonthlyPriceUsd,
@@ -134,7 +134,7 @@ class MindloadEconomyConfig {
       flashcardsPerToken: 50,
       quizPerToken: 30,
       pasteCharCaps: 100000,
-      pdfPageCaps: 25,
+      pdfPageCaps: 50,
       activeSetLimits: 25,
       rolloverLimits: 160,
       tierPrice: 9.99,

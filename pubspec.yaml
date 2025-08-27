@@ -48,6 +48,7 @@ dependencies:
   url_launcher: ^6.3.1
   http: ^1.2.2
   cached_network_image: ^3.3.1
+  connectivity_plus: ^6.0.5
   
   # Notifications - Stable Versions
   flutter_local_notifications: ^19.4.1

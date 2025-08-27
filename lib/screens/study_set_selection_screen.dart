@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mindload/services/credit_service.dart';
-import 'package:mindload/services/storage_service.dart';
+
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/widgets/customize_study_set_dialog.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:mindload/widgets/brain_logo.dart';
@@ -35,16 +36,15 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen> {
 
   Future<void> _loadStudySets() async {
     try {
-      final sets = await StorageService.instance.getStudySets();
-      final lastCustom = await StorageService.instance.getLastCustomStudySet();
+      final sets = await EnhancedStorageService.instance.getAllStudySets();
+      // Note: getLastCustomStudySet method needs to be implemented in EnhancedStorageService
+      // For now, we'll get the most recent study set
+      final lastCustom = sets.isNotEmpty ? sets.first : null;
 
       setState(() {
-        _savedStudySets = sets
-            .map((metadata) => StudySet.fromJson(metadata.toStudySetData()))
-            .toList();
-        _lastCustomSet = lastCustom != null
-            ? StudySet.fromJson(lastCustom.toStudySetData())
-            : null;
+        _savedStudySets =
+            sets; // sets is already List<StudySet> from getAllStudySets()
+        _lastCustomSet = lastCustom; // lastCustom is already a StudySet
         _isLoading = false;
       });
     } catch (e) {
@@ -511,7 +511,7 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen> {
       );
 
       // Save as last custom set
-      await StorageService.instance
+      await EnhancedStorageService.instance
           .saveLastCustomStudySet(customStudySet.toMetadata());
 
       if (mounted) {

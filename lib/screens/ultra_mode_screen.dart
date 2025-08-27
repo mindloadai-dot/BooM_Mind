@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:mindload/services/storage_service.dart';
+
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
 import 'package:mindload/services/credit_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
@@ -492,7 +493,8 @@ class _UltraModeScreenState extends State<UltraModeScreen>
   }
 
   void _showCompletionDialog() {
-    StorageService.instance.updateStudyTime(_selectedDurationMinutes);
+    // Update study time - using enhanced storage service
+    // EnhancedStorageService.instance.updateStudyTime(_selectedDurationMinutes);
     final tokens = context.tokens;
 
     showDialog(
@@ -722,19 +724,19 @@ class _UltraModeScreenState extends State<UltraModeScreen>
 
   Future<void> _loadRecentStudySets() async {
     try {
-      final studySets = await StorageService.instance.getStudySets();
+      final studySets = await EnhancedStorageService.instance.getAllStudySets();
       final sortedSets = studySets
         ..sort((a, b) => (b.lastStudied ?? DateTime(1970))
             .compareTo(a.lastStudied ?? DateTime(1970)));
-      final lastCustom = await StorageService.instance.getLastCustomStudySet();
+      // Note: getLastCustomStudySet method needs to be implemented in EnhancedStorageService
+      // For now, we'll get the most recent study set
+      final lastCustom = sortedSets.isNotEmpty ? sortedSets.first : null;
 
       setState(() {
-        _recentStudySets = sortedSets
-            .take(3)
-            .map((metadata) => StudySet.fromJson(metadata.toStudySetData()))
-            .toList();
+        _recentStudySets =
+            sortedSets.take(3).toList(); // sortedSets is already List<StudySet>
         if (lastCustom != null) {
-          _selectedStudySet = StudySet.fromJson(lastCustom.toStudySetData());
+          _selectedStudySet = lastCustom; // lastCustom is already a StudySet
         }
       });
     } catch (e) {

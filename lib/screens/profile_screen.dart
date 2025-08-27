@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +21,6 @@ import 'package:mindload/screens/privacy_policy_screen.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/mindload_button_system.dart';
-import 'dart:io';
 import 'package:timezone/timezone.dart' as tz;
 
 class ProfileScreen extends StatefulWidget {
@@ -157,6 +158,350 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  /// Build initials avatar when no profile picture is available
+  Widget _buildInitialsAvatar(BuildContext context) {
+    final userProfile = UserProfileService.instance;
+    final displayName = userProfile.displayName;
+    final initials = _getInitials(displayName);
+
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            context.tokens.primary,
+            context.tokens.secondary,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            color: context.tokens.onPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Generate initials from display name
+  String _getInitials(String name) {
+    if (name.isEmpty || name == 'User') {
+      return 'U';
+    }
+
+    final words = name.trim().split(' ');
+    if (words.length == 1) {
+      // Single word - take first two characters
+      return words[0].substring(0, words[0].length > 1 ? 2 : 1).toUpperCase();
+    } else {
+      // Multiple words - take first character of first two words
+      return '${words[0][0]}${words[1][0]}'.toUpperCase();
+    }
+  }
+
+  /// Show profile picture options dialog
+  void _showProfilePictureOptions() {
+    HapticFeedbackService().lightImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: context.tokens.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: context.tokens.outline.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Text(
+                'Profile Picture',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: context.tokens.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Options
+            ListTile(
+              leading: Icon(Icons.camera_alt, color: context.tokens.primary),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _takePhoto();
+              },
+            ),
+
+            ListTile(
+              leading: Icon(Icons.photo_library, color: context.tokens.primary),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromGallery();
+              },
+            ),
+
+            // Show remove option only if user has a profile picture
+            FutureBuilder<bool>(
+              future: LocalImageStorageService.instance.hasProfileImage(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data == true) {
+                  return ListTile(
+                    leading: Icon(Icons.delete, color: context.tokens.error),
+                    title: Text(
+                      'Remove Photo',
+                      style: TextStyle(color: context.tokens.error),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _removeProfilePicture();
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Take photo using camera
+  Future<void> _takePhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
+        preferredCameraDevice: CameraDevice.rear,
+      );
+
+      if (image != null) {
+        await _processAndSaveImage(image);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error taking photo: $e');
+      }
+      _showErrorSnackBar('Failed to take photo. Please try again.');
+    }
+  }
+
+  /// Pick image from gallery
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
+      );
+
+      if (image != null) {
+        await _processAndSaveImage(image);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error picking image: $e');
+      }
+      _showErrorSnackBar('Failed to pick image. Please try again.');
+    }
+  }
+
+  /// Process and save the selected image
+  Future<void> _processAndSaveImage(XFile imageFile) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Convert XFile to File
+      final File originalFile = File(imageFile.path);
+
+      // Process the image to create a square, non-distorted version
+      final File processedFile = await _processImageToSquare(originalFile);
+
+      // Save the processed image
+      final savedPath = await LocalImageStorageService.instance
+          .saveProfileImage(processedFile);
+
+      // Clean up temporary file if it's different from original
+      if (processedFile.path != originalFile.path) {
+        try {
+          await processedFile.delete();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (savedPath != null) {
+        setState(() {}); // Refresh the UI
+        HapticFeedbackService().success();
+        _showSuccessSnackBar('Profile picture updated successfully!');
+      } else {
+        _showErrorSnackBar('Failed to save profile picture. Please try again.');
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted) Navigator.pop(context);
+
+      if (kDebugMode) {
+        print('Error processing image: $e');
+      }
+      _showErrorSnackBar('Failed to process image. Please try again.');
+    }
+  }
+
+  /// Process image to create a square, non-distorted version
+  Future<File> _processImageToSquare(File originalFile) async {
+    try {
+      // Read the original image
+      final Uint8List imageBytes = await originalFile.readAsBytes();
+      final img.Image? originalImage = img.decodeImage(imageBytes);
+
+      if (originalImage == null) {
+        throw Exception('Failed to decode image');
+      }
+
+      // Calculate the size for the square (use the smaller dimension to avoid distortion)
+      final int size = originalImage.width < originalImage.height
+          ? originalImage.width
+          : originalImage.height;
+
+      // Calculate crop coordinates to center the square
+      final int cropX = (originalImage.width - size) ~/ 2;
+      final int cropY = (originalImage.height - size) ~/ 2;
+
+      // Crop the image to a square
+      final img.Image croppedImage = img.copyCrop(
+        originalImage,
+        x: cropX,
+        y: cropY,
+        width: size,
+        height: size,
+      );
+
+      // Resize to 512x512 for optimal profile picture size
+      final img.Image resizedImage = img.copyResize(
+        croppedImage,
+        width: 512,
+        height: 512,
+        interpolation: img.Interpolation.cubic,
+      );
+
+      // Encode as JPEG with high quality
+      final Uint8List processedBytes = Uint8List.fromList(
+        img.encodeJpg(resizedImage, quality: 95),
+      );
+
+      // Create a temporary file for the processed image
+      final Directory tempDir = Directory.systemTemp;
+      final String tempPath =
+          '${tempDir.path}/processed_profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final File processedFile = File(tempPath);
+
+      // Write the processed image
+      await processedFile.writeAsBytes(processedBytes);
+
+      return processedFile;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error processing image to square: $e');
+      }
+      // If processing fails, return the original file
+      return originalFile;
+    }
+  }
+
+  /// Remove profile picture
+  Future<void> _removeProfilePicture() async {
+    try {
+      final success =
+          await LocalImageStorageService.instance.deleteProfileImage();
+
+      if (success) {
+        setState(() {}); // Refresh the UI
+        HapticFeedbackService().success();
+        _showSuccessSnackBar('Profile picture removed successfully!');
+      } else {
+        _showErrorSnackBar(
+            'Failed to remove profile picture. Please try again.');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error removing profile picture: $e');
+      }
+      _showErrorSnackBar('Failed to remove profile picture. Please try again.');
+    }
+  }
+
+  /// Show success snackbar
+  void _showSuccessSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: context.tokens.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Show error snackbar
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: context.tokens.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,29 +549,52 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Row(
             children: [
               // Profile Avatar
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      context.tokens.primary,
-                      context.tokens.secondary,
+              GestureDetector(
+                onTap: _showProfilePictureOptions,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        context.tokens.primary,
+                        context.tokens.secondary,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.tokens.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.tokens.primary.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: FutureBuilder<String?>(
+                      future: LocalImageStorageService.instance
+                          .getProfileImagePath(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null) {
+                          // Show profile picture
+                          return Image.file(
+                            File(snapshot.data!),
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback to initials if image fails to load
+                              return _buildInitialsAvatar(context);
+                            },
+                          );
+                        } else {
+                          // Show initials
+                          return _buildInitialsAvatar(context);
+                        }
+                      },
                     ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.person,
-                  size: 40,
-                  color: context.tokens.onPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 20),

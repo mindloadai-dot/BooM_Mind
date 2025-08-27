@@ -12,12 +12,12 @@ import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/services/local_image_storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/firebase_options.dart';
 import 'package:mindload/config/environment_config.dart';
 
 import 'package:mindload/screens/social_auth_screen.dart';
 import 'package:mindload/screens/home_screen.dart';
-import 'package:mindload/screens/mandatory_onboarding_screen.dart';
 import 'package:mindload/screens/logic_packs_screen.dart';
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/achievements_screen.dart';
@@ -48,15 +48,6 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('Firebase initialized successfully');
-
-    // Verify Firebase is ready by checking if we can access it
-    try {
-      // This will throw an error if Firebase isn't ready
-      await Future.delayed(const Duration(milliseconds: 100));
-      print('Firebase verification successful');
-    } catch (verifyError) {
-      print('Firebase verification failed: $verifyError');
-    }
   } catch (e) {
     print('Firebase initialization failed: $e');
     // Continue without Firebase - app can still run with limited functionality
@@ -66,12 +57,15 @@ void main() async {
     // Initialize Firebase App Check (non-blocking)
     if (kDebugMode && AppCheckConfig.shouldSkipAppCheck) {
       await AppCheckConfig.disableAppCheck();
+      print('App Check disabled for debug mode');
     } else {
       await AppCheckConfig.initialize();
+      print('App Check initialized successfully');
     }
   } catch (e) {
     print('App Check initialization failed: $e');
     // Continue without App Check - app can still run
+    await AppCheckConfig.disableAppCheck();
   }
 
   try {
@@ -99,62 +93,72 @@ void main() async {
     // Continue without mandatory onboarding
   }
 
-  try {
-    // Initialize Theme Manager
-    await ThemeManager.instance.loadTheme();
-  } catch (e) {
-    print('Theme Manager initialization failed: $e');
-    // Continue with default theme
-  }
+  // Initialize critical services in parallel for faster startup
+  await Future.wait([
+    // Theme Manager (critical for UI)
+    ThemeManager.instance.loadTheme().catchError((e) {
+      print('Theme Manager initialization failed: $e');
+    }),
 
-  // Wait a moment to ensure Firebase is fully ready
-  await Future.delayed(const Duration(milliseconds: 500));
+    // Auth Service (critical for user state)
+    AuthService.instance.initialize().catchError((e) {
+      print('Auth Service initialization failed: $e');
+    }),
 
-  try {
-    // Initialize Mindload Economy Service
-    await MindloadEconomyService.instance.initialize();
-  } catch (e) {
-    print('Mindload Economy Service initialization failed: $e');
-    // Continue without economy service
-  }
+    // Enhanced Storage Service (critical for data)
+    EnhancedStorageService.instance.initialize().catchError((e) {
+      print('Enhanced Storage Service initialization failed: $e');
+    }),
+  ]);
 
-  try {
-    // Initialize Haptic Feedback Service
-    await HapticFeedbackService().initialize();
-  } catch (e) {
-    print('Haptic Feedback Service initialization failed: $e');
-    // Continue without haptic feedback
-  }
+  // Initialize non-critical services in parallel (lazy loading)
+  Future.wait([
+    // Mindload Economy Service
+    MindloadEconomyService.instance.initialize().catchError((e) {
+      print('Mindload Economy Service initialization failed: $e');
+    }),
 
-  try {
-    // Initialize User Profile Service
-    await UserProfileService.instance.initialize();
-    print('User Profile Service initialized successfully');
-  } catch (e) {
-    print('User Profile Service initialization failed: $e');
-    // Continue without user profile service
-  }
+    // User Profile Service
+    UserProfileService.instance.initialize().catchError((e) {
+      print('User Profile Service initialization failed: $e');
+    }),
 
-  try {
-    // Initialize Local Image Storage Service
-    await LocalImageStorageService.instance
-        .getStorageInfo(); // This will create directories if needed
-    print('Local Image Storage Service initialized successfully');
-  } catch (e) {
-    print('Local Image Storage Service initialization failed: $e');
-    // Continue without local image storage
-  }
+    // Haptic Feedback Service
+    HapticFeedbackService().initialize().catchError((e) {
+      print('Haptic Feedback Service initialization failed: $e');
+    }),
+  ]).then((_) {
+    print('Non-critical services initialized successfully');
+  });
 
-  try {
-    // Initialize Ultra Audio Controller for binaural beats
-    await UltraAudioController.instance.initialize();
-    print('Ultra Audio Controller initialized successfully');
-  } catch (e) {
-    print('Ultra Audio Controller initialization failed: $e');
-    // Continue without ultra audio - app can still run
-  }
+  // Initialize heavy services asynchronously (don't block startup)
+  _initializeHeavyServicesAsync();
 
   runApp(const MindLoadApp());
+}
+
+/// Initialize heavy services asynchronously without blocking startup
+void _initializeHeavyServicesAsync() {
+  // Initialize these services in the background
+  Future.microtask(() async {
+    try {
+      // Local Image Storage Service (heavy I/O operations)
+      await LocalImageStorageService.instance.getStorageInfo();
+      print('Local Image Storage Service initialized successfully');
+    } catch (e) {
+      print('Local Image Storage Service initialization failed: $e');
+    }
+  });
+
+  Future.microtask(() async {
+    try {
+      // Ultra Audio Controller (heavy audio processing)
+      await UltraAudioController.instance.initialize();
+      print('Ultra Audio Controller initialized successfully');
+    } catch (e) {
+      print('Ultra Audio Controller initialization failed: $e');
+    }
+  });
 }
 
 class MindLoadApp extends StatelessWidget {
@@ -181,6 +185,9 @@ class MindLoadApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<MandatoryOnboardingService>.value(
           value: MandatoryOnboardingService.instance,
+        ),
+        ChangeNotifierProvider<EnhancedStorageService>.value(
+          value: EnhancedStorageService.instance,
         ),
       ],
       child: Consumer<ThemeManager>(
@@ -322,16 +329,9 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
 
           final user = snapshot.data;
           if (user != null) {
-            // Check if user needs to complete mandatory onboarding
-            return Consumer<MandatoryOnboardingService>(
-              builder: (context, onboardingService, child) {
-                if (onboardingService.needsOnboarding) {
-                  return const MandatoryOnboardingScreen();
-                } else {
-                  return const HomeScreen();
-                }
-              },
-            );
+            // User is authenticated, show home screen
+            // Onboarding will be handled by the HomeScreen or a separate onboarding flow
+            return const HomeScreen();
           } else {
             return const SocialAuthScreen();
           }
@@ -410,6 +410,46 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
                     setState(() => _isInitialized = true);
                   },
                   child: const Text('Skip Verification & Continue'),
+                ),
+              ],
+
+              // Local Admin Test Button (only in debug mode)
+              if (kDebugMode && !_isInitialized && !_hasError) ...[
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      setState(() {
+                        _statusMessage = 'Signing in as Local Admin...';
+                      });
+
+                      final authService = AuthService.instance;
+                      final user = await authService.signInAsAdminTest();
+
+                      if (user != null) {
+                        setState(() {
+                          _statusMessage =
+                              'Local Admin signed in successfully!';
+                          _isInitialized = true;
+                        });
+                      } else {
+                        setState(() {
+                          _statusMessage = 'Failed to sign in as Local Admin';
+                          _hasError = true;
+                        });
+                      }
+                    } catch (e) {
+                      setState(() {
+                        _statusMessage = 'Error: $e';
+                        _hasError = true;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: tokens.primary,
+                    foregroundColor: tokens.onPrimary,
+                  ),
+                  child: const Text('Sign In as Local Admin (Debug)'),
                 ),
               ],
             ],

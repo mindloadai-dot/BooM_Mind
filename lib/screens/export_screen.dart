@@ -7,7 +7,8 @@ import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/pdf_export_models.dart';
-import 'package:mindload/services/storage_service.dart';
+
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
 import 'package:mindload/screens/subscription_settings_screen.dart';
 import 'package:mindload/screens/tiers_benefits_screen.dart';
@@ -595,8 +596,8 @@ class _ExportScreenState extends State<ExportScreen> {
       final itemCounts = <String, int>{};
       try {
         // Get study set data from storage
-        final studySet =
-            await StorageService.instance.getFullStudySet(widget.studySetId);
+        final studySet = await EnhancedStorageService.instance
+            .getStudySet(widget.studySetId);
         if (studySet != null) {
           if (options.includeFlashcards) {
             itemCounts['flashcards'] = studySet.flashcards.length;

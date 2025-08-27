@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mindload/services/storage_service.dart';
+
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/credit_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
@@ -174,12 +175,10 @@ class _UltraModeScreenEnhancedState extends State<UltraModeScreenEnhanced>
 
   Future<void> _loadRecentStudySets() async {
     try {
-      final studySets = await StorageService.instance.getStudySets();
+      final studySets = await EnhancedStorageService.instance.getAllStudySets();
       setState(() {
-        _recentStudySets = studySets
-            .take(5)
-            .map((metadata) => StudySet.fromJson(metadata.toStudySetData()))
-            .toList();
+        _recentStudySets =
+            studySets.take(5).toList(); // studySets is already List<StudySet>
       });
     } catch (e) {
       debugPrint('Failed to load study sets: $e');

@@ -201,6 +201,9 @@ class _MandatoryOnboardingScreenState extends State<MandatoryOnboardingScreen>
             duration: const Duration(seconds: 2),
           ),
         );
+
+        // Navigate to the next page after saving nickname
+        _nextPage();
       }
     } catch (e) {
       if (mounted) {
@@ -231,6 +234,61 @@ class _MandatoryOnboardingScreenState extends State<MandatoryOnboardingScreen>
         );
       }
     }
+  }
+
+  void _showAgain() {
+    // Reset to the first page (nickname page)
+    setState(() {
+      _currentPage = 0;
+    });
+    _pageController.animateToPage(
+      0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _exitOnboarding() {
+    // Show confirmation dialog before exiting
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Exit Onboarding'),
+          content: const Text(
+            'Are you sure you want to exit the onboarding? You can skip setting up your nickname for now and do it later from the settings.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(); // Close dialog
+                
+                // Mark onboarding as completed even without nickname
+                try {
+                  await MandatoryOnboardingService.instance.completeOnboarding();
+                } catch (e) {
+                  // Handle error silently - user can still proceed
+                  debugPrint('Error completing onboarding: $e');
+                }
+                
+                // Exit to home
+                if (mounted) {
+                  Navigator.of(context).pushReplacementNamed('/home');
+                }
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: context.tokens.error,
+              ),
+              child: const Text('Exit'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -359,10 +417,12 @@ class _MandatoryOnboardingScreenState extends State<MandatoryOnboardingScreen>
                   color: tokens.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(40),
                 ),
-                child: Icon(
-                  Icons.person_add,
-                  size: 40,
-                  color: tokens.primary,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    'assets/images/Brain_logo.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
 
@@ -507,10 +567,12 @@ class _MandatoryOnboardingScreenState extends State<MandatoryOnboardingScreen>
                   color: (feature.color ?? tokens.primary).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(40),
                 ),
-                child: Icon(
-                  feature.icon,
-                  size: 40,
-                  color: feature.color ?? tokens.primary,
+                child: Center(
+                  child: Icon(
+                    feature.icon,
+                    size: 40,
+                    color: feature.color ?? tokens.primary,
+                  ),
                 ),
               ),
 
@@ -585,53 +647,101 @@ class _MandatoryOnboardingScreenState extends State<MandatoryOnboardingScreen>
       SemanticTokens tokens, MandatoryOnboardingService onboardingService) {
     return Container(
       padding: const EdgeInsets.all(24),
-      child: Row(
+      child: Column(
         children: [
-          // Previous button
-          if (_currentPage > 0) ...[
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _previousPage,
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: tokens.outline),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          // Main navigation row
+          Row(
+            children: [
+              // Previous button
+              if (_currentPage > 0) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _previousPage,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: tokens.outline),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Previous'),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Previous'),
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
+                const SizedBox(width: 16),
+              ],
 
-          // Next/Complete button
-          Expanded(
-            flex: _currentPage > 0 ? 1 : 1,
-            child: ElevatedButton(
-              onPressed: _currentPage == _featurePages.length - 1
-                  ? (onboardingService.canCompleteOnboarding
-                      ? _completeOnboarding
-                      : null)
-                  : _nextPage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: tokens.primary,
-                foregroundColor: tokens.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              // Next/Complete button
+              Expanded(
+                flex: _currentPage > 0 ? 1 : 1,
+                child: ElevatedButton(
+                  onPressed: _currentPage == _featurePages.length - 1
+                      ? (onboardingService.canCompleteOnboarding
+                          ? _completeOnboarding
+                          : null)
+                      : _nextPage,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: tokens.primary,
+                    foregroundColor: tokens.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text(
+                    _currentPage == _featurePages.length - 1
+                        ? 'Get Started!'
+                        : 'Next',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text(
-                _currentPage == _featurePages.length - 1
-                    ? 'Get Started!'
-                    : 'Next',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Secondary options row
+          Row(
+            children: [
+              // Show Again button
+              Expanded(
+                child: TextButton(
+                  onPressed: _showAgain,
+                  style: TextButton.styleFrom(
+                    foregroundColor: tokens.textSecondary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Show Again',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
-            ),
+
+              // Exit button
+              Expanded(
+                child: TextButton(
+                  onPressed: _exitOnboarding,
+                  style: TextButton.styleFrom(
+                    foregroundColor: tokens.error,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Exit',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

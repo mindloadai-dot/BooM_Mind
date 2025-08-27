@@ -4,12 +4,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/models/study_data.dart';
 
-import 'package:mindload/services/storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
+
 import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/services/document_processor.dart';
 
 import 'package:mindload/screens/study_screen.dart';
 import 'package:mindload/screens/ultra_mode_screen.dart';
+import 'package:mindload/screens/mandatory_onboarding_screen.dart';
+import 'package:mindload/services/mandatory_onboarding_service.dart';
 import 'package:mindload/screens/profile_screen.dart';
 import 'package:mindload/screens/tiers_benefits_screen.dart';
 import 'package:mindload/services/pdf_export_service.dart';
@@ -50,11 +53,27 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<StudySet> _studySets = [];
+  List<StudySet> _filteredStudySets = [];
   bool _isLoading = false;
   late AnimationController _scanController;
   late Animation<double> _scanAnimation;
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+
+  // Search and filter state
+  String _searchQuery = '';
+  String _sortBy = 'recent'; // 'recent', 'title', 'size', 'cards', 'quizzes'
+  String _filterBy =
+      'all'; // 'all', 'flashcards', 'quizzes', 'recent', 'archived'
+
+  // Statistics
+  int get _totalFlashcards =>
+      _studySets.fold(0, (sum, set) => sum + set.flashcards.length);
+  int get _totalQuizzes =>
+      _studySets.fold(0, (sum, set) => sum + set.quizzes.length);
+  int get _totalContent =>
+      _studySets.fold(0, (sum, set) => sum + set.content.length);
 
   @override
   void initState() {
@@ -69,6 +88,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     _initializeData();
+    _checkOnboarding();
+  }
+
+  Future<void> _checkOnboarding() async {
+    // Check if user needs onboarding after authentication
+    final onboardingService = MandatoryOnboardingService.instance;
+
+    if (kDebugMode) {
+      print(
+          '🔍 HomeScreen onboarding check: needsOnboarding=${onboardingService.needsOnboarding}');
+      print('🔍 Onboarding status: ${onboardingService.getOnboardingStatus()}');
+    }
+
+    if (onboardingService.needsOnboarding) {
+      if (kDebugMode) {
+        print('🎯 Showing onboarding after authentication');
+      }
+
+      // Defer navigation to after the current build frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const MandatoryOnboardingScreen(),
+            ),
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -76,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _scanController.dispose();
     _textController.dispose();
     _titleController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -86,33 +135,441 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _loadStudySets() async {
     setState(() => _isLoading = true);
     try {
-      final studySetsMetadata = await StorageService.instance.getStudySets();
-      studySetsMetadata.sort((a, b) => b.lastStudied.compareTo(a.lastStudied));
+      // Use enhanced storage service for better offline support
+      final fullStudySets =
+          await EnhancedStorageService.instance.getAllStudySets();
 
-      // Load full study sets with flashcards and quiz questions
-      final fullStudySets = <StudySet>[];
-      for (final metadata in studySetsMetadata) {
-        debugPrint('Loading full study set for: ${metadata.setId}');
-        final fullStudySet =
-            await StorageService.instance.getFullStudySet(metadata.setId);
-        if (fullStudySet != null) {
-          debugPrint(
-              '✅ Loaded full study set: ${fullStudySet.title} with ${fullStudySet.flashcards.length} flashcards and ${fullStudySet.quizzes.length} quizzes');
-          fullStudySets.add(fullStudySet);
-        } else {
-          debugPrint(
-              '⚠️ Full study set not found, using metadata fallback for: ${metadata.setId}');
-          // Fallback to metadata-only if full data not available
-          fullStudySets.add(StudySet.fromJson(metadata.toStudySetData()));
+      // Sort by last studied date
+      fullStudySets.sort((a, b) => b.lastStudied.compareTo(a.lastStudied));
+
+      if (kDebugMode) {
+        print('📚 Home screen loaded ${fullStudySets.length} study sets:');
+        for (final studySet in fullStudySets) {
+          print(
+              '  📚 ${studySet.title} (${studySet.flashcards.length} cards, ${studySet.quizzes.length} quizzes)');
         }
       }
 
-      setState(() => _studySets = fullStudySets);
+      setState(() {
+        _studySets = fullStudySets;
+        _filteredStudySets = fullStudySets; // Initialize filtered list
+      });
+      _applySearchAndFilters(); // Apply filters after loading
     } catch (e) {
       _showErrorSnackBar('Failed to load study sets');
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _applySearchAndFilters() {
+    List<StudySet> filtered = List.from(_studySets);
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((set) {
+        final query = _searchQuery.toLowerCase();
+        return set.title.toLowerCase().contains(query) ||
+            set.content.toLowerCase().contains(query) ||
+            set.tags.any((tag) => tag.toLowerCase().contains(query));
+      }).toList();
+    }
+
+    // Apply category filter
+    switch (_filterBy) {
+      case 'flashcards':
+        filtered = filtered.where((set) => set.flashcards.isNotEmpty).toList();
+        break;
+      case 'quizzes':
+        filtered = filtered.where((set) => set.quizzes.isNotEmpty).toList();
+        break;
+      case 'recent':
+        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+        filtered = filtered
+            .where((set) => set.createdDate.isAfter(thirtyDaysAgo))
+            .toList();
+        break;
+      case 'archived':
+        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+        filtered = filtered
+            .where((set) => set.createdDate.isBefore(thirtyDaysAgo))
+            .toList();
+        break;
+    }
+
+    // Apply sorting
+    switch (_sortBy) {
+      case 'recent':
+        filtered.sort((a, b) => b.lastStudied.compareTo(a.lastStudied));
+        break;
+      case 'title':
+        filtered.sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        break;
+      case 'size':
+        filtered.sort((a, b) => b.content.length.compareTo(a.content.length));
+        break;
+      case 'cards':
+        filtered
+            .sort((a, b) => b.flashcards.length.compareTo(a.flashcards.length));
+        break;
+      case 'quizzes':
+        filtered.sort((a, b) => b.quizzes.length.compareTo(a.quizzes.length));
+        break;
+    }
+
+    if (kDebugMode) {
+      print(
+          '🔍 Applied filters: search="$_searchQuery", filter="$_filterBy", sort="$_sortBy"');
+      print(
+          '📊 Filtered study sets: ${filtered.length} out of ${_studySets.length}');
+      for (final studySet in filtered) {
+        print('  📚 ${studySet.title}');
+      }
+    }
+
+    setState(() => _filteredStudySets = filtered);
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() => _searchQuery = query);
+    _applySearchAndFilters();
+  }
+
+  void _onSortChanged(String? value) {
+    if (value != null) {
+      setState(() => _sortBy = value);
+      _applySearchAndFilters();
+    }
+  }
+
+  void _onFilterChanged(String? value) {
+    if (value != null) {
+      setState(() => _filterBy = value);
+      _applySearchAndFilters();
+    }
+  }
+
+  Widget _buildSearchBar() {
+    final tokens = context.tokens;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: Spacing.md),
+      decoration: BoxDecoration(
+        color: tokens.surfaceAlt.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tokens.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.primary.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        decoration: InputDecoration(
+          hintText: 'Search your study sets...',
+          hintStyle: TextStyle(
+            color: tokens.textSecondary,
+            fontSize: 16,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: tokens.textSecondary,
+            size: 20,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    color: tokens.textSecondary,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    _onSearchChanged('');
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+        style: TextStyle(
+          color: tokens.textPrimary,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectivityStatus(SemanticTokens tokens) {
+    return Consumer<EnhancedStorageService>(
+      builder: (context, storageService, child) {
+        if (storageService.isOnline && storageService.pendingSyncCount == 0) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: storageService.isOnline
+                  ? tokens.success.withValues(alpha: 0.1)
+                  : tokens.warning.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: storageService.isOnline
+                    ? tokens.success.withValues(alpha: 0.3)
+                    : tokens.warning.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  storageService.isOnline ? Icons.cloud_done : Icons.cloud_off,
+                  size: 16,
+                  color:
+                      storageService.isOnline ? tokens.success : tokens.warning,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  storageService.isOnline
+                      ? 'Syncing ${storageService.pendingSyncCount} items...'
+                      : 'Offline mode - changes will sync when online',
+                  style: TextStyle(
+                    color: storageService.isOnline
+                        ? tokens.success
+                        : tokens.warning,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (storageService.isSyncing) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        storageService.isOnline
+                            ? tokens.success
+                            : tokens.warning,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterAndSortControls() {
+    final tokens = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Responsive layout based on available width
+          if (constraints.maxWidth > 500) {
+            // Wide screen: side-by-side layout
+            return Row(
+              children: [
+                // Filter dropdown
+                Expanded(
+                  child: _buildDropdownField(
+                    value: _filterBy,
+                    onChanged: _onFilterChanged,
+                    hintText: 'Filter by',
+                    icon: Icons.filter_list,
+                    items: [
+                      DropdownMenuItem(value: 'all', child: Text('All Sets')),
+                      DropdownMenuItem(
+                          value: 'flashcards', child: Text('With Flashcards')),
+                      DropdownMenuItem(
+                          value: 'quizzes', child: Text('With Quizzes')),
+                      DropdownMenuItem(
+                          value: 'recent', child: Text('Recent (30 days)')),
+                      DropdownMenuItem(
+                          value: 'archived', child: Text('Archived')),
+                    ],
+                    tokens: tokens,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Sort dropdown
+                Expanded(
+                  child: _buildDropdownField(
+                    value: _sortBy,
+                    onChanged: _onSortChanged,
+                    hintText: 'Sort by',
+                    icon: Icons.sort,
+                    items: [
+                      DropdownMenuItem(
+                          value: 'recent', child: Text('Recently Studied')),
+                      DropdownMenuItem(
+                          value: 'title', child: Text('Alphabetical')),
+                      DropdownMenuItem(
+                          value: 'size', child: Text('Content Size')),
+                      DropdownMenuItem(
+                          value: 'cards', child: Text('Most Cards')),
+                      DropdownMenuItem(
+                          value: 'quizzes', child: Text('Most Quizzes')),
+                    ],
+                    tokens: tokens,
+                  ),
+                ),
+              ],
+            );
+          } else {
+            // Narrow screen: stacked layout
+            return Column(
+              children: [
+                _buildDropdownField(
+                  value: _filterBy,
+                  onChanged: _onFilterChanged,
+                  hintText: 'Filter by',
+                  icon: Icons.filter_list,
+                  items: [
+                    DropdownMenuItem(value: 'all', child: Text('All Sets')),
+                    DropdownMenuItem(
+                        value: 'flashcards', child: Text('With Flashcards')),
+                    DropdownMenuItem(
+                        value: 'quizzes', child: Text('With Quizzes')),
+                    DropdownMenuItem(
+                        value: 'recent', child: Text('Recent (30 days)')),
+                    DropdownMenuItem(
+                        value: 'archived', child: Text('Archived')),
+                  ],
+                  tokens: tokens,
+                ),
+                const SizedBox(height: 8),
+                _buildDropdownField(
+                  value: _sortBy,
+                  onChanged: _onSortChanged,
+                  hintText: 'Sort by',
+                  icon: Icons.sort,
+                  items: [
+                    DropdownMenuItem(
+                        value: 'recent', child: Text('Recently Studied')),
+                    DropdownMenuItem(
+                        value: 'title', child: Text('Alphabetical')),
+                    DropdownMenuItem(
+                        value: 'size', child: Text('Content Size')),
+                    DropdownMenuItem(value: 'cards', child: Text('Most Cards')),
+                    DropdownMenuItem(
+                        value: 'quizzes', child: Text('Most Quizzes')),
+                  ],
+                  tokens: tokens,
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String value,
+    required ValueChanged<String?> onChanged,
+    required String hintText,
+    required IconData icon,
+    required List<DropdownMenuItem<String>> items,
+    required SemanticTokens tokens,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.surfaceAlt.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: tokens.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hintText,
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          suffixIcon: Icon(icon, color: tokens.textSecondary, size: 18),
+        ),
+        style: TextStyle(
+          color: tokens.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        dropdownColor: tokens.surface,
+        items: items,
+        icon: Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: tokens.textSecondary,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required SemanticTokens tokens,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.primary,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.primary.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showDocumentUploadOptions() {
@@ -505,75 +962,91 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final tokens = context.tokens;
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) => Dialog(
         backgroundColor: tokens.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.terminal, color: tokens.primary),
-                  const SizedBox(width: Spacing.sm),
-                  Text(
-                    'INPUT TEXT DATA',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: tokens.primary,
-                          letterSpacing: 1,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Spacing.lg),
-              AccessibleTextInput(
-                controller: _textController,
-                labelText: 'Study Material',
-                hintText: 'Paste your study content here...',
-                maxLines: 6,
-                semanticLabel: 'Enter or paste your study material content',
-              ),
-              const SizedBox(height: Spacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AccessibleButton(
-                    onPressed: () => Navigator.pop(context),
-                    variant: ButtonVariant.text,
-                    semanticLabel: 'Cancel text input',
-                    child: const Text('CANCEL'),
-                  ),
-                  const SizedBox(width: Spacing.sm),
-                  AccessibleButton(
-                    onPressed: _textController.text.isNotEmpty
-                        ? () {
-                            if (_textController.text.isEmpty) return;
-
-                            Navigator.pop(context);
-                            final String content = _textController.text;
-                            _textController.clear();
-
-                            _showProcessingOptionsDialog(
-                                content, 'Custom Study Set');
-                          }
-                        : null,
-                    disabled: _textController.text.isEmpty,
-                    semanticLabel:
-                        'Process the entered text to create study materials',
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.play_arrow),
-                        const SizedBox(width: Spacing.xs),
-                        const Text('PROCESS'),
-                      ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.terminal, color: tokens.primary),
+                    const SizedBox(width: Spacing.sm),
+                    Text(
+                      'INPUT TEXT DATA',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: tokens.primary,
+                            letterSpacing: 1,
+                          ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: Spacing.lg),
+                Flexible(
+                  child: AccessibleTextInput(
+                    controller: _textController,
+                    labelText: 'Study Material',
+                    hintText: 'Paste your study content here...',
+                    maxLines: 6,
+                    semanticLabel: 'Enter or paste your study material content',
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: Spacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: AccessibleButton(
+                        onPressed: () => Navigator.pop(context),
+                        variant: ButtonVariant.text,
+                        size: ButtonSize.medium,
+                        semanticLabel: 'Cancel text input',
+                        child: const Text('CANCEL'),
+                      ),
+                    ),
+                    const SizedBox(width: Spacing.sm),
+                    Expanded(
+                      child: AccessibleButton(
+                        onPressed: _textController.text.isNotEmpty
+                            ? () {
+                                if (_textController.text.isEmpty) return;
+
+                                Navigator.pop(context);
+                                final String content = _textController.text;
+                                _textController.clear();
+
+                                _showProcessingOptionsDialog(
+                                    content, 'Custom Study Set');
+                              }
+                            : null,
+                        disabled: _textController.text.isEmpty,
+                        size: ButtonSize.medium,
+                        semanticLabel:
+                            'Process the entered text to create study materials',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.play_arrow, size: 16),
+                            const SizedBox(width: Spacing.xs),
+                            const Text('PROCESS'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -598,16 +1071,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         backgroundColor: tokens.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 500,
-            maxHeight: 600,
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
+              // Header - Fixed height to prevent overflow
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: tokens.primary.withValues(alpha: 0.05),
                   borderRadius: const BorderRadius.only(
@@ -624,18 +1097,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(Icons.auto_awesome,
-                          color: tokens.primary, size: 24),
+                          color: tokens.primary, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             'Generate Study Set',
                             style: TextStyle(
                               color: tokens.primary,
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -644,7 +1118,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             'How would you like to generate your study materials?',
                             style: TextStyle(
                               color: tokens.textSecondary,
-                              fontSize: 14,
+                              fontSize: 13,
                             ),
                           ),
                         ],
@@ -654,10 +1128,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
 
-              // Content
+              // Content - Scrollable with fixed constraints
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,7 +1147,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                       // Info box
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: tokens.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
@@ -685,20 +1159,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           children: [
                             Icon(
                               Icons.lightbulb_outline,
-                              size: 20,
+                              size: 18,
                               color: tokens.primary,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
                                     'Recommended Settings',
                                     style: TextStyle(
                                       color: tokens.primary,
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 14,
+                                      fontSize: 13,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -706,7 +1181,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     '10 Quiz Questions + 15 Flashcards',
                                     style: TextStyle(
                                       color: tokens.textSecondary,
-                                      fontSize: 13,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
@@ -720,9 +1195,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
 
-              // Actions
+              // Actions - Fixed height with responsive layout
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: tokens.surface,
                   borderRadius: const BorderRadius.only(
@@ -736,48 +1211,66 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    AccessibleButton(
-                      onPressed: () => Navigator.pop(context),
-                      variant: ButtonVariant.text,
-                      semanticLabel: 'Cancel study set generation',
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: 12),
-                    AccessibleButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _processContent(content, title);
-                      },
-                      variant: ButtonVariant.text,
-                      semanticLabel:
-                          'Generate study set with default settings: 10 quiz questions and 15 flashcards',
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.flash_on),
-                          const SizedBox(width: Spacing.xs),
-                          const Text('Use Defaults'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    AccessibleButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showCustomizeStudySetDialog(content, title);
-                      },
-                      semanticLabel: 'Customize study set generation options',
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.tune),
-                          const SizedBox(width: Spacing.xs),
-                          const Text('Customize'),
-                        ],
-                      ),
+                    // Primary action buttons in a column to prevent overflow
+                    Column(
+                      children: [
+                        // Use Defaults button (primary action)
+                        AccessibleButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _processContent(content, title);
+                          },
+                          fullWidth: true,
+                          variant: ButtonVariant.primary,
+                          size: ButtonSize.medium,
+                          semanticLabel:
+                              'Generate study set with default settings: 10 quiz questions and 15 flashcards',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.flash_on, size: 16),
+                              const SizedBox(width: 8),
+                              const Text('USE DEFAULTS'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Customize button (secondary action)
+                        AccessibleButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showCustomizeStudySetDialog(content, title);
+                          },
+                          fullWidth: true,
+                          variant: ButtonVariant.secondary,
+                          size: ButtonSize.medium,
+                          semanticLabel:
+                              'Customize study set generation options',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.tune, size: 16),
+                              const SizedBox(width: 8),
+                              const Text('CUSTOMIZE'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Cancel button
+                        AccessibleButton(
+                          onPressed: () => Navigator.pop(context),
+                          fullWidth: true,
+                          variant: ButtonVariant.text,
+                          size: ButtonSize.medium,
+                          semanticLabel: 'Cancel study set generation',
+                          child: const Text('CANCEL'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -792,11 +1285,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _showCustomizeStudySetDialog(String content, String title) {
     showDialog(
       context: context,
-      builder: (context) => CustomizeStudySetDialog(
-        topicDifficulty: 'medium',
-        onGenerate: (quizCount, flashcardCount) {
-          _processContentWithCounts(content, title, quizCount, flashcardCount);
-        },
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: context.tokens.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: CustomizeStudySetDialog(
+            topicDifficulty: 'medium',
+            onGenerate: (quizCount, flashcardCount) {
+              Navigator.pop(context);
+              _processContentWithCounts(
+                  content, title, quizCount, flashcardCount);
+            },
+          ),
+        ),
       ),
     );
   }
@@ -927,7 +1433,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       // If AI generation failed or returned empty content, create a working study set
       if (!aiGenerationSucceeded && (flashcardCount > 0 || quizCount > 0)) {
-        await StorageService.instance.createWorkingStudySet(title, content);
+        await EnhancedStorageService.instance.addStudySet(StudySet(
+          id: 'temp_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecondsSinceEpoch}',
+          title: title,
+          content: content,
+          flashcards: [],
+          quizzes: [],
+          createdDate: DateTime.now(),
+          lastStudied: DateTime.now(),
+          notificationsEnabled: false,
+        ));
         await _loadStudySets();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -962,7 +1477,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Credits are already consumed by MindloadEconomyService during generation
 
       final StudySet studySet = StudySet(
-        id: 'study_${DateTime.now().millisecondsSinceEpoch}',
+        id: 'study_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecondsSinceEpoch}',
         title: title,
         content: content,
         flashcards: flashcards,
@@ -973,7 +1488,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         lastStudied: DateTime.now(),
       );
 
-      await StorageService.instance.saveFullStudySet(studySet);
+      await EnhancedStorageService.instance.addStudySet(studySet);
       await _loadStudySets();
 
       // Track achievement progress
@@ -1350,7 +1865,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final tokens = context.tokens;
     try {
       // Update the full study set to preserve all data including notificationsEnabled
-      await StorageService.instance.updateFullStudySet(updatedStudySet);
+      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
 
       // Reload study sets to reflect changes
       await _loadStudySets();
@@ -1644,7 +2159,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await NotificationService.instance.cancelAllNotifications();
 
       // Delete from storage
-      await StorageService.instance.deleteStudySet(studySet.id);
+      await EnhancedStorageService.instance.deleteStudySet(studySet.id);
 
       // Reload study sets
       await _loadStudySets();
@@ -1766,8 +2281,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     try {
       final updatedStudySet = studySet.copyWith(title: newTitle.trim());
-      await StorageService.instance
-          .updateStudySet(updatedStudySet.toMetadata());
+      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
       await _loadStudySets();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1871,8 +2385,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         lastStudied: DateTime.now(),
       );
 
-      await StorageService.instance
-          .updateStudySet(updatedStudySet.toMetadata());
+      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
       await _loadStudySets();
 
       // Hide loading and show success
@@ -2069,28 +2582,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            // Credits state banners (low/empty credits) - constrained to prevent overflow
-            Flexible(
-              child: const CreditsStateBanners(),
-            ),
-
-            // Main content
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _loadStudySets,
-                color: tokens.primary,
-                child: _isLoading ? _buildLoadingScreen() : _buildMainContent(),
-              ),
-            ),
-          ],
+        body: RefreshIndicator(
+          onRefresh: _loadStudySets,
+          color: tokens.primary,
+          child: _isLoading ? _buildLoadingScreen() : _buildMainContent(),
         ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             border: Border(
               top: BorderSide(color: tokens.primary.withValues(alpha: 0.2)),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: tokens.primary.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
           child: SafeArea(
             child: Container(
@@ -2102,68 +2610,152 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   final canUpload =
                       economyService.hasCredits && economyService.canGenerate;
 
-                  return IntrinsicHeight(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Expanded(
-                          child: _buildBottomNavButtonWithUsage(
-                            icon: Icons.upload_file,
-                            label: 'UPLOAD DOC',
-                            usageType: 'upload',
-                            canPerformAction: canUpload,
-                            onTap: canUpload
-                                ? _showDocumentUploadOptions
-                                : () => _showLimitReachedDialog(
-                                    'upload', 'uploads'),
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Responsive bottom navigation based on screen width
+                      if (constraints.maxWidth > 600) {
+                        // Wide screen: 4 buttons in a row
+                        return IntrinsicHeight(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Expanded(
+                                child: _buildBottomNavButtonWithUsage(
+                                  icon: Icons.upload_file,
+                                  label: 'UPLOAD DOC',
+                                  usageType: 'upload',
+                                  canPerformAction: canUpload,
+                                  onTap: canUpload
+                                      ? _showDocumentUploadOptions
+                                      : () => _showLimitReachedDialog(
+                                          'upload', 'uploads'),
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildBottomNavButton(
+                                  icon: Icons.add_circle_outline,
+                                  label: 'CREATE SET',
+                                  onTap: () async {
+                                    HapticFeedbackService().mediumImpact();
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const CreateScreen()),
+                                    );
+                                    await _loadStudySets();
+                                  },
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildBottomNavButton(
+                                  icon: Icons.emoji_events,
+                                  label: 'ACHIEVEMENTS',
+                                  onTap: () {
+                                    HapticFeedbackService().mediumImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const AchievementsScreen()),
+                                    );
+                                  },
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildBottomNavButton(
+                                  icon: Icons.flash_on,
+                                  label: 'ULTRA MODE',
+                                  onTap: () {
+                                    HapticFeedbackService().mediumImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const UltraModeScreen()),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        Expanded(
-                          child: _buildBottomNavButton(
-                            icon: Icons.add_circle_outline,
-                            label: 'CREATE SET',
-                            onTap: () {
-                              HapticFeedbackService().mediumImpact();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const CreateScreen()),
-                              );
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildBottomNavButton(
-                            icon: Icons.emoji_events,
-                            label: 'ACHIEVEMENTS',
-                            onTap: () {
-                              HapticFeedbackService().mediumImpact();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AchievementsScreen()),
-                              );
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildBottomNavButton(
-                            icon: Icons.flash_on,
-                            label: 'ULTRA MODE',
-                            onTap: () {
-                              HapticFeedbackService().mediumImpact();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const UltraModeScreen()),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+                        );
+                      } else {
+                        // Narrow screen: 2x2 grid layout
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildBottomNavButtonWithUsage(
+                                    icon: Icons.upload_file,
+                                    label: 'UPLOAD',
+                                    usageType: 'upload',
+                                    canPerformAction: canUpload,
+                                    onTap: canUpload
+                                        ? _showDocumentUploadOptions
+                                        : () => _showLimitReachedDialog(
+                                            'upload', 'uploads'),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _buildBottomNavButton(
+                                    icon: Icons.add_circle_outline,
+                                    label: 'CREATE',
+                                    onTap: () async {
+                                      HapticFeedbackService().mediumImpact();
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const CreateScreen()),
+                                      );
+                                      await _loadStudySets();
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildBottomNavButton(
+                                    icon: Icons.emoji_events,
+                                    label: 'ACHIEVEMENTS',
+                                    onTap: () {
+                                      HapticFeedbackService().mediumImpact();
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const AchievementsScreen()),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _buildBottomNavButton(
+                                    icon: Icons.flash_on,
+                                    label: 'ULTRA MODE',
+                                    onTap: () {
+                                      HapticFeedbackService().mediumImpact();
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const UltraModeScreen()),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      }
+                    },
                   );
                 },
               ),
@@ -2224,10 +2816,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildMainContent() {
     final tokens = context.tokens;
+
+    if (kDebugMode) {
+      print(
+          '🎨 Building main content with ${_filteredStudySets.length} study sets');
+      print(
+          '🎨 Study sets: ${_filteredStudySets.map((s) => s.title).toList()}');
+    }
+
     return Consumer<MindloadEconomyService>(
       builder: (context, economyService, child) {
         return CustomScrollView(
           slivers: [
+            // Credits state banners
+            const SliverToBoxAdapter(
+              child: CreditsStateBanners(),
+            ),
+
+            // Header content
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(Spacing.md),
@@ -2243,275 +2849,613 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(height: 16),
                     ],
 
-                    Text(
-                      'RECENT STUDY SETS',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: tokens.primary,
-                            letterSpacing: 1,
+                    // Modern header with title and stats
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'My Study Sets',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      color: tokens.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 24,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _studySets.isEmpty
+                                    ? 'Start by creating your first study set'
+                                    : '${_studySets.length} study set${_studySets.length != 1 ? 's' : ''} ready to study',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: tokens.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                              ),
+                            ],
                           ),
+                        ),
+                        if (_studySets.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: tokens.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: tokens.primary.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$_totalFlashcards',
+                                  style: TextStyle(
+                                    color: tokens.primary,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                Text(
+                                  'Cards',
+                                  style: TextStyle(
+                                    color:
+                                        tokens.primary.withValues(alpha: 0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: tokens.secondary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: tokens.secondary.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$_totalQuizzes',
+                                  style: TextStyle(
+                                    color: tokens.secondary,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                Text(
+                                  'Quizzes',
+                                  style: TextStyle(
+                                    color:
+                                        tokens.secondary.withValues(alpha: 0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: Spacing.md),
+
+                    // Search and filter controls
+                    if (_studySets.isNotEmpty) ...[
+                      _buildSearchBar(),
+                      const SizedBox(height: Spacing.md),
+                      _buildFilterAndSortControls(),
+                      const SizedBox(height: Spacing.md),
+                    ],
+
+                    // Connectivity and sync status
+                    _buildConnectivityStatus(tokens),
                   ],
                 ),
               ),
             ),
-            _studySets.isEmpty
-                ? SliverFillRemaining(
-                    child: Center(
+
+            // Study sets list or empty state - Use full remaining space
+            if (_filteredStudySets.isEmpty)
+              SliverFillRemaining(
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.folder_open,
-                            size: 60,
-                            color: tokens.primary.withValues(alpha: 0.5),
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: tokens.primary.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: tokens.primary.withValues(alpha: 0.1),
+                                width: 2,
+                              ),
+                            ),
+                            child: Icon(
+                              _studySets.isEmpty
+                                  ? Icons.library_add_rounded
+                                  : Icons.search_off_rounded,
+                              size: 56,
+                              color: tokens.primary.withValues(alpha: 0.7),
+                            ),
                           ),
-                          const SizedBox(height: Spacing.sm),
+                          const SizedBox(height: 24),
                           Text(
-                            'NO STUDY SETS FOUND',
+                            _studySets.isEmpty
+                                ? 'No Study Sets Yet'
+                                : 'No Results Found',
                             style: Theme.of(context)
                                 .textTheme
-                                .titleMedium
+                                .headlineSmall
                                 ?.copyWith(
                                   color: tokens.textPrimary,
-                                  letterSpacing: 1,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
                                 ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: Spacing.xs),
+                          const SizedBox(height: 8),
                           Text(
-                            'Upload a document or paste text to get started',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: tokens.textSecondary,
-                                ),
+                            _studySets.isEmpty
+                                ? 'Create your first study set by uploading a document or pasting text'
+                                : 'Try adjusting your search terms or filters to find what you\'re looking for',
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: tokens.textSecondary,
+                                      height: 1.5,
+                                      fontSize: 16,
+                                    ),
                             textAlign: TextAlign.center,
                           ),
+                          if (_studySets.isEmpty) ...[
+                            const SizedBox(height: Spacing.lg),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildEmptyStateAction(
+                                  icon: Icons.upload_file,
+                                  label: 'Upload',
+                                  onTap: _showDocumentUploadOptions,
+                                  tokens: tokens,
+                                ),
+                                const SizedBox(width: Spacing.md),
+                                _buildEmptyStateAction(
+                                  icon: Icons.paste,
+                                  label: 'Paste Text',
+                                  onTap: _showPasteTextDialog,
+                                  tokens: tokens,
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                  )
-                : SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) =>
-                            _buildStudySetCard(_studySets[index]),
-                        childCount: _studySets.length,
-                      ),
-                    ),
                   ),
+                ),
+              )
+            else
+              SliverFillRemaining(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: _filteredStudySets.length,
+                    itemBuilder: (context, index) {
+                      if (kDebugMode) {
+                        print(
+                            '🎯 Rendering study set at index $index: ${_filteredStudySets[index].title}');
+                      }
+
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: index < _filteredStudySets.length - 1
+                              ? Spacing.md
+                              : Spacing.lg, // Add bottom padding for last item
+                        ),
+                        child:
+                            _buildModernStudySetCard(_filteredStudySets[index]),
+                      );
+                    },
+                  ),
+                ),
+              ),
           ],
         );
       },
     );
   }
 
-  Widget _buildStudySetCard(StudySet studySet) {
+  Widget _buildModernStudySetCard(StudySet studySet) {
     final tokens = context.tokens;
     final daysSinceStudied =
         DateTime.now().difference(studySet.lastStudied).inDays;
+    final daysSinceCreated =
+        DateTime.now().difference(studySet.createdDate).inDays;
 
-    return AccessibleCard(
+    return Container(
       margin: const EdgeInsets.only(bottom: Spacing.md),
-      padding: const EdgeInsets.all(Spacing.lg),
-      onTap: () {
-        HapticFeedbackService().lightImpact();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StudyScreen(studySet: studySet),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tokens.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.primary.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        );
-      },
-      semanticLabel:
-          'Study set: ${studySet.title}, ${studySet.flashcards.length} flashcards, ${studySet.quizzes.length} quizzes, last studied ${daysSinceStudied == 0 ? 'today' : '$daysSinceStudied days ago'}',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  studySet.title.toUpperCase(),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: tokens.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedbackService().lightImpact();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudyScreen(studySet: studySet),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with title and menu
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            studySet.title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: tokens.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            daysSinceCreated == 0
+                                ? 'Created today'
+                                : daysSinceCreated == 1
+                                    ? 'Created yesterday'
+                                    : 'Created $daysSinceCreated days ago',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: tokens.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                          ),
+                        ],
                       ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: tokens.textSecondary,
+                        size: 20,
+                      ),
+                      color: tokens.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onSelected: (value) =>
+                          _handleStudySetAction(value, studySet),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'notifications',
+                          child: Row(
+                            children: [
+                              Icon(
+                                studySet.notificationsEnabled
+                                    ? Icons.notifications_active
+                                    : Icons.notifications_off,
+                                color: tokens.primary,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Notifications',
+                                style: TextStyle(
+                                  color: tokens.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'rename',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, color: tokens.primary, size: 18),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Rename',
+                                style: TextStyle(
+                                  color: tokens.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'refresh',
+                          child: Row(
+                            children: [
+                              Icon(Icons.refresh,
+                                  color: tokens.secondary, size: 18),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Refresh Content',
+                                style: TextStyle(
+                                  color: tokens.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'export_flashcards',
+                          child: Row(
+                            children: [
+                              Icon(Icons.picture_as_pdf,
+                                  color: tokens.secondary, size: 18),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Export Flashcards',
+                                style: TextStyle(
+                                  color: tokens.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'export_quizzes',
+                          child: Row(
+                            children: [
+                              Icon(Icons.quiz,
+                                  color: tokens.secondary, size: 18),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Export Quizzes',
+                                style: TextStyle(
+                                  color: tokens.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: tokens.error, size: 18),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Delete',
+                                style: TextStyle(
+                                  color: tokens.error,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              // Three dot menu
-              PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_vert,
-                  color: tokens.textPrimary,
-                  size: 20,
+
+                const SizedBox(height: 16),
+
+                // Stats row
+                Row(
+                  children: [
+                    _buildModernStatChip(
+                      icon: Icons.quiz,
+                      label: '${studySet.flashcards.length}',
+                      subtitle: 'Cards',
+                      color: tokens.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildModernStatChip(
+                      icon: Icons.assignment,
+                      label: '${studySet.quizzes.length}',
+                      subtitle: 'Quizzes',
+                      color: tokens.secondary,
+                    ),
+                    const Spacer(),
+                    if (studySet.notificationsEnabled)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: tokens.success.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: tokens.success.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.notifications_active,
+                              size: 14,
+                              color: tokens.success,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Active',
+                              style: TextStyle(
+                                color: tokens.success,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-                color: tokens.surface,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                onSelected: (value) => _handleStudySetAction(value, studySet),
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'notifications',
-                    child: Row(
-                      children: [
-                        Icon(
-                          studySet.notificationsEnabled
-                              ? Icons.notifications_active
-                              : Icons.notifications_off,
-                          color: tokens.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: Spacing.sm),
-                        Text(
-                          'Notifications',
-                          style: TextStyle(color: tokens.textPrimary),
-                        ),
-                      ],
+
+                const SizedBox(height: 12),
+
+                // Last studied info
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: tokens.textSecondary,
                     ),
-                  ),
-                  PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.edit,
-                          color: tokens.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: Spacing.sm),
-                        Text(
-                          'Rename Set',
-                          style: TextStyle(color: tokens.textPrimary),
-                        ),
-                      ],
+                    const SizedBox(width: 6),
+                    Text(
+                      daysSinceStudied == 0
+                          ? 'Studied today'
+                          : daysSinceStudied == 1
+                              ? 'Studied yesterday'
+                              : 'Last studied $daysSinceStudied days ago',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: tokens.textSecondary,
+                            fontSize: 12,
+                          ),
                     ),
-                  ),
-                  PopupMenuItem(
-                    value: 'refresh',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.refresh,
-                          color: tokens.secondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: Spacing.sm),
-                        Text(
-                          'Refresh Set',
-                          style: TextStyle(color: tokens.textPrimary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'export_flashcards',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.picture_as_pdf,
-                          color: tokens.secondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: Spacing.sm),
-                        Text(
-                          'Export Flashcards',
-                          style: TextStyle(color: tokens.textPrimary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'export_quizzes',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.quiz,
-                          color: tokens.secondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: Spacing.sm),
-                        Text(
-                          'Export Quizzes',
-                          style: TextStyle(color: tokens.textPrimary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete,
-                          color: tokens.error,
-                          size: 20,
-                        ),
-                        const SizedBox(width: Spacing.sm),
-                        Text(
-                          'Delete',
-                          style: TextStyle(color: tokens.error),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: tokens.textSecondary,
-                size: 16,
-                semanticLabel: 'Navigate to study set',
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernStatChip({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildStatChip(
-                icon: Icons.quiz,
-                label: '${studySet.flashcards.length} Cards',
-              ),
-              _buildStatChip(
-                icon: Icons.assignment,
-                label:
-                    '${studySet.quizzes.length} Quiz${studySet.quizzes.length != 1 ? 'es' : ''}',
-              ),
-              if (studySet.notificationsEnabled)
-                _buildStatChip(
-                  icon: Icons.notifications_active,
-                  label: 'Notifications On',
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.8),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            daysSinceStudied == 0
-                ? 'Studied today'
-                : 'Last studied $daysSinceStudied day${daysSinceStudied > 1 ? 's' : ''} ago',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: tokens.textSecondary,
-                ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatChip({required IconData icon, required String label}) {
+  Widget _buildStatChip({
+    required IconData icon,
+    required String label,
+    Color? color,
+  }) {
     final tokens = context.tokens;
-    return AccessibleChip(
-      label: Text(label),
-      avatar: Icon(icon, size: 16, color: tokens.textSecondary),
-      semanticLabel: label,
+    final chipColor = color ?? tokens.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: chipColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: chipColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: chipColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2527,13 +3471,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       size: ButtonSize.medium,
       semanticLabel: label,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 18, color: tokens.navIcon),
-            const SizedBox(height: 4),
+            Icon(icon, size: 16, color: tokens.navIcon),
+            const SizedBox(height: 3),
             Flexible(
               child: Text(
                 label,
@@ -2543,6 +3488,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: tokens.navText,
                       fontWeight: FontWeight.w600,
+                      fontSize: 9,
+                      height: 1.0,
                     ),
               ),
             ),
@@ -2568,17 +3515,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       semanticLabel:
           canPerformAction ? label : '$label - disabled, limit reached',
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               canPerformAction ? icon : Icons.block,
-              size: 18,
+              size: 16,
               color: canPerformAction ? tokens.navIcon : tokens.textTertiary,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Flexible(
               child: Text(
                 label,
@@ -2590,7 +3538,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ? tokens.navText
                           : tokens.textTertiary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 7,
+                      fontSize: 9,
+                      height: 1.0,
                     ),
               ),
             ),
@@ -2749,7 +3698,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 TextField(
                   controller: textController,
                   maxLines: 8,
-                  maxLength: 10000,
+                  maxLength: 100000,
                   decoration: InputDecoration(
                     hintText:
                         'Paste your text here...\n\n• Lecture notes\n• Textbook chapters\n• Articles\n• Course materials\n• YouTube video links (youtube.com / youtu.be)',
@@ -2767,7 +3716,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${textController.text.length}/10,000 characters',
+                  '${textController.text.length}/100,000 characters',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: tokens.textMuted,
                       ),
@@ -2922,12 +3871,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
 
         // Navigate to create screen to show the new materials
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const CreateScreen(),
           ),
         );
+        // Refresh study sets when returning from create screen
+        await _loadStudySets();
       }
     } catch (e) {
       if (mounted) {

@@ -48,6 +48,10 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>Mindload uses Face ID to securely authenticate and protect your study data and personal learning progress.</string>
 	
+	<!-- Notification Usage Description -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Mindload sends study reminders, quiz notifications, and achievement alerts to help you maintain your learning streak and stay motivated.</string>
+	
 	<!-- Camera and Photo Library Usage Descriptions -->
 	<key>NSCameraUsageDescription</key>
 	<string>Mindload needs access to your camera to take profile pictures for a personalized experience.</string>
@@ -83,6 +87,8 @@
 		<string>mailto</string>
 		<string>tel</string>
 		<string>sms</string>
+		<string>youtube</string>
+		<string>youtu</string>
 	</array>
 	
 	<!-- URL Schemes for Authentication -->
@@ -94,6 +100,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>mindload</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>youtube-links</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>https</string>
 			</array>
 		</dict>
 	</array>

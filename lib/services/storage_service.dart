@@ -21,19 +21,20 @@ class StorageService extends ChangeNotifier {
     totalItems: 0,
     lastUpdated: DateTime.now(),
   );
-  
+
   // File names
   final String _metadataFileName = 'study_sets_metadata.json';
   final String _totalsFileName = 'storage_totals.json';
-  
+
   // Check if running on web
   bool get _isWeb => kIsWeb;
-  
+
   // Getters
   StorageTotals get totals => _totals;
   Map<String, StudySetMetadata> get metadata => Map.unmodifiable(_metadata);
-  bool get isStorageWarning => StorageConfig.isStorageWarning(_totals.getUsagePercentage(StorageConfig.storageBudgetMB));
-  
+  bool get isStorageWarning => StorageConfig.isStorageWarning(
+      _totals.getUsagePercentage(StorageConfig.storageBudgetMB));
+
   // Initialize storage service
   Future<void> initialize() async {
     try {
@@ -56,7 +57,7 @@ class StorageService extends ChangeNotifier {
   Future<void> addSet(StudySetMetadata metadata) async {
     _metadata[metadata.setId] = metadata;
     _updateTotals();
-    
+
     // Save to storage
     if (_isWeb) {
       await _saveMetadataWeb();
@@ -65,10 +66,10 @@ class StorageService extends ChangeNotifier {
       await _saveMetadata();
       await _saveTotals();
     }
-    
+
     // Check if we need to evict
     await _checkAndEvictIfNeeded();
-    
+
     notifyListeners();
   }
 
@@ -93,7 +94,7 @@ class StorageService extends ChangeNotifier {
     final metadata = _metadata.remove(setId);
     if (metadata != null) {
       _updateTotals();
-      
+
       // Save to storage
       if (_isWeb) {
         await _saveMetadataWeb();
@@ -102,7 +103,7 @@ class StorageService extends ChangeNotifier {
         await _saveMetadata();
         await _saveTotals();
       }
-      
+
       notifyListeners();
     }
   }
@@ -113,7 +114,7 @@ class StorageService extends ChangeNotifier {
     if (oldMetadata != null) {
       _metadata[metadata.setId] = metadata;
       _updateTotals();
-      
+
       // Save to storage
       if (_isWeb) {
         await _saveMetadataWeb();
@@ -122,7 +123,7 @@ class StorageService extends ChangeNotifier {
         await _saveMetadata();
         await _saveTotals();
       }
-      
+
       notifyListeners();
     }
   }
@@ -134,7 +135,7 @@ class StorageService extends ChangeNotifier {
       if (metadata != null) {
         final updatedMetadata = metadata.markOpened();
         _metadata[setId] = updatedMetadata;
-        
+
         if (_isWeb) {
           await _saveMetadataWeb();
         } else {
@@ -157,7 +158,7 @@ class StorageService extends ChangeNotifier {
       if (metadata != null) {
         final updatedMetadata = metadata.copyWith(isPinned: !metadata.isPinned);
         _metadata[setId] = updatedMetadata;
-        
+
         if (_isWeb) {
           await _saveMetadataWeb();
         } else {
@@ -180,7 +181,7 @@ class StorageService extends ChangeNotifier {
       if (metadata != null) {
         final updatedMetadata = metadata.copyWith(isArchived: true);
         _metadata[setId] = updatedMetadata;
-        
+
         if (_isWeb) {
           await _saveMetadataWeb();
           await _saveTotalsWeb();
@@ -188,7 +189,7 @@ class StorageService extends ChangeNotifier {
           await _saveMetadata();
           await _saveTotals();
         }
-        
+
         notifyListeners();
         return true;
       }
@@ -246,19 +247,21 @@ class StorageService extends ChangeNotifier {
       // Save the metadata
       final metadata = studySet.toMetadata();
       await addOrUpdateSet(metadata);
-      
+
       // Save the full study set data separately
       final studySetData = studySet.toJson();
       if (_isWeb) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('study_set_${studySet.id}', jsonEncode(studySetData));
+        await prefs.setString(
+            'study_set_${studySet.id}', jsonEncode(studySetData));
       } else {
         // For native platforms, save to file system
-        final file = File('${await getApplicationDocumentsDirectory()}/study_sets/${studySet.id}.json');
+        final file = File(
+            '${await getApplicationDocumentsDirectory()}/study_sets/${studySet.id}.json');
         await file.create(recursive: true);
         await file.writeAsString(jsonEncode(studySetData));
       }
-      
+
       return true;
     } catch (e) {
       debugPrint('Failed to save full study set: $e');
@@ -282,19 +285,21 @@ class StorageService extends ChangeNotifier {
       // Update the metadata
       final metadata = studySet.toMetadata();
       await updateSet(metadata);
-      
+
       // Update the full study set data
       final studySetData = studySet.toJson();
       if (_isWeb) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('study_set_${studySet.id}', jsonEncode(studySetData));
+        await prefs.setString(
+            'study_set_${studySet.id}', jsonEncode(studySetData));
       } else {
         // For native platforms, save to file system
-        final file = File('${await getApplicationDocumentsDirectory()}/study_sets/${studySet.id}.json');
+        final file = File(
+            '${await getApplicationDocumentsDirectory()}/study_sets/${studySet.id}.json');
         await file.create(recursive: true);
         await file.writeAsString(jsonEncode(studySetData));
       }
-      
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -330,7 +335,8 @@ class StorageService extends ChangeNotifier {
         }
       } else {
         // For native platforms, load from file system
-        final file = File('${await getApplicationDocumentsDirectory()}/study_sets/$setId.json');
+        final file = File(
+            '${await getApplicationDocumentsDirectory()}/study_sets/$setId.json');
         if (await file.exists()) {
           final studySetData = await file.readAsString();
           final jsonData = jsonDecode(studySetData) as Map<String, dynamic>;
@@ -439,7 +445,8 @@ class StorageService extends ChangeNotifier {
   }
 
   // Save user economy data
-  Future<void> saveUserEconomyData(String userId, Map<String, dynamic> data) async {
+  Future<void> saveUserEconomyData(
+      String userId, Map<String, dynamic> data) async {
     await saveJsonData('user_economy_$userId', data);
   }
 
@@ -474,7 +481,8 @@ class StorageService extends ChangeNotifier {
   }
 
   // Save user entitlements
-  Future<void> saveUserEntitlements(String userId, Map<String, dynamic> data) async {
+  Future<void> saveUserEntitlements(
+      String userId, Map<String, dynamic> data) async {
     await saveJsonData('user_entitlements_$userId', data);
   }
 
@@ -548,9 +556,10 @@ class StorageService extends ChangeNotifier {
   // Get storage stats (alias for compatibility)
   Map<String, dynamic> getStorageStats() {
     final freeSpaceGB = _getFreeSpaceGB();
-    final currentBudgetMB = StorageConfig.getCurrentBudgetMB(freeSpaceGB as int);
+    final currentBudgetMB =
+        StorageConfig.getCurrentBudgetMB(freeSpaceGB as int);
     final usagePercentage = _totals.getUsagePercentage(currentBudgetMB);
-    
+
     return {
       'totalBytes': _totals.totalBytes,
       'totalSets': _totals.totalSets,
@@ -572,16 +581,31 @@ class StorageService extends ChangeNotifier {
     return initialize();
   }
 
+  // Force refresh study sets (useful for debugging)
+  Future<void> forceRefresh() async {
+    try {
+      debugPrint('🔄 Force refreshing study sets...');
+      await _loadMetadata();
+      await _loadTotals();
+      notifyListeners();
+      debugPrint('✅ Force refresh completed');
+    } catch (e) {
+      debugPrint('❌ Force refresh failed: $e');
+    }
+  }
+
+  // Debug method to check storage status
+
   // Update totals based on current metadata
   void _updateTotals() {
     int totalBytes = 0;
     int totalItems = 0;
-    
+
     for (final metadata in _metadata.values) {
       totalBytes += metadata.bytes;
       totalItems += metadata.items;
     }
-    
+
     _totals = StorageTotals(
       totalBytes: totalBytes,
       totalSets: _metadata.length,
@@ -597,14 +621,14 @@ class StorageService extends ChangeNotifier {
         // On web, use a reasonable budget estimate
         final currentBudgetMB = 100; // 100MB for web
         final usagePercentage = _totals.getUsagePercentage(currentBudgetMB);
-        
+
         if (usagePercentage > StorageConfig.warnAtUsage) {
           await _evictOldSets(currentBudgetMB);
         }
       } else {
         final freeSpaceGB = await _getFreeSpaceGB();
         final currentBudgetMB = StorageConfig.getCurrentBudgetMB(freeSpaceGB);
-        
+
         if (_totals.isOverAnyLimit(currentBudgetMB)) {
           debugPrint('⚠️ Storage over limits, triggering eviction');
           await evict(currentBudgetMB);
@@ -614,7 +638,7 @@ class StorageService extends ChangeNotifier {
       debugPrint('⚠️ Failed to check eviction: $e');
     }
   }
-  
+
   // Evict sets to free up space
   Future<EvictionResult> evict(int budgetMB) async {
     try {
@@ -623,33 +647,33 @@ class StorageService extends ChangeNotifier {
           .where((m) => !m.isPinned && !m.isArchived)
           .toList()
         ..sort((a, b) => a.lastOpenedAt.compareTo(b.lastOpenedAt));
-      
+
       int freedBytes = 0;
       int evictedSets = 0;
       final List<String> evictedSetIds = [];
-      
+
       for (final set in unpinnedSets) {
         // Check if we've freed enough space
         if (freedBytes / (1024 * 1024) >= StorageConfig.evictBatch ||
             !_totals.isOverAnyLimit(budgetMB)) {
           break;
         }
-        
+
         // Evict this set
         await removeSet(set.setId);
         freedBytes += set.bytes;
         evictedSets++;
         evictedSetIds.add(set.setId);
-        
+
         debugPrint('🗑️ Evicted set: ${set.title} (${set.bytes} bytes)');
       }
-      
+
       final result = EvictionResult(
         freedBytes: freedBytes,
         evictedSets: evictedSets,
         evictedSetIds: evictedSetIds,
       );
-      
+
       debugPrint('✅ Eviction completed: $result');
       return result;
     } catch (e) {
@@ -667,9 +691,10 @@ class StorageService extends ChangeNotifier {
     try {
       final sets = _metadata.values.toList()
         ..sort((a, b) => a.lastOpenedAt.compareTo(b.lastOpenedAt));
-      
-      final targetBytes = (budgetMB * 1024 * 1024 * 0.8).round(); // 80% of budget
-      
+
+      final targetBytes =
+          (budgetMB * 1024 * 1024 * 0.8).round(); // 80% of budget
+
       while (_totals.totalBytes > targetBytes && sets.isNotEmpty) {
         final oldestSet = sets.removeAt(0);
         await removeSet(oldestSet.setId);
@@ -697,68 +722,72 @@ class StorageService extends ChangeNotifier {
       return 10; // Default fallback
     }
   }
-  
+
   // Load metadata from disk (native platforms)
   Future<void> _loadMetadata() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_metadataFileName');
-      
+
       if (await file.exists()) {
         final jsonString = await file.readAsString();
         final json = jsonDecode(jsonString) as Map<String, dynamic>;
-        
+
         _metadata.clear();
         for (final entry in json.entries) {
-          final metadata = StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
+          final metadata =
+              StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
           _metadata[entry.key] = metadata;
         }
-        
-        debugPrint('📁 Loaded ${_metadata.length} study set metadata entries from disk');
+
+        debugPrint(
+            '📁 Loaded ${_metadata.length} study set metadata entries from disk');
       }
     } catch (e) {
       debugPrint('⚠️ Failed to load metadata from disk: $e');
     }
   }
-  
+
   // Load metadata from web storage
   Future<void> _loadMetadataWeb() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final data = prefs.getString(_metadataFileName);
-      
+
       if (data != null) {
         final json = jsonDecode(data) as Map<String, dynamic>;
         _metadata.clear();
         for (final entry in json.entries) {
-          final metadata = StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
+          final metadata =
+              StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
           _metadata[entry.key] = metadata;
         }
-        debugPrint('📁 Loaded ${_metadata.length} study set metadata entries from web storage');
+        debugPrint(
+            '📁 Loaded ${_metadata.length} study set metadata entries from web storage');
       }
     } catch (e) {
       debugPrint('⚠️ Failed to load metadata from web storage: $e');
     }
   }
-  
+
   // Save metadata to disk (native platforms)
   Future<void> _saveMetadata() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_metadataFileName');
-      
+
       final json = <String, dynamic>{};
       for (final entry in _metadata.entries) {
         json[entry.key] = entry.value.toJson();
       }
-      
+
       await file.writeAsString(jsonEncode(json));
       debugPrint('💾 Saved metadata to disk');
     } catch (e) {
       debugPrint('❌ Failed to save metadata: $e');
     }
   }
-  
+
   // Save metadata to web storage
   Future<void> _saveMetadataWeb() async {
     try {
@@ -767,20 +796,20 @@ class StorageService extends ChangeNotifier {
       for (final entry in _metadata.entries) {
         json[entry.key] = entry.value.toJson();
       }
-      
+
       await prefs.setString(_metadataFileName, jsonEncode(json));
       debugPrint('💾 Saved metadata to web storage');
     } catch (e) {
       debugPrint('❌ Failed to save metadata to web storage: $e');
     }
   }
-  
+
   // Load totals from disk (native platforms)
   Future<void> _loadTotals() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_totalsFileName');
-      
+
       if (await file.exists()) {
         final jsonString = await file.readAsString();
         final json = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -791,13 +820,13 @@ class StorageService extends ChangeNotifier {
       debugPrint('⚠️ Failed to load totals from disk: $e');
     }
   }
-  
+
   // Load totals from web storage
   Future<void> _loadTotalsWeb() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final data = prefs.getString(_totalsFileName);
-      
+
       if (data != null) {
         final json = jsonDecode(data) as Map<String, dynamic>;
         _totals = StorageTotals.fromJson(json);
@@ -807,20 +836,20 @@ class StorageService extends ChangeNotifier {
       debugPrint('⚠️ Failed to load totals from web storage: $e');
     }
   }
-  
+
   // Save totals to disk (native platforms)
   Future<void> _saveTotals() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$_totalsFileName');
-      
+
       await file.writeAsString(jsonEncode(_totals.toJson()));
       debugPrint('💾 Saved totals to disk');
     } catch (e) {
       debugPrint('❌ Failed to save totals: $e');
     }
   }
-  
+
   // Save totals to web storage
   Future<void> _saveTotalsWeb() async {
     try {
@@ -831,7 +860,7 @@ class StorageService extends ChangeNotifier {
       debugPrint('❌ Failed to save totals to web storage: $e');
     }
   }
-  
+
   // Get storage usage statistics
   String getStorageInfo() {
     return '''
@@ -863,7 +892,8 @@ Storage Service Info:
   // Get sets by title (since category doesn't exist)
   List<StudySetMetadata> getSetsByTitle(String titleQuery) {
     return _metadata.values
-        .where((metadata) => metadata.title.toLowerCase().contains(titleQuery.toLowerCase()))
+        .where((metadata) =>
+            metadata.title.toLowerCase().contains(titleQuery.toLowerCase()))
         .toList();
   }
 
@@ -901,7 +931,7 @@ Storage Service Info:
         totalItems: 0,
         lastUpdated: DateTime.now(),
       );
-      
+
       if (_isWeb) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_metadataFileName);
@@ -911,11 +941,11 @@ Storage Service Info:
         final directory = await getApplicationDocumentsDirectory();
         final metadataFile = File('${directory.path}/$_metadataFileName');
         final totalsFile = File('${directory.path}/$_totalsFileName');
-        
+
         if (await metadataFile.exists()) await metadataFile.delete();
         if (await totalsFile.exists()) await totalsFile.delete();
       }
-      
+
       notifyListeners();
       debugPrint('🗑️ All storage data cleared');
     } catch (e) {

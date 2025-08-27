@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/firebase_client_service.dart';
-import 'package:mindload/screens/home_screen.dart';
+
 import 'package:mindload/theme.dart';
 
 class SocialAuthScreen extends StatefulWidget {
@@ -299,19 +299,9 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
   void _navigateToHome() {
     print('🔐 _navigateToHome called');
     try {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) {
-            print('🔐 Building HomeScreen');
-            return const HomeScreen();
-          },
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
-      print('🔐 Navigation to HomeScreen initiated');
+      // Navigate to home route to allow onboarding check
+      Navigator.of(context).pushReplacementNamed('/home');
+      print('🔐 Navigation to home route initiated');
     } catch (e) {
       print('🔐 Navigation error: $e');
       _showErrorDialog('Navigation error: $e');

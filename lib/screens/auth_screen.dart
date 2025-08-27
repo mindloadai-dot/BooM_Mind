@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:mindload/screens/home_screen.dart';
+
 import 'package:mindload/services/storage_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/theme.dart';
@@ -155,16 +155,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   }
 
   void _navigateToHome() {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-    );
+    // Navigate to home route to allow onboarding check
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   @override

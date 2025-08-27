@@ -21,8 +21,10 @@ import 'package:mindload/services/youtube_service.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/widgets/youtube_preview_card.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mindload/services/storage_service.dart';
+
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/openai_service.dart';
+import 'package:mindload/services/auth_service.dart';
 
 /// Create Screen - Demonstrates the complete credits economy integration
 ///
@@ -1027,16 +1029,20 @@ class _CreateScreenState extends State<CreateScreen> {
           debugInfo = 'Rate limit exceeded';
         } else if (e.toString().contains('unavailable')) {
           errorMessage =
-              'YouTube service temporarily unavailable. Please try again.';
+              'YouTube service temporarily unavailable. Using fallback preview.';
           debugInfo = 'Service unavailable';
-        } else if (e.toString().contains('network')) {
+        } else if (e.toString().contains('YouTubeIngestError.unknown')) {
+          errorMessage =
+              'YouTube service temporarily unavailable. Using fallback preview.';
+          debugInfo = 'YouTube service error - using fallback';
+        } else if (e.toString().contains('YouTubeIngestError.serverError')) {
+          errorMessage =
+              'YouTube service temporarily unavailable. Using fallback preview.';
+          debugInfo = 'YouTube server error - using fallback';
+        } else if (e.toString().contains('YouTubeIngestError.networkError')) {
           errorMessage =
               'Network error. Please check your internet connection.';
           debugInfo = 'Network error';
-        } else if (e.toString().contains('YouTubeIngestError.unknown')) {
-          errorMessage =
-              'YouTube service error. This may be due to authentication or service issues.';
-          debugInfo = 'YouTube service error - unknown cause';
         } else if (e.toString().contains('transcript')) {
           errorMessage =
               'Video transcript not available. Please try a different video.';
@@ -1049,7 +1055,7 @@ class _CreateScreenState extends State<CreateScreen> {
           debugInfo = 'Age-restricted video';
         } else {
           errorMessage = 'Failed to load video preview: ${e.toString()}';
-          debugInfo = 'Unknown error';
+          debugInfo = 'Unknown error: ${e.toString()}';
         }
 
         setState(() {
@@ -2119,6 +2125,13 @@ class _CreateScreenState extends State<CreateScreen> {
   }
 
   Future<void> _handleGenerate() async {
+    // Debug: Check authentication status
+    final authService = AuthService.instance;
+    if (kDebugMode) {
+      print('🔐 Authentication status: ${authService.isAuthenticated}');
+      print('🔐 Current user: ${authService.currentUser?.email ?? 'None'}');
+    }
+
     // Validate required fields
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2197,19 +2210,40 @@ class _CreateScreenState extends State<CreateScreen> {
       List<QuizQuestion> quizQuestions = <QuizQuestion>[];
 
       if (_generateFlashcards) {
+        if (kDebugMode) {
+          print('🃏 Starting flashcard generation...');
+        }
         flashcards = await _generateAIFlashcards(
             _contentController.text, _flashcardCount);
+        if (kDebugMode) {
+          print('🃏 Generated ${flashcards.length} flashcards');
+        }
       }
 
       if (_generateQuizzes) {
+        if (kDebugMode) {
+          print('❓ Starting quiz generation...');
+        }
         quizQuestions =
             await _generateAIQuizQuestions(_contentController.text, _quizCount);
+        if (kDebugMode) {
+          print('❓ Generated ${quizQuestions.length} quiz questions');
+        }
       }
 
       // Create the study set with AI-generated content
       final studySetId = 'study_${DateTime.now().millisecondsSinceEpoch}';
       final title = _titleController.text.trim();
       final content = _contentController.text.trim();
+
+      if (kDebugMode) {
+        print('📚 Creating study set:');
+        print('📚 ID: $studySetId');
+        print('📚 Title: $title');
+        print('📚 Content length: ${content.length}');
+        print('📚 Flashcards: ${flashcards.length}');
+        print('📚 Quiz questions: ${quizQuestions.length}');
+      }
 
       // Create quizzes from quiz questions
       final quizzes = quizQuestions.isNotEmpty
@@ -2435,7 +2469,8 @@ class _CreateScreenState extends State<CreateScreen> {
   Future<bool> _saveStudySet(StudySet studySet) async {
     try {
       // Save to local storage using StorageService
-      final success = await StorageService.instance.saveFullStudySet(studySet);
+      final success =
+          await EnhancedStorageService.instance.addStudySet(studySet);
 
       if (kDebugMode) {
         print('💾 Study set saved: ${success ? 'SUCCESS' : 'FAILED'}');

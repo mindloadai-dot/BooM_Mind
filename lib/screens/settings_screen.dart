@@ -168,10 +168,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.settings,
-                  size: 30,
-                  color: context.tokens.onPrimary,
+                child: Center(
+                  child: Icon(
+                    Icons.settings,
+                    size: 30,
+                    color: context.tokens.onPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 20),
@@ -560,13 +562,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             'Show first-time setup again',
             Icons.settings_backup_restore,
             _showResetMandatoryOnboardingDialog,
-          ),
-          const SizedBox(height: 12),
-          _buildPreferenceTile(
-            'Test Welcome Dialog',
-            'Preview the welcome screen',
-            Icons.preview_rounded,
-            _showTestWelcomeDialog,
           ),
           const SizedBox(height: 12),
           _buildPreferenceTile(
@@ -1013,10 +1008,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         });
       }
     }
-  }
-
-  void _showTestWelcomeDialog() async {
-    await EnhancedOnboardingService().showWelcomeDialog(context);
   }
 
   void _showResetMandatoryOnboardingDialog() {

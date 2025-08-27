@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:mindload/services/auth_service.dart';
-import 'package:mindload/screens/home_screen.dart';
+
 import 'package:mindload/theme.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -183,16 +183,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   void _navigateToHome() {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-    );
+    // Navigate to home route to allow onboarding check
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _toggleEmailForm() {

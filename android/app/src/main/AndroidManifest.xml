@@ -26,7 +26,10 @@
         android:usesCleartextTraffic="false"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules">
+        android:fullBackupContent="@xml/backup_rules"
+        android:requestLegacyExternalStorage="false">
+        
+        <!-- YouTube link handling -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -48,6 +51,16 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
+            <!-- Handle YouTube links -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="www.youtube.com" />
+                <data android:scheme="https" android:host="youtu.be" />
+                <data android:scheme="https" android:host="m.youtube.com" />
+            </intent-filter>
         </activity>
         
         <!-- Audio service for background Ultra Mode playback -->
@@ -66,11 +79,13 @@
             </intent-filter>
         </service>
 
-        <!-- Boot receiver for scheduled notifications -->
+        <!-- Boot receiver for scheduled notifications - Temporarily disabled to fix crash -->
+        <!--
         <receiver
             android:name="io.flutter.plugins.flutter_local_notifications.ScheduledNotificationBootReceiver"
             android:enabled="true"
-            android:exported="false">
+            android:exported="false"
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
@@ -78,11 +93,15 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+        -->
         
-        <!-- Notification receiver -->
+        <!-- Notification receiver - Temporarily disabled to fix crash -->
+        <!--
         <receiver
             android:name="io.flutter.plugins.flutter_local_notifications.ScheduledNotificationReceiver"
-            android:exported="false" />
+            android:exported="false"
+            tools:ignore="ExportedReceiver" />
+        -->
         
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

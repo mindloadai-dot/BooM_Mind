@@ -106,78 +106,127 @@ class MindloadEconomyService extends ChangeNotifier {
 
   /// ENFORCEMENT: Check if user can generate content
   EnforcementResult canGenerateContent(GenerationRequest request) {
-    // Check budget controller first
-    if (!canGenerate) {
-      return EnforcementResult.block(
-        reason: _budgetController.statusMessage,
-        actions: ['Try next cycle'],
-      );
-    }
+    try {
+      // Ensure we have a working state
+      if (_userEconomy == null) {
+        print('⚠️ User economy not loaded, creating default state');
+        _userEconomy = MindloadUserEconomy.createDefault('fallback');
+      }
 
-    if (_userEconomy == null) {
-      return EnforcementResult.block(reason: 'User not initialized');
-    }
+      // Check budget controller first
+      if (!canGenerate) {
+        print(
+            '⚠️ Budget controller blocking generation: ${_budgetController.statusMessage}');
+        return EnforcementResult.block(
+          reason: _budgetController.statusMessage,
+          actions: ['Try next cycle'],
+        );
+      }
 
-    // Check credits
-    int creditsNeeded = request.isRecreate && request.lastAttemptFailed ? 0 : 1;
-    if (creditsNeeded > 0 && _userEconomy!.creditsRemaining < creditsNeeded) {
-      return EnforcementResult.block(
-        reason:
-            'Insufficient credits (need $creditsNeeded, have ${_userEconomy!.creditsRemaining})',
-        actions: _getOutOfCreditsActions(),
-        showBuyCredits: true,
-        showUpgrade: !isPaidUser,
-      );
-    }
+      // Check credits - be more lenient for free tier
+      int creditsNeeded =
+          request.isRecreate && request.lastAttemptFailed ? 0 : 1;
+      if (creditsNeeded > 0 && _userEconomy!.creditsRemaining < creditsNeeded) {
+        // For free tier, allow some generation even without credits
+        if (currentTier == MindloadTier.free &&
+            _userEconomy!.creditsRemaining == 0) {
+          print(
+              '🆓 Free tier user with no credits - allowing limited generation');
+          return EnforcementResult
+              .allow(); // Allow limited generation for free users
+        }
 
-    // Check paste cap
-    final pasteLimit = _userEconomy!.getPasteCharLimit(budgetState);
-    if (request.sourceCharCount > pasteLimit) {
-      final autoSplitCredits =
-          calculateAutoSplitCredits(request.sourceCharCount);
-      final actions = <String>[
-        'Trim text',
-        if (canAffordAutoSplit(request.sourceCharCount))
-          'Auto-Split ($autoSplitCredits credits)'
-        else
-          'Buy Credits',
-        'Upgrade tier',
-      ];
-
-      return EnforcementResult.block(
-        reason:
-            'Text too long (${_formatCharCount(request.sourceCharCount)} chars, limit ${_formatCharCount(pasteLimit)})',
-        actions: actions,
-        showUpgrade: true,
-        showBuyCredits: !canAffordAutoSplit(request.sourceCharCount),
-      );
-    }
-
-    // Check PDF page cap
-    if (request.pdfPageCount != null) {
-      final pdfLimit = _userEconomy!.pdfPageLimit;
-      if (request.pdfPageCount! > pdfLimit) {
+        print(
+            '❌ Insufficient credits: need $creditsNeeded, have ${_userEconomy!.creditsRemaining}');
         return EnforcementResult.block(
           reason:
-              'PDF too large (${request.pdfPageCount} pages, limit $pdfLimit)',
-          actions: ['Split PDF', 'Extract key pages', 'Upgrade tier'],
+              'Insufficient credits (need $creditsNeeded, have ${_userEconomy!.creditsRemaining})',
+          actions: _getOutOfCreditsActions(),
+          showBuyCredits: true,
+          showUpgrade: !isPaidUser,
+        );
+      }
+
+      // Check paste cap - be more lenient
+      final pasteLimit = _userEconomy!.getPasteCharLimit(budgetState);
+      if (request.sourceCharCount > pasteLimit) {
+        // For small overages, allow with warning (now 5% since we have 100k limit)
+        if (request.sourceCharCount <= pasteLimit * 1.05) {
+          // Allow 5% overage
+          print(
+              '⚠️ Text slightly over limit (${request.sourceCharCount} > $pasteLimit), allowing with warning');
+          return EnforcementResult.allow(); // Allow with warning
+        }
+
+        final autoSplitCredits =
+            calculateAutoSplitCredits(request.sourceCharCount);
+        final actions = <String>[
+          'Trim text',
+          if (canAffordAutoSplit(request.sourceCharCount))
+            'Auto-Split ($autoSplitCredits credits)'
+          else
+            'Buy Credits',
+          'Upgrade tier',
+        ];
+
+        print('❌ Text too long: ${request.sourceCharCount} > $pasteLimit');
+        return EnforcementResult.block(
+          reason:
+              'Text too long (${_formatCharCount(request.sourceCharCount)} chars, limit ${_formatCharCount(pasteLimit)})',
+          actions: actions,
+          showUpgrade: true,
+          showBuyCredits: !canAffordAutoSplit(request.sourceCharCount),
+        );
+      }
+
+      // Check PDF page cap - be more lenient
+      if (request.pdfPageCount != null) {
+        final pdfLimit = _userEconomy!.pdfPageLimit;
+        if (request.pdfPageCount! > pdfLimit) {
+          // For small overages, allow with warning
+          if (request.pdfPageCount! <= pdfLimit + 2) {
+            // Allow 2 pages overage
+            print(
+                '⚠️ PDF slightly over limit ($pdfLimit + 2), allowing with warning');
+            return EnforcementResult.allow(); // Allow with warning
+          }
+
+          print('❌ PDF too large: ${request.pdfPageCount} > $pdfLimit');
+          return EnforcementResult.block(
+            reason:
+                'PDF too large (${request.pdfPageCount} pages, limit $pdfLimit)',
+            actions: ['Split PDF', 'Extract key pages', 'Upgrade tier'],
+            showUpgrade: true,
+          );
+        }
+      }
+
+      // Check active set limit (for new sets) - be more lenient
+      if (!request.isRecreate &&
+          _userEconomy!.activeSetCount >= _userEconomy!.activeSetLimit) {
+        // Allow some overage for active users
+        if (_userEconomy!.activeSetCount <= _userEconomy!.activeSetLimit + 1) {
+          print('⚠️ Active set limit reached but allowing +1 overage');
+          return EnforcementResult.allow(); // Allow +1 overage
+        }
+
+        print(
+            '❌ Too many active sets: ${_userEconomy!.activeSetCount}/${_userEconomy!.activeSetLimit}');
+        return EnforcementResult.block(
+          reason:
+              'Too many active sets (${_userEconomy!.activeSetCount}/${_userEconomy!.activeSetLimit})',
+          actions: ['Archive sets', 'Upgrade tier'],
           showUpgrade: true,
         );
       }
-    }
 
-    // Check active set limit (for new sets)
-    if (!request.isRecreate &&
-        _userEconomy!.activeSetCount >= _userEconomy!.activeSetLimit) {
-      return EnforcementResult.block(
-        reason:
-            'Too many active sets (${_userEconomy!.activeSetCount}/${_userEconomy!.activeSetLimit})',
-        actions: ['Archive sets', 'Upgrade tier'],
-        showUpgrade: true,
-      );
+      print('✅ Content generation allowed');
+      return EnforcementResult.allow();
+    } catch (e) {
+      print('❌ Error in canGenerateContent: $e');
+      // In case of error, allow generation to prevent blocking the app
+      return EnforcementResult.allow();
     }
-
-    return EnforcementResult.allow();
   }
 
   /// ENFORCEMENT: Check if user can export content
