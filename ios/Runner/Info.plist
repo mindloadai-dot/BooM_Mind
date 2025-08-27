@@ -80,7 +80,13 @@
 		<string>audio</string>
 		<string>remote-notification</string>
 		<string>fetch</string>
-		<string>processing</string>
+	</array>
+	
+	<!-- Background Task Scheduler Permitted Identifiers -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.MindLoad.ios.background-processing</string>
+		<string>com.MindLoad.ios.background-refresh</string>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
