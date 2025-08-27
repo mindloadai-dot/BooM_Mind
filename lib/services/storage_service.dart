@@ -617,23 +617,8 @@ class StorageService extends ChangeNotifier {
   // Check storage limits and evict if needed
   Future<void> _checkAndEvictIfNeeded() async {
     try {
-      if (_isWeb) {
-        // On web, use a reasonable budget estimate
-        final currentBudgetMB = 100; // 100MB for web
-        final usagePercentage = _totals.getUsagePercentage(currentBudgetMB);
-
-        if (usagePercentage > StorageConfig.warnAtUsage) {
-          await _evictOldSets(currentBudgetMB);
-        }
-      } else {
-        final freeSpaceGB = await _getFreeSpaceGB();
-        final currentBudgetMB = StorageConfig.getCurrentBudgetMB(freeSpaceGB);
-
-        if (_totals.isOverAnyLimit(currentBudgetMB)) {
-          debugPrint('⚠️ Storage over limits, triggering eviction');
-          await evict(currentBudgetMB);
-        }
-      }
+      // Auto cleanup disabled - users can manually manage their storage
+      debugPrint('📱 Auto cleanup disabled - users manage their own storage');
     } catch (e) {
       debugPrint('⚠️ Failed to check eviction: $e');
     }
@@ -653,8 +638,8 @@ class StorageService extends ChangeNotifier {
       final List<String> evictedSetIds = [];
 
       for (final set in unpinnedSets) {
-        // Check if we've freed enough space
-        if (freedBytes / (1024 * 1024) >= StorageConfig.evictBatch ||
+        // Check if we've freed enough space (using hardcoded batch size since evictBatch is disabled)
+        if (freedBytes / (1024 * 1024) >= 50 || // 50MB batch size
             !_totals.isOverAnyLimit(budgetMB)) {
           break;
         }

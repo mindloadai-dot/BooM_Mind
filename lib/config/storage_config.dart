@@ -4,8 +4,9 @@ class StorageConfig {
   static const int storageBudgetMB = 250;     // device cache budget
   static const int maxLocalSets = 150;        // Updated: was 500, now 150
   static const int maxLocalItems = 100000;    // total cards+questions cap
-  static const int staleDays = 120;           // auto-evict if unopened for 120d
-  static const int evictBatch = 50;           // evict in chunks to avoid jank
+  // Auto cleanup disabled - users manage their own storage
+  // static const int staleDays = 120;           // auto-evict if unopened for 120d
+  // static const int evictBatch = 50;           // evict in chunks to avoid jank
   static const double warnAtUsage = 0.80;     // show "storage almost full" banner at 80%
   static const int lowFreeSpaceGB = 1;        // if device free space <1GB, reduce budget
   static const int lowModeBudgetMB = 150;     // temporary budget when low on disk
@@ -48,8 +49,9 @@ class StorageConfig {
     return currentItems > maxLocalItems;
   }
   
-  static bool isStale(DateTime lastOpened) {
-    final daysSinceLastOpened = DateTime.now().difference(lastOpened).inDays;
-    return daysSinceLastOpened > staleDays;
-  }
+  // Auto cleanup disabled - isStale method no longer needed
+  // static bool isStale(DateTime lastOpened) {
+  //   final daysSinceLastOpened = DateTime.now().difference(lastOpened).inDays;
+  //   return daysSinceLastOpened > staleDays;
+  // }
 }

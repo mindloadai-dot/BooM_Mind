@@ -207,10 +207,10 @@ void main() {
           isPinned: false,
           bytes: 50 * 1024 * 1024, // 50MB
           items: 200,
-          lastOpenedAt: DateTime.now().subtract(const Duration(days: StorageConfig.staleDays + 10)),
-          lastStudied: DateTime.now().subtract(const Duration(days: StorageConfig.staleDays + 10)),
-          createdAt: DateTime.now().subtract(const Duration(days: StorageConfig.staleDays + 10)),
-          updatedAt: DateTime.now().subtract(const Duration(days: StorageConfig.staleDays + 10)),
+          lastOpenedAt: DateTime.now().subtract(const Duration(days: 130)), // 130 days old
+          lastStudied: DateTime.now().subtract(const Duration(days: 130)),
+          createdAt: DateTime.now().subtract(const Duration(days: 130)),
+          updatedAt: DateTime.now().subtract(const Duration(days: 130)),
         );
         
         await storageService.addOrUpdateSet(staleSet);
