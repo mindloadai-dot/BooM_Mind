@@ -804,4 +804,38 @@ class NotificationService {
     // WorkingNotificationService doesn't need disposal as it's a singleton
     debugPrint('🧹 Unified Notification Service disposed');
   }
+
+  /// Check notification permissions and system status
+  static Future<Map<String, dynamic>> checkNotificationStatus() async {
+    try {
+      final Map<String, dynamic> status = {};
+      
+      // Check if service is initialized
+      status['serviceInitialized'] = instance._workingService.isInitialized;
+      
+      // Check permissions
+      final permissions = await instance._workingService.checkNotificationPermissions();
+      status['permissions'] = permissions;
+      
+      // Check if we can send notifications
+      status['canSendNotifications'] = permissions['canRequest'] ?? false;
+      
+      if (kDebugMode) {
+        debugPrint('🔍 Notification status check:');
+        debugPrint('   Service initialized: ${status['serviceInitialized']}');
+        debugPrint('   Permissions: ${status['permissions']}');
+        debugPrint('   Can send notifications: ${status['canSendNotifications']}');
+      }
+      
+      return status;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to check notification status: $e');
+      }
+      return {
+        'error': e.toString(),
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    }
+  }
 }

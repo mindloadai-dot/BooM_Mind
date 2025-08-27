@@ -229,10 +229,43 @@ class UnifiedNotificationService {
           debugPrint('📱 Android notification permission: ${status.name}');
         }
       } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-        // iOS permissions are handled by the plugin
-        _hasPermissions = true;
-        if (kDebugMode) {
-          debugPrint('📱 iOS notification permissions requested');
+        // iOS permissions need to be requested explicitly
+        try {
+          final bool? result = await _localNotifications
+              .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+              ?.requestPermissions(
+                alert: true,
+                badge: true,
+                sound: true,
+              );
+          
+          _hasPermissions = result ?? false;
+          
+          if (kDebugMode) {
+            debugPrint('📱 iOS notification permission request result: $result');
+            debugPrint('📱 iOS has permissions: $_hasPermissions');
+          }
+          
+          // If permissions not granted, try to check current status
+          if (!_hasPermissions) {
+            final bool? hasPermission = await _localNotifications
+                .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+                ?.requestPermissions(
+                  alert: true,
+                  badge: true,
+                  sound: true,
+                );
+            
+            _hasPermissions = hasPermission ?? false;
+            if (kDebugMode) {
+              debugPrint('📱 iOS permission re-check result: $_hasPermissions');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('❌ iOS permission request failed: $e');
+          }
+          _hasPermissions = false;
         }
       }
       

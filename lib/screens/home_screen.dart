@@ -1672,6 +1672,106 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return '$displayHour:$minute $period';
   }
 
+  void _showNotificationStatusDialog(Map<String, dynamic> status) {
+    final tokens = context.tokens;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: tokens.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.notifications, color: tokens.accent),
+              const SizedBox(width: 8),
+              Text(
+                'Notification System Status',
+                style: TextStyle(color: tokens.textPrimary),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildStatusRow('Service Initialized', status['serviceInitialized'] ?? false),
+                _buildStatusRow('Platform', status['permissions']?['platform'] ?? 'Unknown'),
+                _buildStatusRow('Can Request Permissions', status['permissions']?['canRequest'] ?? false),
+                _buildStatusRow('Can Send Notifications', status['canSendNotifications'] ?? false),
+                if (status['error'] != null)
+                  _buildStatusRow('Error', status['error'], isError: true),
+                const SizedBox(height: 16),
+                Text(
+                  'Timestamp: ${status['timestamp'] ?? 'Unknown'}',
+                  style: TextStyle(
+                    color: tokens.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Close',
+                style: TextStyle(color: tokens.primary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await NotificationService.sendTestNotification();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Test notification sent!'),
+                      backgroundColor: tokens.success,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: tokens.primary),
+              child: Text(
+                'Send Test Notification',
+                style: TextStyle(color: tokens.onPrimary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusRow(String label, dynamic value, {bool isError = false}) {
+    final tokens = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            value == true ? Icons.check_circle : (isError ? Icons.error : Icons.info),
+            color: value == true ? tokens.success : (isError ? tokens.error : tokens.accent),
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$label: ${value.toString()}',
+              style: TextStyle(
+                color: isError ? tokens.error : tokens.textPrimary,
+                fontWeight: value == true ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleStudySetAction(String action, StudySet studySet) async {
     // Provide haptic feedback for the action
     HapticFeedbackService().selectionClick();
@@ -2525,6 +2625,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     );
                     break;
+                  case 'status':
+                    final status = await NotificationService.checkNotificationStatus();
+                    if (mounted) {
+                      _showNotificationStatusDialog(status);
+                    }
+                    break;
                   case 'settings':
                     Navigator.push(
                       context,
@@ -2551,6 +2657,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 12),
                       Text(
                         'Send Test Notification',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'status',
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline,
+                          color: tokens.accent, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Check Notification Status',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
                     ],

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/material.dart' show TimeOfDay, Color;
-// Removed custom large icon imports
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/services/notification_style_service.dart';
 
@@ -723,15 +722,108 @@ class WorkingNotificationService {
   /// Check if Firebase is available (placeholder - implement actual Firebase check)
   bool get hasFirebase => false;
 
-  /// Send test notification
+  /// Check current notification permissions
+  Future<Map<String, dynamic>> checkNotificationPermissions() async {
+    try {
+      final Map<String, dynamic> permissions = {};
+      
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final iOSPlugin = _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+        
+        if (iOSPlugin != null) {
+          // Check if we can request permissions
+          final bool? canRequest = await iOSPlugin.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+          
+          permissions['canRequest'] = canRequest;
+          permissions['platform'] = 'iOS';
+          
+          if (kDebugMode) {
+            debugPrint('📱 iOS notification permissions check:');
+            debugPrint('   Can request permissions: $canRequest');
+          }
+        }
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        permissions['platform'] = 'Android';
+        // Android permissions are handled differently
+        permissions['canRequest'] = true;
+      }
+      
+      permissions['isInitialized'] = _isInitialized;
+      permissions['timestamp'] = DateTime.now().toIso8601String();
+      
+      return permissions;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to check notification permissions: $e');
+      }
+      return {
+        'error': e.toString(),
+        'platform': defaultTargetPlatform.toString(),
+        'isInitialized': _isInitialized,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    }
+  }
+
+  /// Send test notification with enhanced debugging
   Future<bool> sendTestNotification() async {
     try {
-      await showNotificationNow(
-        title: '🧪 Test Notification',
-        body: 'This is a test notification to verify the system is working.',
-        payload: 'test_notification',
-        isHighPriority: false,
+      if (!_isInitialized) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Service not initialized, initializing now...');
+        }
+        await initialize();
+      }
+
+      // Check permissions first
+      final permissions = await checkNotificationPermissions();
+      if (kDebugMode) {
+        debugPrint('🔍 Permission check before test notification: $permissions');
+      }
+
+      // Create notification details
+      final notificationDetails = NotificationDetails(
+        android: AndroidNotificationDetails(
+          _generalChannel,
+          'Test Notifications',
+          channelDescription: 'Test notifications for debugging',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          enableLights: true,
+          color: const Color(0xFF2196F3),
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          sound: 'default',
+          badgeNumber: 1,
+          categoryIdentifier: 'test_notification',
+          threadIdentifier: 'test_thread',
+          // Add iOS-specific settings for better compatibility
+          interruptionLevel: InterruptionLevel.timeSensitive,
+        ),
       );
+
+      // Show the notification
+      await _flutterLocalNotificationsPlugin.show(
+        DateTime.now().millisecondsSinceEpoch,
+        '🧪 Test Notification',
+        'This is a test notification to verify the system is working.',
+        notificationDetails,
+        payload: 'test_notification',
+      );
+
+      if (kDebugMode) {
+        debugPrint('✅ Test notification sent successfully');
+      }
       return true;
     } catch (e) {
       if (kDebugMode) {
