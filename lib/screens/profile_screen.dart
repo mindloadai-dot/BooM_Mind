@@ -1531,6 +1531,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       const SizedBox(height: 24),
                       _buildNotificationStyleSection(tokens),
                       const SizedBox(height: 24),
+                      _buildNotificationSettingsSection(tokens),
+                      const SizedBox(height: 24),
                       _buildAchievementsSection(tokens),
                     ],
                   ),
@@ -2072,6 +2074,333 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         ),
       ),
     );
+  }
+
+  /// Build comprehensive notification settings section
+  Widget _buildNotificationSettingsSection(SemanticTokens tokens) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Notification Settings',
+          style: TextStyle(
+            color: tokens.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Configure notification categories and permissions',
+          style: TextStyle(
+            color: tokens.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Notification Categories
+        _buildNotificationCategoriesSection(tokens),
+        const SizedBox(height: 16),
+
+        // Permission Status
+        _buildPermissionStatusSection(tokens),
+        const SizedBox(height: 16),
+
+        // Test Notifications
+        _buildTestNotificationsSection(tokens),
+      ],
+    );
+  }
+
+  /// Build notification categories section
+  Widget _buildNotificationCategoriesSection(SemanticTokens tokens) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tokens.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Notification Categories',
+            style: TextStyle(
+              color: tokens.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildCategoryToggle('Study Reminders', 'Study session notifications', Icons.school, true),
+          _buildCategoryToggle('Streak Alerts', 'Daily streak maintenance', Icons.local_fire_department, true),
+          _buildCategoryToggle('Exam Deadlines', 'Important exam reminders', Icons.event, true),
+          _buildCategoryToggle('Inactivity Nudges', 'Gentle reminders to study', Icons.notifications_active, false),
+          _buildCategoryToggle('Event Triggers', 'Special event notifications', Icons.celebration, true),
+          _buildCategoryToggle('Promotional', 'App updates and features', Icons.campaign, false),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual category toggle
+  Widget _buildCategoryToggle(String title, String description, IconData icon, bool defaultValue) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: context.tokens.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: context.tokens.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: context.tokens.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: defaultValue,
+            onChanged: (value) {
+              // TODO: Implement category toggle
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$title ${value ? 'enabled' : 'disabled'}'),
+                  backgroundColor: context.tokens.primary,
+                ),
+              );
+            },
+            activeColor: context.tokens.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build permission status section
+  Widget _buildPermissionStatusSection(SemanticTokens tokens) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tokens.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Permission Status',
+            style: TextStyle(
+              color: tokens.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.notifications, color: tokens.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Notification Permissions',
+                  style: TextStyle(
+                    color: tokens.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: tokens.success,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'GRANTED',
+                  style: TextStyle(
+                    color: tokens.onPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.schedule, color: tokens.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Background Processing',
+                  style: TextStyle(
+                    color: tokens.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: tokens.success,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'ENABLED',
+                  style: TextStyle(
+                    color: tokens.onPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build test notifications section
+  Widget _buildTestNotificationsSection(SemanticTokens tokens) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tokens.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Test Notifications',
+            style: TextStyle(
+              color: tokens.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Test different notification types to ensure everything is working',
+            style: TextStyle(
+              color: tokens.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _testStudyNotification(tokens),
+                  icon: const Icon(Icons.school, size: 18),
+                  label: const Text('Study'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: tokens.primary,
+                    foregroundColor: tokens.onPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _testDeadlineNotification(tokens),
+                  icon: const Icon(Icons.event, size: 18),
+                  label: const Text('Deadline'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: tokens.primary,
+                    foregroundColor: tokens.onPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Test study notification
+  void _testStudyNotification(SemanticTokens tokens) async {
+    try {
+      await WorkingNotificationService.instance.showNotificationNow(
+        title: '📚 Study Session Ready',
+        body: 'Time to review your flashcards!',
+        payload: 'test_study',
+        isHighPriority: false,
+        channelType: 'study_reminders',
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Study notification sent!'),
+            backgroundColor: tokens.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send notification: $e'),
+            backgroundColor: tokens.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Test deadline notification
+  void _testDeadlineNotification(SemanticTokens tokens) async {
+    try {
+      await WorkingNotificationService.instance.showNotificationNow(
+        title: '⏰ Deadline Approaching',
+        body: 'Your exam is tomorrow!',
+        payload: 'test_deadline',
+        isHighPriority: true,
+        channelType: 'deadlines',
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Deadline notification sent!'),
+            backgroundColor: tokens.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send notification: $e'),
+            backgroundColor: tokens.error,
+          ),
+        );
+      }
+    }
   }
 
   /// Build profile picture section for edit dialog

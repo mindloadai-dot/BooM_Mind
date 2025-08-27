@@ -5,6 +5,7 @@ import 'package:mindload/services/mandatory_onboarding_service.dart';
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/privacy_security_screen.dart';
 import 'package:mindload/screens/profile_screen.dart';
+import 'package:mindload/screens/notification_settings_screen.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
@@ -436,10 +437,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => Scaffold(
-                      appBar: AppBar(title: const Text('Notification Settings')),
-                      body: const Center(child: Text('Notification settings are now managed through the main settings')),
-                    )),
+                    builder: (context) => const NotificationSettingsScreen()),
               ),
             ),
             const SizedBox(height: 12),
