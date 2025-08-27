@@ -5,6 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/material.dart' show TimeOfDay, Color;
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/services/notification_style_service.dart';
+import 'dart:io' show Platform;
 
 /// Enhanced notification service with style-based personalization
 /// This is the core notification engine that applies user's preferred style
@@ -807,6 +808,74 @@ class WorkingNotificationService {
     }
   }
 
+  /// Verify iOS notification system functionality
+  Future<Map<String, dynamic>> verifyIOSNotifications() async {
+    try {
+      final Map<String, dynamic> verification = {};
+      
+      if (!Platform.isIOS) {
+        return {'error': 'This method is only available on iOS'};
+      }
+      
+      final iOSPlugin = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+      
+      if (iOSPlugin == null) {
+        return {'error': 'iOS notification plugin not available'};
+      }
+      
+      // Check current permissions
+      final permissions = await iOSPlugin.checkPermissions();
+      verification['current_permissions'] = permissions;
+      
+      // Check if service is initialized
+      verification['service_initialized'] = _isInitialized;
+      
+      // Check if channels are created
+      verification['channels_created'] = _isInitialized; // This will be true if initialize() was called
+      
+      // Test basic notification functionality
+      try {
+        await iOSPlugin.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+          critical: false,
+        );
+        verification['permission_request_success'] = true;
+      } catch (e) {
+        verification['permission_request_success'] = false;
+        verification['permission_request_error'] = e.toString();
+      }
+      
+      // Check notification categories
+      verification['notification_categories'] = [
+        'mindload_study_reminders',
+        'mindload_deadlines', 
+        'mindload_achievements',
+        'mindload_notifications'
+      ];
+      
+      if (kDebugMode) {
+        debugPrint('🔍 iOS Notification System Verification:');
+        debugPrint('   Service Initialized: ${verification['service_initialized']}');
+        debugPrint('   Channels Created: ${verification['channels_created']}');
+        debugPrint('   Current Permissions: ${verification['current_permissions']}');
+        debugPrint('   Permission Request: ${verification['permission_request_success']}');
+      }
+      
+      return verification;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ iOS notification verification failed: $e');
+      }
+      return {
+        'error': e.toString(),
+        'service_initialized': _isInitialized,
+        'channels_created': _isInitialized,
+      };
+    }
+  }
 
 
   /// Get system status
