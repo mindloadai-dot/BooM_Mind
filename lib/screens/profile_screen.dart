@@ -12,15 +12,20 @@ import 'package:mindload/services/local_image_storage_service.dart';
 import 'package:mindload/services/notification_test_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/screens/settings_screen.dart';
 import 'package:mindload/screens/notification_settings_screen.dart';
 import 'package:mindload/screens/privacy_policy_screen.dart';
+import 'package:mindload/screens/privacy_security_screen.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/mindload_button_system.dart';
+import 'package:mindload/widgets/change_password_dialog.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class ProfileScreen extends StatefulWidget {
@@ -45,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   bool _biometricEnabled = false;
   bool _hapticEnabled = true;
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   @override
   void initState() {
@@ -53,6 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _initializeAnimations();
     _startAnimations();
     _initializeHapticFeedback();
+    _loadBiometricPreference();
   }
 
   void _checkAuthentication() {
@@ -131,6 +138,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     });
   }
 
+  Future<void> _loadBiometricPreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+      setState(() {
+        _biometricEnabled = biometricEnabled;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to load biometric preference: $e');
+      }
+    }
+  }
+
   /// Load profile image from local storage
   Future<void> _loadProfileImage() async {
     try {
@@ -147,16 +168,111 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  void _toggleBiometric(bool value) {
-    setState(() {
-      _biometricEnabled = value;
-    });
-    // TODO: Implement actual biometric toggle functionality
-    // This would typically involve:
-    // 1. Checking if biometrics are available
-    // 2. Authenticating the user
-    // 3. Saving the preference to secure storage
-    // 4. Updating the app's authentication flow
+  void _toggleBiometric(bool value) async {
+    try {
+      if (value) {
+        // Enable biometric authentication
+        // First check if biometrics are available
+        final isAvailable = await _localAuth.canCheckBiometrics;
+        final isDeviceSupported = await _localAuth.isDeviceSupported();
+        
+        if (!isAvailable || !isDeviceSupported) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Biometric authentication is not available on this device'),
+                backgroundColor: context.tokens.error,
+              ),
+            );
+          }
+          return;
+        }
+        
+        // Test biometric authentication
+        final authenticated = await _localAuth.authenticate(
+          localizedReason: 'Authenticate to enable biometric login',
+          options: const AuthenticationOptions(
+            biometricOnly: true,
+            stickyAuth: true,
+          ),
+        );
+        
+        if (authenticated) {
+          // Save preference to storage
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('biometric_enabled', true);
+          
+          setState(() {
+            _biometricEnabled = true;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Biometric authentication enabled'),
+                backgroundColor: context.tokens.success,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Biometric authentication failed'),
+                backgroundColor: context.tokens.error,
+              ),
+            );
+          }
+        }
+      } else {
+        // Disable biometric authentication
+        // Require user to authenticate before disabling
+        final authenticated = await _localAuth.authenticate(
+          localizedReason: 'Authenticate to disable biometric login',
+          options: const AuthenticationOptions(
+            biometricOnly: true,
+            stickyAuth: true,
+          ),
+        );
+        
+        if (authenticated) {
+          // Save preference to storage
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('biometric_enabled', false);
+          
+          setState(() {
+            _biometricEnabled = false;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Biometric authentication disabled'),
+                backgroundColor: context.tokens.success,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Authentication failed'),
+                backgroundColor: context.tokens.error,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: context.tokens.error,
+          ),
+        );
+      }
+    }
   }
 
   void _toggleHapticFeedback(bool value) {
@@ -1003,8 +1119,16 @@ class _ProfileScreenState extends State<ProfileScreen>
               Icons.security,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()),
               ),
+            ),
+            const SizedBox(height: 12),
+
+            _buildSettingsTile(
+              'Change Password',
+              'Update your account password',
+              Icons.lock_reset,
+              () => _showChangePasswordDialog(),
             ),
             const SizedBox(height: 12),
 
@@ -1277,6 +1401,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
       ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => ChangePasswordDialog(),
     );
   }
 }
