@@ -2,7 +2,7 @@
 class StorageConfig {
   // Storage budget constants
   static const int storageBudgetMB = 250;     // device cache budget
-  static const int maxLocalSets = 500;        // absolute cap (per device)
+  static const int maxLocalSets = 150;        // Updated: was 500, now 150
   static const int maxLocalItems = 100000;    // total cards+questions cap
   static const int staleDays = 120;           // auto-evict if unopened for 120d
   static const int evictBatch = 50;           // evict in chunks to avoid jank
