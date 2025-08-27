@@ -1393,15 +1393,36 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: const Text('Cancel'),
           ),
           DestructiveButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              AuthService.instance.signOut();
+              await _performSignOut();
             },
             child: const Text('Sign Out'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _performSignOut() async {
+    try {
+      // First, sign out from the auth service
+      await AuthService.instance.signOut();
+      
+      if (mounted) {
+        // Clear any navigation stack and go to auth screen
+        Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to sign out: $e'),
+            backgroundColor: context.tokens.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showChangePasswordDialog() {

@@ -1338,15 +1338,19 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _signOut() async {
     HapticFeedbackService().warning();
     try {
+      // First, sign out from the auth service
       await AuthService.instance.signOut();
+      
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/auth');
+        // Clear any navigation stack and go to auth screen
+        Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to sign out: $e'),
+            backgroundColor: context.tokens.error,
           ),
         );
       }

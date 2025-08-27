@@ -317,18 +317,9 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isInitialized) {
-      return FutureBuilder<AuthUser?>(
-        future: _getAuthState(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          final user = snapshot.data;
+      return Consumer<AuthService>(
+        builder: (context, authService, child) {
+          final user = authService.currentUser;
           if (user != null) {
             // User is authenticated, show home screen
             // Onboarding will be handled by the HomeScreen or a separate onboarding flow
@@ -460,16 +451,4 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
     );
   }
 
-  Future<AuthUser?> _getAuthState() async {
-    try {
-      if (AuthService.instance == null) {
-        return null;
-      }
-
-      final user = AuthService.instance.currentUser;
-      return user;
-    } catch (e) {
-      return null;
-    }
-  }
 }

@@ -18,6 +18,7 @@ import 'package:mindload/services/enhanced_onboarding_service.dart';
 import 'package:mindload/services/mandatory_onboarding_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
 
+
 enum AuthProvider {
   google,
   microsoft,
@@ -485,18 +486,74 @@ class AuthService extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      // Sign out from Firebase
+      if (kDebugMode) {
+        print('🔐 Starting sign out process...');
+      }
+
+      // Step 1: Sign out from Firebase
       await _firebaseAuth.signOut();
+      if (kDebugMode) {
+        print('✅ Firebase sign out completed');
+      }
 
-      // Note: Google Sign-In signOut would be handled here when properly configured
+      // Step 2: Clear current user state
+      _currentUser = null;
+      if (kDebugMode) {
+        print('✅ Current user state cleared');
+      }
 
+      // Step 3: Clear all local data and preferences
+      await _clearUserData();
+      if (kDebugMode) {
+        print('✅ Local user data cleared');
+      }
+
+      // Step 4: Clear user profile service data
+      try {
+        await UserProfileService.instance.clearProfile();
+        if (kDebugMode) {
+          print('✅ User profile data cleared');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Could not clear user profile data: $e');
+        }
+      }
+
+      // Step 5: Clear onboarding data
+      try {
+        await OnboardingService().resetOnboarding();
+        await EnhancedOnboardingService().resetOnboarding();
+        await MandatoryOnboardingService.instance.resetOnboarding();
+        if (kDebugMode) {
+          print('✅ Onboarding data cleared');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Could not clear onboarding data: $e');
+        }
+      }
+
+      // Step 6: Clear enhanced storage data (skip for now - not essential for logout)
+      if (kDebugMode) {
+        print('ℹ️ Enhanced storage data clearing skipped (not essential for logout)');
+      }
+
+      // Step 7: Notify listeners of state change
+      notifyListeners();
+      if (kDebugMode) {
+        print('✅ Sign out process completed successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Sign Out Error: $e');
+      }
+      
+      // Even if there's an error, try to clear local state
       _currentUser = null;
       await _clearUserData();
       notifyListeners();
-    } catch (e) {
-      if (kDebugMode) {
-        print('Sign Out Error: $e');
-      }
+      
       rethrow;
     }
   }
