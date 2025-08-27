@@ -149,6 +149,9 @@
 			</dict>
 		</dict>
 	</dict>
+	<!-- Document Support Configuration -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -156,6 +159,8 @@
 			<string>All Document Types</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>public.text</string>
