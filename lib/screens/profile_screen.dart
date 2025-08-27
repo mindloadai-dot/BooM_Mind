@@ -7,7 +7,7 @@ import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
-import 'package:mindload/services/working_notification_service.dart';
+
 import 'package:mindload/services/local_image_storage_service.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -1529,10 +1529,6 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       const SizedBox(height: 24),
                       _buildQuietHoursSection(tokens),
                       const SizedBox(height: 24),
-                      _buildNotificationStyleSection(tokens),
-                      const SizedBox(height: 24),
-                      _buildNotificationSettingsSection(tokens),
-                      const SizedBox(height: 24),
                       _buildAchievementsSection(tokens),
                     ],
                   ),
@@ -1934,184 +1930,10 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     );
   }
 
-  Widget _buildNotificationStyleSection(SemanticTokens tokens) {
-    final userProfile = UserProfileService.instance;
-    final currentStyle = userProfile.notificationStyle;
-    final availableStyles = userProfile.availableStyles;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Notification Style',
-          style: TextStyle(
-            color: tokens.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose how notifications are delivered to you',
-          style: TextStyle(
-            color: tokens.textSecondary,
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Style Selection
-        for (final style in availableStyles) ...[
-          _buildStyleOption(tokens, style, currentStyle == style),
-          if (style != availableStyles.last) const SizedBox(height: 12),
-        ],
-
-        const SizedBox(height: 16),
-
-        // Current Style Preview
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: tokens.primary.withOpacity(0.1),
-            border: Border.all(color: tokens.primary),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Current Style Preview',
-                style: TextStyle(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _getStylePreviewText(currentStyle),
-                style: TextStyle(
-                  color: tokens.textSecondary,
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStyleOption(
-      SemanticTokens tokens, String style, bool isSelected) {
-    final styleInfo = UserProfileService.instance.getStyleInfo(style);
-    final emoji = styleInfo['emoji'] as String;
-    final name = styleInfo['name'] as String;
-    final description = styleInfo['description'] as String;
-
-    return GestureDetector(
-      onTap: () => _updateNotificationStyle(style),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? tokens.primary.withOpacity(0.1) : tokens.surface,
-          border: Border.all(
-            color: isSelected ? tokens.primary : tokens.outline,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? tokens.primary
-                    : tokens.outline.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Center(
-                child: Text(
-                  emoji,
-                  style: TextStyle(fontSize: 24),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(
-                      color: tokens.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: tokens.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: tokens.primary,
-                size: 24,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /// Build comprehensive notification settings section
-  Widget _buildNotificationSettingsSection(SemanticTokens tokens) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Notification Settings',
-          style: TextStyle(
-            color: tokens.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Configure notification categories and permissions',
-          style: TextStyle(
-            color: tokens.textSecondary,
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 16),
 
-        // Notification Categories
-        _buildNotificationCategoriesSection(tokens),
-        const SizedBox(height: 16),
-
-        // Permission Status
-        _buildPermissionStatusSection(tokens),
-        const SizedBox(height: 16),
-
-        // Test Notifications
-        _buildTestNotificationsSection(tokens),
-      ],
-    );
-  }
 
   /// Build notification categories section
   Widget _buildNotificationCategoriesSection(SemanticTokens tokens) {
@@ -2280,128 +2102,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     );
   }
 
-  /// Build test notifications section
-  Widget _buildTestNotificationsSection(SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: tokens.outline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Test Notifications',
-            style: TextStyle(
-              color: tokens.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Test different notification types to ensure everything is working',
-            style: TextStyle(
-              color: tokens.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _testStudyNotification(tokens),
-                  icon: const Icon(Icons.school, size: 18),
-                  label: const Text('Study'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: tokens.primary,
-                    foregroundColor: tokens.onPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _testDeadlineNotification(tokens),
-                  icon: const Icon(Icons.event, size: 18),
-                  label: const Text('Deadline'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: tokens.primary,
-                    foregroundColor: tokens.onPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  /// Test study notification
-  void _testStudyNotification(SemanticTokens tokens) async {
-    try {
-      await WorkingNotificationService.instance.showNotificationNow(
-        title: '📚 Study Session Ready',
-        body: 'Time to review your flashcards!',
-        payload: 'test_study',
-        isHighPriority: false,
-        channelType: 'study_reminders',
-      );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Study notification sent!'),
-            backgroundColor: tokens.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send notification: $e'),
-            backgroundColor: tokens.error,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Test deadline notification
-  void _testDeadlineNotification(SemanticTokens tokens) async {
-    try {
-      await WorkingNotificationService.instance.showNotificationNow(
-        title: '⏰ Deadline Approaching',
-        body: 'Your exam is tomorrow!',
-        payload: 'test_deadline',
-        isHighPriority: true,
-        channelType: 'deadlines',
-      );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Deadline notification sent!'),
-            backgroundColor: tokens.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send notification: $e'),
-            backgroundColor: tokens.error,
-          ),
-        );
-      }
-    }
-  }
 
   /// Build profile picture section for edit dialog
   Widget _buildEditProfilePictureSection(SemanticTokens tokens) {
@@ -2844,50 +2545,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     }
   }
 
-  String _getStylePreviewText(String style) {
-    final userProfile = UserProfileService.instance;
-    final nickname = userProfile.displayName;
 
-    switch (style) {
-      case 'mindful':
-        return '🧘 Gentle reminder: Study session ready for $nickname\nTake your time, $nickname';
-      case 'coach':
-        return '🏆 Come on, $nickname! Study session ready!\nYou\'re absolutely crushing it!';
-      case 'toughlove':
-        return '💪 Listen up, $nickname! Study session ready!\nStop making excuses and get to work!';
-      case 'cram':
-        return '🚨 URGENT: Study session ready - $nickname!\nMAXIMUM INTENSITY NOW!';
-      default:
-        return 'Study session ready - $nickname';
-    }
-  }
-
-  void _updateNotificationStyle(String newStyle) async {
-    try {
-      await UserProfileService.instance.updateNotificationStyle(newStyle);
-      setState(() {});
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Notification style updated to: ${UserProfileService.instance.getStyleDisplayName(newStyle)}'),
-            backgroundColor: context.tokens.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update notification style: $e'),
-            backgroundColor: context.tokens.error,
-          ),
-        );
-      }
-    }
-  }
 
   Widget _buildAchievementsSection(SemanticTokens tokens) {
     return Column(
@@ -2980,23 +2638,6 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       ),
       child: Column(
         children: [
-          // Test Notification Button
-          SecondaryButton(
-            onPressed: _testPersonalizedNotification,
-            icon: Icons.notifications,
-            fullWidth: true,
-            child: const Text('Test Personalized Notification'),
-          ),
-          const SizedBox(height: 12),
-
-          // Comprehensive Test Button
-          SecondaryButton(
-            onPressed: _runComprehensiveTest,
-            icon: Icons.science,
-            fullWidth: true,
-            child: const Text('Run Comprehensive Notification Test'),
-          ),
-          const SizedBox(height: 16),
 
           // Action Buttons Row
           ButtonRow(
@@ -3204,78 +2845,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     }
   }
 
-  void _testPersonalizedNotification() async {
-    try {
-      final userProfile = UserProfileService.instance;
-      final displayName = userProfile.displayName;
 
-      await WorkingNotificationService.instance.showNotificationNow(
-        title: '🧪 TEST NOTIFICATION - $displayName',
-        body:
-            'This is a personalized notification test using your nickname: $displayName',
-        payload: 'test_personalized',
-        isHighPriority: true,
-        channelType: 'study_reminders',
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Personalized notification sent to: $displayName'),
-            backgroundColor: context.tokens.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send test notification: $e'),
-            backgroundColor: context.tokens.error,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Run comprehensive notification system test
-  void _runComprehensiveTest() async {
-    try {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                const Text('🚀 Starting comprehensive notification test...'),
-            backgroundColor: context.tokens.primary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-
-      // Run the comprehensive test
-              await WorkingNotificationService.instance.sendTestNotification();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                const Text('🎉 Comprehensive notification test completed!'),
-            backgroundColor: context.tokens.success,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Comprehensive test failed: $e'),
-            backgroundColor: context.tokens.error,
-          ),
-        );
-      }
-    }
-  }
 
   /// Test nickname system functionality
   void _testNicknameSystem() async {
