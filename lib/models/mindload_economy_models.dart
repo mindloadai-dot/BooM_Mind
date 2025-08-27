@@ -35,7 +35,7 @@ extension MindloadTierExtension on MindloadTier {
   String get subtitle {
     switch (this) {
       case MindloadTier.free:
-        return 'Free tier with basic features';
+        return 'Free tier with Ultra Mode access';
       case MindloadTier.axon:
         return 'Entry-level premium features';
       case MindloadTier.neuron:
@@ -111,7 +111,7 @@ class MindloadEconomyConfig {
       rolloverLimits: 0,
       tierPrice: 0.0,
       monthlyYoutubeIngests: 0,
-      hasUltraAccess: false,
+      hasUltraAccess: true, // Ultra Mode now available for all tiers
     ),
     MindloadTier.axon: MindloadEconomyConfig(
       tier: MindloadTier.axon,

@@ -63,7 +63,7 @@ class TierLimits {
       priorityProcessing: false,
       monthlyTokens: 0,
       monthlyYoutubeIngests: 0,
-      hasUltraAccess: false,
+      hasUltraAccess: true, // Ultra Mode now available for all tiers
       maxPdfPages: 2,
       examWeekBoosts: 0,
       maxYouTubeDurationMinutes: 0, // No YouTube access
@@ -220,7 +220,7 @@ class TierInfo {
     TierInfo(
       tier: SubscriptionTier.free,
       name: 'Dendrite',
-      description: 'Free tier with basic features',
+      description: 'Free tier with Ultra Mode access',
       color: Color(0xFF9E9E9E),
       price: 0.0,
     ),
