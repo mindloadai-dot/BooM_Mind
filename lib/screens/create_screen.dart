@@ -25,6 +25,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/services/auth_service.dart';
+import 'package:mindload/services/achievement_tracker_service.dart';
 
 /// Create Screen - Demonstrates the complete credits economy integration
 ///
@@ -2278,6 +2279,37 @@ class _CreateScreenState extends State<CreateScreen> {
       final saveSuccess = await _saveStudySet(studySet);
 
       if (saveSuccess) {
+        // Track achievement progress for study set creation
+        await AchievementTrackerService.instance.trackStudySetCreated(
+          cardCount: flashcards.length + quizQuestions.length,
+          setType: 'ai_generated',
+          isPublic: false,
+        );
+
+        // Track individual card creation achievements
+        if (flashcards.isNotEmpty) {
+          await AchievementTrackerService.instance.trackCardsCreated(
+            flashcards.length,
+            cardType: 'flashcard',
+          );
+        }
+
+        if (quizQuestions.isNotEmpty) {
+          await AchievementTrackerService.instance.trackCardsCreated(
+            quizQuestions.length,
+            cardType: 'quiz_question',
+          );
+        }
+
+        if (kDebugMode) {
+          print('✅ Study set created and saved successfully!');
+          print('📚 ID: ${studySet.id}');
+          print('📚 Title: ${studySet.title}');
+          print('📚 Flashcards: ${studySet.flashcards.length}');
+          print('📚 Quiz Questions: ${studySet.quizQuestions.length}');
+          print('📚 Quizzes: ${studySet.quizzes.length}');
+        }
+
         // Schedule deadline notifications if deadline is enabled and set
         if (_isDeadlineEnabled && _selectedDeadline != null) {
           await DeadlineService.instance
@@ -2328,15 +2360,6 @@ class _CreateScreenState extends State<CreateScreen> {
           _flashcardCount = 10;
           _quizCount = 5;
         });
-
-        if (kDebugMode) {
-          print('✅ Study set created and saved successfully!');
-          print('📚 ID: ${studySet.id}');
-          print('📚 Title: ${studySet.title}');
-          print('📚 Flashcards: ${studySet.flashcards.length}');
-          print('📚 Quiz Questions: ${studySet.quizQuestions.length}');
-          print('📚 Quizzes: ${studySet.quizzes.length}');
-        }
       } else {
         // Handle save failure
         ScaffoldMessenger.of(context).showSnackBar(

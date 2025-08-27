@@ -390,4 +390,40 @@ class UserProfileService extends ChangeNotifier {
       'available_styles': _availableStyles,
     };
   }
+
+  /// Debug method to check nickname status
+  void debugNicknameStatus() {
+    if (kDebugMode) {
+      debugPrint('🔍 NICKNAME DEBUG INFO:');
+      debugPrint('   Raw nickname: $_nickname');
+      debugPrint('   Has nickname: $hasNickname');
+      debugPrint('   Display name: $displayName');
+      debugPrint('   Personalized greeting: $personalizedGreeting');
+    }
+  }
+
+  /// Force refresh nickname from storage
+  Future<void> refreshNickname() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _nickname = prefs.getString(_nicknameKey);
+      
+      // Ensure nickname is properly loaded
+      if (_nickname != null && _nickname!.trim().isEmpty) {
+        _nickname = null;
+      }
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        debugPrint('🔄 Nickname refreshed: $_nickname');
+        debugPrint('   Display name: $displayName');
+        debugPrint('   Has Nickname: $hasNickname');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to refresh nickname: $e');
+      }
+    }
+  }
 }

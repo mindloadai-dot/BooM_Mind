@@ -701,43 +701,76 @@ async function checkTranscriptAvailability(videoId) {
                 charCount: null,
             };
         }
-        // Check if captions are available using YouTube Data API v3
-        const captionsResponse = await fetch(`https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}&key=${apiKey}`);
-        if (!captionsResponse.ok) {
-            logger.warn(`Failed to check captions availability for video ${videoId}: ${captionsResponse.status}`);
-            return {
-                available: false,
-                language: null,
-                charCount: null,
-            };
+        logger.info(`Checking transcript availability for video ${videoId}`);
+        // Method 1: Check captions availability
+        try {
+            const captionsResponse = await fetch(`https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}&key=${apiKey}`);
+            if (captionsResponse.ok) {
+                const captionsData = await captionsResponse.json();
+                const captions = captionsData.items || [];
+                if (captions.length > 0) {
+                    logger.info(`Found ${captions.length} caption tracks`);
+                    // Find the best available caption
+                    let bestCaption = captions.find((cap) => cap.snippet.trackKind !== 'asr'); // Manual captions
+                    if (!bestCaption) {
+                        bestCaption = captions.find((cap) => cap.snippet.trackKind === 'asr'); // Auto-generated
+                    }
+                    if (!bestCaption) {
+                        bestCaption = captions[0]; // Any caption
+                    }
+                    if (bestCaption) {
+                        return {
+                            available: true,
+                            language: bestCaption.snippet.language,
+                            charCount: null, // Will be determined during actual fetch
+                        };
+                    }
+                }
+            }
         }
-        const captionsData = await captionsResponse.json();
-        const captions = captionsData.items || [];
-        if (captions.length === 0) {
-            logger.info(`No captions available for video ${videoId}`);
-            return {
-                available: false,
-                language: null,
-                charCount: null,
-            };
+        catch (captionError) {
+            logger.warn(`Caption availability check failed: ${captionError}`);
         }
-        // Find the best available caption track
-        let selectedCaption = null;
-        // Prefer auto-generated captions
-        selectedCaption = captions.find((cap) => cap.snippet.trackKind === 'asr');
-        // Fallback to any caption
-        if (!selectedCaption) {
-            selectedCaption = captions[0];
+        // Method 2: Check auto-generated transcripts
+        try {
+            const transcriptResponse = await fetch(`https://www.googleapis.com/youtube/v3/transcripts?part=snippet&videoId=${videoId}&key=${apiKey}`);
+            if (transcriptResponse.ok) {
+                const transcriptData = await transcriptResponse.json();
+                const transcripts = transcriptData.items || [];
+                if (transcripts.length > 0) {
+                    logger.info(`Found ${transcripts.length} auto-generated transcripts`);
+                    const bestTranscript = transcripts[0];
+                    return {
+                        available: true,
+                        language: bestTranscript.snippet.language,
+                        charCount: null, // Will be determined during actual fetch
+                    };
+                }
+            }
         }
-        if (selectedCaption) {
-            // Estimate character count based on video duration (rough estimate)
-            // This is just for preview purposes - actual count will be determined during fetch
-            return {
-                available: true,
-                language: selectedCaption.snippet.language,
-                charCount: null, // Will be determined when actually fetching
-            };
+        catch (transcriptError) {
+            logger.warn(`Transcript availability check failed: ${transcriptError}`);
         }
+        // Method 3: Check if we can extract from video page
+        try {
+            const pageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+            if (pageResponse.ok) {
+                const html = await pageResponse.text();
+                // Look for any indication of transcript availability
+                if (html.includes('transcript') || html.includes('caption') || html.includes('subtitle')) {
+                    logger.info(`Transcript indicators found in video page`);
+                    return {
+                        available: true,
+                        language: 'en',
+                        charCount: null,
+                    };
+                }
+            }
+        }
+        catch (pageError) {
+            logger.warn(`Page availability check failed: ${pageError}`);
+        }
+        logger.info(`No transcript available for video ${videoId}`);
         return {
             available: false,
             language: null,
@@ -760,65 +793,190 @@ async function fetchTranscript(videoId, preferredLanguage) {
             logger.warn('YouTube API key not available for transcript fetching');
             return null;
         }
-        // First, check if captions are available using YouTube Data API v3
+        logger.info(`Attempting to fetch transcript for video ${videoId}`);
+        // Method 1: Try to get captions list first
         const captionsResponse = await fetch(`https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}&key=${apiKey}`);
-        if (!captionsResponse.ok) {
-            logger.warn(`Failed to fetch captions list for video ${videoId}: ${captionsResponse.status}`);
-            return null;
-        }
-        const captionsData = await captionsResponse.json();
-        const captions = captionsData.items || [];
-        if (captions.length === 0) {
-            logger.info(`No captions available for video ${videoId}`);
-            return null;
-        }
-        // Find the best caption track
-        let selectedCaption = null;
-        // Prefer auto-generated captions in preferred language
-        if (preferredLanguage) {
-            selectedCaption = captions.find((cap) => cap.snippet.language === preferredLanguage && cap.snippet.trackKind === 'asr'); // Auto-generated
-        }
-        // Fallback to any auto-generated caption
-        if (!selectedCaption) {
-            selectedCaption = captions.find((cap) => cap.snippet.trackKind === 'asr');
-        }
-        // Fallback to any caption
-        if (!selectedCaption) {
-            selectedCaption = captions[0];
-        }
-        if (!selectedCaption) {
-            logger.info(`No suitable caption track found for video ${videoId}`);
-            return null;
-        }
-        // Now fetch the actual transcript using the caption ID
-        const transcriptResponse = await fetch(`https://www.googleapis.com/youtube/v3/captions/${selectedCaption.id}?key=${apiKey}&tfmt=srv3`);
-        if (!transcriptResponse.ok) {
-            logger.warn(`Failed to fetch transcript for video ${videoId}: ${transcriptResponse.status}`);
-            return null;
-        }
-        const xmlText = await transcriptResponse.text();
-        // Parse XML and extract text content
-        const textMatches = xmlText.match(/<text[^>]*>([^<]+)<\/text>/g);
-        if (textMatches && textMatches.length > 0) {
-            const transcript = textMatches
-                .map(match => {
-                const textContent = match.replace(/<[^>]*>/g, '');
-                return decodeURIComponent(textContent);
-            })
-                .join(' ')
-                .trim();
-            if (transcript.length > 50) { // Minimum viable transcript length
-                return {
-                    text: sanitizeTranscript(transcript),
-                    language: selectedCaption.snippet.language,
-                };
+        if (captionsResponse.ok) {
+            const captionsData = await captionsResponse.json();
+            const captions = captionsData.items || [];
+            if (captions.length > 0) {
+                logger.info(`Found ${captions.length} caption tracks for video ${videoId}`);
+                // Find the best caption track
+                let selectedCaption = null;
+                // Prefer manual captions in preferred language
+                if (preferredLanguage) {
+                    selectedCaption = captions.find((cap) => cap.snippet.language === preferredLanguage &&
+                        cap.snippet.trackKind !== 'asr' // Manual captions are better
+                    );
+                }
+                // Fallback to any manual caption
+                if (!selectedCaption) {
+                    selectedCaption = captions.find((cap) => cap.snippet.trackKind !== 'asr');
+                }
+                // Fallback to auto-generated captions in preferred language
+                if (!selectedCaption && preferredLanguage) {
+                    selectedCaption = captions.find((cap) => cap.snippet.language === preferredLanguage &&
+                        cap.snippet.trackKind === 'asr');
+                }
+                // Fallback to any auto-generated caption
+                if (!selectedCaption) {
+                    selectedCaption = captions.find((cap) => cap.snippet.trackKind === 'asr');
+                }
+                // Final fallback to any caption
+                if (!selectedCaption) {
+                    selectedCaption = captions[0];
+                }
+                if (selectedCaption) {
+                    logger.info(`Selected caption track: ${selectedCaption.snippet.language} (${selectedCaption.snippet.trackKind})`);
+                    // Try to fetch the actual transcript content
+                    try {
+                        const transcriptResponse = await fetch(`https://www.googleapis.com/youtube/v3/captions/${selectedCaption.id}?key=${apiKey}`);
+                        if (transcriptResponse.ok) {
+                            const transcriptText = await transcriptResponse.text();
+                            // Parse the transcript content
+                            const parsedTranscript = parseTranscriptContent(transcriptText);
+                            if (parsedTranscript && parsedTranscript.length > 100) {
+                                logger.info(`Successfully fetched transcript: ${parsedTranscript.length} characters`);
+                                return {
+                                    text: sanitizeTranscript(parsedTranscript),
+                                    language: selectedCaption.snippet.language,
+                                };
+                            }
+                        }
+                    }
+                    catch (captionError) {
+                        logger.warn(`Failed to fetch caption content: ${captionError}`);
+                    }
+                }
             }
         }
-        logger.warn(`Transcript too short or empty for video ${videoId}`);
+        // Method 2: Try to get auto-generated transcripts using different approach
+        logger.info(`Attempting alternative transcript method for video ${videoId}`);
+        try {
+            // Use the transcripts endpoint for auto-generated transcripts
+            const transcriptResponse = await fetch(`https://www.googleapis.com/youtube/v3/transcripts?part=snippet&videoId=${videoId}&key=${apiKey}`);
+            if (transcriptResponse.ok) {
+                const transcriptData = await transcriptResponse.json();
+                const transcripts = transcriptData.items || [];
+                if (transcripts.length > 0) {
+                    logger.info(`Found ${transcripts.length} auto-generated transcripts`);
+                    // Find the best transcript
+                    let selectedTranscript = null;
+                    if (preferredLanguage) {
+                        selectedTranscript = transcripts.find((t) => t.snippet.language === preferredLanguage);
+                    }
+                    if (!selectedTranscript) {
+                        selectedTranscript = transcripts[0];
+                    }
+                    if (selectedTranscript) {
+                        // Fetch the actual transcript content
+                        const contentResponse = await fetch(`https://www.googleapis.com/youtube/v3/transcripts/${selectedTranscript.id}?key=${apiKey}`);
+                        if (contentResponse.ok) {
+                            const transcriptText = await contentResponse.text();
+                            const parsedTranscript = parseTranscriptContent(transcriptText);
+                            if (parsedTranscript && parsedTranscript.length > 100) {
+                                logger.info(`Successfully fetched auto-generated transcript: ${parsedTranscript.length} characters`);
+                                return {
+                                    text: sanitizeTranscript(parsedTranscript),
+                                    language: selectedTranscript.snippet.language,
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (transcriptError) {
+            logger.warn(`Alternative transcript method failed: ${transcriptError}`);
+        }
+        // Method 3: Try to extract from video page (last resort)
+        logger.info(`Attempting to extract transcript from video page for ${videoId}`);
+        try {
+            const pageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+            if (pageResponse.ok) {
+                const html = await pageResponse.text();
+                // Look for transcript data in the page
+                const transcriptMatch = html.match(/"transcriptRenderer":\s*\{[^}]+"content":\s*\{[^}]+"simpleText":\s*"([^"]+)"/);
+                if (transcriptMatch) {
+                    const extractedText = transcriptMatch[1];
+                    if (extractedText.length > 100) {
+                        logger.info(`Extracted transcript from page: ${extractedText.length} characters`);
+                        return {
+                            text: sanitizeTranscript(extractedText),
+                            language: 'en', // Assume English for page extraction
+                        };
+                    }
+                }
+            }
+        }
+        catch (pageError) {
+            logger.warn(`Page extraction failed: ${pageError}`);
+        }
+        logger.warn(`No transcript available for video ${videoId} after trying all methods`);
         return null;
     }
     catch (error) {
         logger.error(`Error fetching transcript for video ${videoId}:`, error);
+        return null;
+    }
+}
+/**
+ * Parse transcript content from various formats
+ */
+function parseTranscriptContent(content) {
+    try {
+        // Try to parse as XML first
+        if (content.includes('<text')) {
+            const textMatches = content.match(/<text[^>]*>([^<]+)<\/text>/g);
+            if (textMatches && textMatches.length > 0) {
+                return textMatches
+                    .map(match => {
+                    const textContent = match.replace(/<[^>]*>/g, '');
+                    return decodeURIComponent(textContent);
+                })
+                    .join(' ')
+                    .trim();
+            }
+        }
+        // Try to parse as JSON
+        if (content.startsWith('{') || content.startsWith('[')) {
+            try {
+                const jsonData = JSON.parse(content);
+                if (jsonData.events) {
+                    // YouTube transcript format
+                    return jsonData.events
+                        .filter((event) => event.segs && event.segs.length > 0)
+                        .map((event) => event.segs
+                        .filter((seg) => seg.utf8)
+                        .map((seg) => seg.utf8)
+                        .join(''))
+                        .join(' ')
+                        .trim();
+                }
+            }
+            catch (jsonError) {
+                // Not JSON, continue to next method
+            }
+        }
+        // Try to extract plain text
+        if (content.length > 100) {
+            // Remove HTML tags and decode entities
+            const cleanText = content
+                .replace(/<[^>]*>/g, '')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .trim();
+            if (cleanText.length > 100) {
+                return cleanText;
+            }
+        }
+        return null;
+    }
+    catch (error) {
+        logger.error('Error parsing transcript content:', error);
         return null;
     }
 }
@@ -827,9 +985,13 @@ function sanitizeTranscript(text) {
     // Normalize whitespace
     return text
         .replace(/\[\d{2}:\d{2}\]/g, '') // Remove timestamps like [00:15]
+        .replace(/\[\d{1,2}:\d{2}:\d{2}\]/g, '') // Remove timestamps like [1:23:45]
         .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Remove emojis
         .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+        .replace(/\[.*?\]/g, '') // Remove any remaining bracketed content
         .replace(/\s+/g, ' ') // Normalize whitespace
+        .replace(/\n+/g, ' ') // Replace newlines with spaces
+        .replace(/\t+/g, ' ') // Replace tabs with spaces
         .trim();
 }
 function calculateEstimatedTokens(durationSeconds, charCount) {

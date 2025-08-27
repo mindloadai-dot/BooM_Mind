@@ -233,6 +233,19 @@ class _StudyScreenState extends State<StudyScreen>
       // Trigger bounce animation for visual feedback
       _bounceController.forward().then((_) => _bounceController.reverse());
       if (kDebugMode) debugPrint('🎬 Next card animations triggered');
+
+      // Track flashcard review for achievements
+      _trackFlashcardReview();
+    } else {
+      // End of flashcards
+      _trackFlashcardSessionCompletion();
+      // Show completion feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎉 Completed all flashcards!'),
+          backgroundColor: context.tokens.success,
+        ),
+      );
     }
   }
 

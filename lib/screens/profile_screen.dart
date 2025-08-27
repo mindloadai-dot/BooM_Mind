@@ -175,19 +175,20 @@ class _ProfileScreenState extends State<ProfileScreen>
         // First check if biometrics are available
         final isAvailable = await _localAuth.canCheckBiometrics;
         final isDeviceSupported = await _localAuth.isDeviceSupported();
-        
+
         if (!isAvailable || !isDeviceSupported) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Biometric authentication is not available on this device'),
+                content: const Text(
+                    'Biometric authentication is not available on this device'),
                 backgroundColor: context.tokens.error,
               ),
             );
           }
           return;
         }
-        
+
         // Test biometric authentication
         final authenticated = await _localAuth.authenticate(
           localizedReason: 'Authenticate to enable biometric login',
@@ -196,16 +197,16 @@ class _ProfileScreenState extends State<ProfileScreen>
             stickyAuth: true,
           ),
         );
-        
+
         if (authenticated) {
           // Save preference to storage
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool('biometric_enabled', true);
-          
+
           setState(() {
             _biometricEnabled = true;
           });
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -234,16 +235,16 @@ class _ProfileScreenState extends State<ProfileScreen>
             stickyAuth: true,
           ),
         );
-        
+
         if (authenticated) {
           // Save preference to storage
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool('biometric_enabled', false);
-          
+
           setState(() {
             _biometricEnabled = false;
           });
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -1118,7 +1119,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               Icons.security,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const PrivacySecurityScreen()),
               ),
             ),
             const SizedBox(height: 12),
@@ -1407,10 +1409,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       // First, sign out from the auth service
       await AuthService.instance.signOut();
-      
+
       if (mounted) {
         // Clear any navigation stack and go to auth screen
-        Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/auth', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -2935,6 +2938,39 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Comprehensive test failed: $e'),
+            backgroundColor: context.tokens.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Test nickname system functionality
+  void _testNicknameSystem() async {
+    try {
+      final userProfile = UserProfileService.instance;
+
+      // Debug current nickname status
+      userProfile.debugNicknameStatus();
+
+      // Force refresh nickname from storage
+      await userProfile.refreshNickname();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Nickname system test completed!\nCurrent nickname: ${userProfile.displayName}'),
+            backgroundColor: context.tokens.success,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Nickname test failed: $e'),
             backgroundColor: context.tokens.error,
           ),
         );
