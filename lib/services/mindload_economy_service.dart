@@ -726,13 +726,13 @@ class MindloadEconomyService extends ChangeNotifier {
       case MindloadTier.free:
         return 0; // No YouTube access
       case MindloadTier.axon:
-        return 10; // 10 minutes
+        return 45; // 45 minutes
       case MindloadTier.neuron:
-        return 30; // 30 minutes
+        return 45; // 45 minutes
       case MindloadTier.cortex:
-        return 60; // 1 hour
+        return 45; // 45 minutes
       case MindloadTier.singularity:
-        return 120; // 2 hours
+        return 45; // 45 minutes
       case MindloadTier.synapse:
         return 45; // Legacy tier: 45 minutes
     }

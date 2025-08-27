@@ -5,10 +5,27 @@ import * as logger from 'firebase-functions/logger';
 import { admin, db } from './admin';
 
 // Import YouTube functions
-import './youtube';
+import { 
+  youtubePreview, 
+  youtubeIngest, 
+  cleanupYouTubeRateLimit, 
+  resetUserRateLimits, 
+  getRateLimitStatus, 
+  cleanupYouTubeCache 
+} from './youtube';
 
 // Import and export AI processing functions
 export { generateFlashcards, generateQuiz, processWithAI } from './ai-processing';
+
+// Import and export YouTube functions
+export { 
+  youtubePreview, 
+  youtubeIngest, 
+  cleanupYouTubeRateLimit, 
+  resetUserRateLimits, 
+  getRateLimitStatus, 
+  cleanupYouTubeCache 
+} from './youtube';
 
 // Import and export notification functions
 export { 

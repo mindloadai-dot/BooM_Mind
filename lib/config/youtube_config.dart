@@ -12,8 +12,8 @@ class YouTubeConfig {
   // Configuration for YouTube processing
   static const int tokensPerMLToken = 750;
   static const int outTokensDefault = 500;
-  static const int freeMaxDurationSeconds = 1800; // 30 min
-  static const int proMaxDurationSeconds = 7200; // 120 min
+  static const int freeMaxDurationSeconds = 2700; // 45 min
+  static const int proMaxDurationSeconds = 2700; // 45 min
   static const List<String> transcriptLangFallbacks = ['en', 'en-US'];
   static const int cacheTtlMinutes = 15;
   static const int maxCacheEntries = 1000;

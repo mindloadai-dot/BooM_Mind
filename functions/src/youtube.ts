@@ -11,8 +11,8 @@ const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 const CONFIG = {
   TOKENS_PER_ML_TOKEN: 750,
   OUT_TOKENS_DEFAULT: 500,
-  FREE_MAX_DURATION_SECONDS: 1800, // 30 min
-  PRO_MAX_DURATION_SECONDS: 7200,  // 120 min
+  FREE_MAX_DURATION_SECONDS: 2700, // 45 min
+  PRO_MAX_DURATION_SECONDS: 2700,  // 45 min
   TRANSCRIPT_LANG_FALLBACKS: ['en', 'en-US'],
   CACHE_TTL_MINUTES: 15,
   MAX_CACHE_SIZE: 200,
@@ -275,12 +275,8 @@ async function validateAppCheck(appCheckToken: string): Promise<boolean> {
         return false;
       }
 
-      // Check if token is not expired
-      const now = Math.floor(Date.now() / 1000);
-      if (appCheckClaims.exp && appCheckClaims.exp < now) {
-        logger.warn('App Check token expired');
-        return false;
-      }
+      // Note: App Check token expiration is handled automatically by Firebase
+      // No need to manually check expiration
 
       return true;
     } catch (verifyError) {

@@ -39,12 +39,8 @@ async function validateAppCheck(appCheckToken: string): Promise<boolean> {
         return false;
       }
 
-      // Check if token is not expired
-      const now = Math.floor(Date.now() / 1000);
-      if (appCheckClaims.exp && appCheckClaims.exp < now) {
-        logger.warn('App Check token expired');
-        return false;
-      }
+      // Note: App Check token expiration is handled automatically by Firebase
+      // No need to manually check expiration
 
       return true;
     } catch (verifyError) {

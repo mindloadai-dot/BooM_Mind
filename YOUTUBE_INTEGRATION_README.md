@@ -48,25 +48,25 @@ YouTube integration is available across different subscription tiers with varyin
 
 ### Axon
 - **YouTube Access**: ✅ Available
-- **Duration Limit**: 10 minute videos
+- **Duration Limit**: 45 minute videos
 - **Monthly Videos**: 1 video/month
 - **Features**: Basic video processing
 
 ### Neuron
 - **YouTube Access**: ✅ Available
-- **Duration Limit**: 30 minute videos
+- **Duration Limit**: 45 minute videos
 - **Monthly Videos**: 3 videos/month
 - **Features**: Enhanced processing with GPT-4 Turbo
 
 ### Cortex
 - **YouTube Access**: ✅ Available
-- **Duration Limit**: 1 hour videos
+- **Duration Limit**: 45 minute videos
 - **Monthly Videos**: 5 videos/month
 - **Features**: Extended content processing
 
 ### Singularity
 - **YouTube Access**: ✅ Available
-- **Duration Limit**: 2 hour videos
+- **Duration Limit**: 45 minute videos
 - **Monthly Videos**: 10 videos/month
 - **Features**: Maximum content processing capability
 
@@ -120,15 +120,15 @@ YouTube integration is available across different subscription tiers with varyin
 ```typescript
 YOUTUBE_API_KEY=your_youtube_api_key
 TOKENS_PER_ML_TOKEN=750
-FREE_MAX_DURATION_SECONDS=1800
-PRO_MAX_DURATION_SECONDS=7200
+FREE_MAX_DURATION_SECONDS=2700
+PRO_MAX_DURATION_SECONDS=2700
 TRANSCRIPT_LANG_FALLBACKS=en,en-US
 ```
 
 ### Plan Limits
-- **Free Tier**: 30 minutes max, 1 YouTube ingest per month
-- **Pro Tier**: 120 minutes max, unlimited YouTube ingests
-- **Token Costs**: Based on transcript length and analysis depth
+- **Free Tier**: 45 minutes max, 1 YouTube ingest per month
+- **Pro Tier**: 45 minutes max, unlimited YouTube ingests
+- **Token Costs**: Fixed 5 MindLoad tokens per YouTube video
 
 ## Security Features
 - **App Check**: Firebase App Check on all endpoints

@@ -23,19 +23,25 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUserData = exports.updateUserStats = exports.deleteUserData = exports.createUserProfile = exports.helloWorld = exports.clearPurchaseCache = exports.getPurchaseVerificationStatus = exports.getPurchaseHistory = exports.verifyLogicPackPurchaseEnhanced = exports.cleanupOldLedgerEntries = exports.getLedgerStats = exports.dailyLedgerReconciliation = exports.reconcileUserLedger = exports.getUserTokenAccount = exports.getLedgerEntries = exports.writeLedgerEntry = exports.verifyLogicPackPurchase = exports.cleanupActionHistory = exports.consumeTokens = exports.processNotificationQueue = exports.markNotificationRead = exports.getNotificationHistory = exports.unregisterDeviceToken = exports.registerDeviceToken = exports.updateNotificationPreferences = exports.getNotificationPreferences = exports.sendNotification = exports.scheduleNotification = exports.processWithAI = exports.generateQuiz = exports.generateFlashcards = void 0;
+exports.updateUserData = exports.updateUserStats = exports.deleteUserData = exports.createUserProfile = exports.helloWorld = exports.clearPurchaseCache = exports.getPurchaseVerificationStatus = exports.getPurchaseHistory = exports.verifyLogicPackPurchaseEnhanced = exports.cleanupOldLedgerEntries = exports.getLedgerStats = exports.dailyLedgerReconciliation = exports.reconcileUserLedger = exports.getUserTokenAccount = exports.getLedgerEntries = exports.writeLedgerEntry = exports.verifyLogicPackPurchase = exports.cleanupActionHistory = exports.consumeTokens = exports.processNotificationQueue = exports.markNotificationRead = exports.getNotificationHistory = exports.unregisterDeviceToken = exports.registerDeviceToken = exports.updateNotificationPreferences = exports.getNotificationPreferences = exports.sendNotification = exports.scheduleNotification = exports.cleanupYouTubeCache = exports.getRateLimitStatus = exports.resetUserRateLimits = exports.cleanupYouTubeRateLimit = exports.youtubeIngest = exports.youtubePreview = exports.processWithAI = exports.generateQuiz = exports.generateFlashcards = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const identity_1 = require("firebase-functions/v2/identity");
 const logger = __importStar(require("firebase-functions/logger"));
 const admin_1 = require("./admin");
-// Import YouTube functions
-require("./youtube");
 // Import and export AI processing functions
 var ai_processing_1 = require("./ai-processing");
 Object.defineProperty(exports, "generateFlashcards", { enumerable: true, get: function () { return ai_processing_1.generateFlashcards; } });
 Object.defineProperty(exports, "generateQuiz", { enumerable: true, get: function () { return ai_processing_1.generateQuiz; } });
 Object.defineProperty(exports, "processWithAI", { enumerable: true, get: function () { return ai_processing_1.processWithAI; } });
+// Import and export YouTube functions
+var youtube_1 = require("./youtube");
+Object.defineProperty(exports, "youtubePreview", { enumerable: true, get: function () { return youtube_1.youtubePreview; } });
+Object.defineProperty(exports, "youtubeIngest", { enumerable: true, get: function () { return youtube_1.youtubeIngest; } });
+Object.defineProperty(exports, "cleanupYouTubeRateLimit", { enumerable: true, get: function () { return youtube_1.cleanupYouTubeRateLimit; } });
+Object.defineProperty(exports, "resetUserRateLimits", { enumerable: true, get: function () { return youtube_1.resetUserRateLimits; } });
+Object.defineProperty(exports, "getRateLimitStatus", { enumerable: true, get: function () { return youtube_1.getRateLimitStatus; } });
+Object.defineProperty(exports, "cleanupYouTubeCache", { enumerable: true, get: function () { return youtube_1.cleanupYouTubeCache; } });
 // Import and export notification functions
 var notification_functions_1 = require("./notification-functions");
 Object.defineProperty(exports, "scheduleNotification", { enumerable: true, get: function () { return notification_functions_1.scheduleNotification; } });

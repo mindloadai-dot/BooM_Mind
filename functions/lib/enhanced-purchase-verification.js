@@ -400,11 +400,16 @@ async function writeLedgerEntry(db, userId, action, tokens, requestId, source, m
             }
             else {
                 // Create new account if it doesn't exist
+                // Check if user is admin and give them 1000 tokens instead of 20
+                const userDoc = await transaction.get(db.collection('users').doc(userId));
+                const isAdmin = userDoc.exists && userDoc.data()?.email === 'admin@mindload.test';
+                const welcomeBonus = isAdmin ? 1000 : 20;
+                const freeActions = isAdmin ? 1000 : 20;
                 const newAccount = {
                     userId,
                     monthlyTokens: tokens,
-                    welcomeBonus: 20,
-                    freeActions: 20,
+                    welcomeBonus: welcomeBonus,
+                    freeActions: freeActions,
                     lastResetDate: admin_1.admin.firestore.Timestamp.fromDate(now),
                     lastLedgerEntryId: entryId,
                     lastUpdated: admin_1.admin.firestore.FieldValue.serverTimestamp(),

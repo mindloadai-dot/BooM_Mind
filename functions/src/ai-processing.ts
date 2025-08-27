@@ -192,8 +192,9 @@ export const processWithAI = onCall(
 
       if (generateFlashcards) {
         if (apiKey) {
-          const flashcardResult = await generateFlashcards.run({ data: { content, count: 10 } });
-          results.flashcards = flashcardResult.flashcards;
+          // Generate flashcards directly using OpenAI API
+          const flashcardResult = await generateFlashcardsDirectly(content, 10);
+          results.flashcards = flashcardResult;
         } else {
           throw new HttpsError('failed-precondition', 'OpenAI API key not configured');
         }
@@ -201,8 +202,9 @@ export const processWithAI = onCall(
 
       if (generateQuestions) {
         if (apiKey) {
-          const quizResult = await generateQuiz.run({ data: { content, questionCount: 5 } });
-          results.questions = quizResult.quiz.questions;
+          // Generate quiz questions directly using OpenAI API
+          const quizResult = await generateQuizQuestionsDirectly(content, 5);
+          results.questions = quizResult;
         } else {
           throw new HttpsError('failed-precondition', 'OpenAI API key not configured');
         }
@@ -242,7 +244,7 @@ async function generateAISummary(content: string, customInstructions?: string): 
         messages: [
           {
             role: 'system',
-            content: `You are an expert at creating concise, informative summaries. Create a clear summary of the provided content that captures the key points and main ideas. ${customInstructions ? `Additional instructions: ${customInstructions}` : ''}`
+            content: `You are an expert at creating concise, informative summaries. Create a clear summary of the content that captures the key points and main ideas. ${customInstructions ? `Additional instructions: ${customInstructions}` : ''}`
           },
           {
             role: 'user',
@@ -263,6 +265,108 @@ async function generateAISummary(content: string, customInstructions?: string): 
   }
 
   throw new HttpsError('internal', 'Failed to generate summary');
+}
+
+async function generateFlashcardsDirectly(content: string, count: number): Promise<any[]> {
+  const apiKey = openaiApiKey.value();
+  if (!apiKey) {
+    throw new HttpsError('failed-precondition', 'OpenAI API key not configured');
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert at creating educational flashcards. Create ${count} flashcards from the provided content. Each flashcard should have a clear question on the front and a concise answer on the back. Return the response as a JSON array with objects containing 'question' and 'answer' fields.`
+          },
+          {
+            role: 'user',
+            content: `Create ${count} flashcards from this content:\n\n${content}`
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7,
+        response_format: { type: "json_object" }
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json() as any;
+      const content = data.choices?.[0]?.message?.content;
+      if (content) {
+        try {
+          const parsed = JSON.parse(content);
+          return parsed.flashcards || [];
+        } catch (parseError) {
+          logger.error('Error parsing flashcards response:', parseError);
+          return [];
+        }
+      }
+    }
+  } catch (error) {
+    logger.error('Error generating flashcards:', error);
+  }
+
+  return [];
+}
+
+async function generateQuizQuestionsDirectly(content: string, count: number): Promise<any[]> {
+  const apiKey = openaiApiKey.value();
+  if (!apiKey) {
+    throw new HttpsError('failed-precondition', 'OpenAI API key not configured');
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert at creating educational quiz questions. Create ${count} multiple choice questions from the provided content. Each question should have 4 options (A, B, C, D) with one correct answer. Return the response as a JSON array with objects containing 'question', 'options' (array of 4 strings), and 'correctAnswer' (index 0-3) fields.`
+          },
+          {
+            role: 'user',
+            content: `Create ${count} quiz questions from this content:\n\n${content}`
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7,
+        response_format: { type: "json_object" }
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json() as any;
+      const content = data.choices?.[0]?.message?.content;
+      if (content) {
+        try {
+          const parsed = JSON.parse(content);
+          return parsed.questions || [];
+        } catch (parseError) {
+          logger.error('Error parsing quiz response:', parseError);
+          return [];
+        }
+      }
+    }
+  } catch (error) {
+    logger.error('Error generating quiz questions:', error);
+  }
+
+  return [];
 }
 
 

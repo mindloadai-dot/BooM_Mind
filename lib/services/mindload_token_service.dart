@@ -5,14 +5,16 @@ import 'package:crypto/crypto.dart';
 /// MindLoad Token Service
 /// Single source of truth for token calculations and management
 class MindloadTokenService {
-  static final MindloadTokenService _instance = MindloadTokenService._internal();
+  static final MindloadTokenService _instance =
+      MindloadTokenService._internal();
   factory MindloadTokenService() => _instance;
   MindloadTokenService._internal();
 
   /// Token calculation constants
   static const int _wordsPerToken = 1000;
   static const int _audioMinutesPerToken = 2;
-  static const double _youtubeWordsPerMinute = 150; // Approximate words per minute
+  static const double _youtubeWordsPerMinute =
+      150; // Approximate words per minute
 
   /// Calculate tokens required for a source
   /// 1 MindLoad Token => up to 30 quiz Q + 50 flashcards
@@ -23,7 +25,8 @@ class MindloadTokenService {
     required bool hasCaptions,
   }) {
     final wordCost = (words / _wordsPerToken).ceil();
-    final audioCost = hasCaptions ? 0 : (minutes / _audioMinutesPerToken).ceil();
+    final audioCost =
+        hasCaptions ? 0 : (minutes / _audioMinutesPerToken).ceil();
     return max(1, wordCost + audioCost);
   }
 
@@ -31,7 +34,8 @@ class MindloadTokenService {
   int tokensByMinutes(int minutes, bool hasCaptions) {
     final approxWords = (minutes * _youtubeWordsPerMinute).ceil();
     final wordCost = (approxWords / _wordsPerToken).ceil();
-    final audioCost = hasCaptions ? 0 : (minutes / _audioMinutesPerToken).ceil();
+    final audioCost =
+        hasCaptions ? 0 : (minutes / _audioMinutesPerToken).ceil();
     return max(1, wordCost + audioCost);
   }
 
@@ -48,12 +52,14 @@ class MindloadTokenService {
   }
 
   /// Calculate tokens for YouTube video
+  /// Fixed pricing: 5 MindLoad tokens per YouTube video regardless of duration
   int tokensForYouTube({
     required int durationMinutes,
     required bool hasCaptions,
     String? language,
   }) {
-    return tokensByMinutes(durationMinutes, hasCaptions);
+    // Fixed pricing: 5 tokens per YouTube video
+    return 5;
   }
 
   /// Generate source hash for deduplication
@@ -104,7 +110,8 @@ class MindloadTokenService {
     required bool hasCaptions,
   }) {
     final wordCost = (words / _wordsPerToken).ceil();
-    final audioCost = hasCaptions ? 0 : (minutes / _audioMinutesPerToken).ceil();
+    final audioCost =
+        hasCaptions ? 0 : (minutes / _audioMinutesPerToken).ceil();
     final totalCost = max(1, wordCost + audioCost);
 
     return {

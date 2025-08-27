@@ -80,7 +80,7 @@ class TierLimits {
       hasUltraAccess: true,
       maxPdfPages: 10,
       examWeekBoosts: 0,
-      maxYouTubeDurationMinutes: 10, // 10 minute videos
+      maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.neuron: TierLimits(
       dailyQuizQuestions: 100,
@@ -94,7 +94,7 @@ class TierLimits {
       hasUltraAccess: true,
       maxPdfPages: 25,
       examWeekBoosts: 0,
-      maxYouTubeDurationMinutes: 30, // 30 minute videos
+      maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.synapse: TierLimits(
       dailyQuizQuestions: 150,
@@ -122,7 +122,7 @@ class TierLimits {
       hasUltraAccess: true,
       maxPdfPages: 50,
       examWeekBoosts: 0,
-      maxYouTubeDurationMinutes: 60, // 1 hour videos
+      maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
     SubscriptionTier.singularity: TierLimits(
       dailyQuizQuestions: 500,
@@ -136,7 +136,7 @@ class TierLimits {
       hasUltraAccess: true,
       maxPdfPages: 100,
       examWeekBoosts: 0,
-      maxYouTubeDurationMinutes: 120, // 2 hour videos
+      maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
 
     // Legacy tier limits (for backward compatibility during transition)

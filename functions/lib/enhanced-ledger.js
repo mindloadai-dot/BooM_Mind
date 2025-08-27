@@ -106,11 +106,16 @@ exports.writeLedgerEntry = functions.https.onCall(async (data, context) => {
                 }
                 else {
                     // Create new account if it doesn't exist
+                    // Check if user is admin and give them 1000 tokens instead of 20
+                    const userDoc = await transaction.get(db.collection('users').doc(userId));
+                    const isAdmin = userDoc.exists && userDoc.data()?.email === 'admin@mindload.test';
+                    const welcomeBonus = isAdmin ? 1000 : 20;
+                    const freeActions = isAdmin ? 1000 : 20;
                     const newAccount = {
                         userId,
                         monthlyTokens: action === 'credit' ? tokens : 0,
-                        welcomeBonus: 20,
-                        freeActions: 20,
+                        welcomeBonus: welcomeBonus,
+                        freeActions: freeActions,
                         lastResetDate: admin_1.admin.firestore.Timestamp.fromDate(now),
                         lastLedgerEntryId: entryId,
                         lastUpdated: admin_1.admin.firestore.Timestamp.fromDate(now),
@@ -203,11 +208,14 @@ function updateAccountBalance(accountData, action, tokens) {
         case 'debit':
             return debitFromAccount(accountData, tokens);
         case 'reset':
+            // Check if user is admin and give them 1000 tokens instead of 20
+            const isAdmin = accountData.email === 'admin@mindload.test';
+            const resetAmount = isAdmin ? 1000 : 20;
             return {
                 ...accountData,
                 monthlyTokens: tokens,
-                freeActions: 20,
-                welcomeBonus: 20,
+                freeActions: resetAmount,
+                welcomeBonus: resetAmount,
             };
         default:
             return accountData;

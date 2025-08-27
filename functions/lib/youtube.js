@@ -25,14 +25,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cleanupYouTubeCache = exports.youtubeIngest = exports.youtubePreview = exports.getRateLimitStatus = exports.resetUserRateLimits = exports.cleanupYouTubeRateLimit = exports.cleanupRateLimitData = void 0;
 const https_1 = require("firebase-functions/v2/https");
+const params_1 = require("firebase-functions/params");
 const admin_1 = require("./admin");
 const logger = __importStar(require("firebase-functions/logger"));
+// Define secrets for secure API key management
+const youtubeApiKey = (0, params_1.defineSecret)('YOUTUBE_API_KEY');
 // Configuration for YouTube processing
 const CONFIG = {
     TOKENS_PER_ML_TOKEN: 750,
     OUT_TOKENS_DEFAULT: 500,
-    FREE_MAX_DURATION_SECONDS: 1800,
-    PRO_MAX_DURATION_SECONDS: 7200,
+    FREE_MAX_DURATION_SECONDS: 2700,
+    PRO_MAX_DURATION_SECONDS: 2700,
     TRANSCRIPT_LANG_FALLBACKS: ['en', 'en-US'],
     CACHE_TTL_MINUTES: 15,
     MAX_CACHE_SIZE: 200,
@@ -220,13 +223,29 @@ function checkAbusePatterns(videoId) {
     return { allowed: true };
 }
 /**
- * Validate App Check token
+ * Validate App Check token properly
  */
 async function validateAppCheck(appCheckToken) {
     try {
-        // In production, verify the App Check token
-        // For now, just check that it exists and is not empty
-        return Boolean(appCheckToken && appCheckToken.length > 0);
+        if (!appCheckToken || appCheckToken.length === 0) {
+            return false;
+        }
+        // In production, verify the App Check token with Firebase Admin SDK
+        try {
+            const appCheckClaims = await admin_1.admin.appCheck().verifyToken(appCheckToken);
+            // Verify the token is for the correct app
+            if (appCheckClaims.appId !== process.env.FIREBASE_PROJECT_ID) {
+                logger.warn('App Check token app ID mismatch');
+                return false;
+            }
+            // Note: App Check token expiration is handled automatically by Firebase
+            // No need to manually check expiration
+            return true;
+        }
+        catch (verifyError) {
+            logger.error('App Check token verification failed:', verifyError);
+            return false;
+        }
     }
     catch (error) {
         logger.error('App Check validation failed:', error);
@@ -346,6 +365,7 @@ exports.youtubePreview = (0, https_1.onCall)({
     region: 'us-central1',
     timeoutSeconds: 30,
     memory: '256MiB',
+    secrets: [youtubeApiKey],
 }, async (request) => {
     const { data, auth } = request;
     // Validate authentication
@@ -462,6 +482,7 @@ exports.youtubeIngest = (0, https_1.onCall)({
     region: 'us-central1',
     timeoutSeconds: 60,
     memory: '512MiB',
+    secrets: [youtubeApiKey],
 }, async (request) => {
     const { data, auth } = request;
     // Validate authentication
@@ -613,7 +634,7 @@ exports.youtubeIngest = (0, https_1.onCall)({
  */
 async function fetchVideoMetadata(videoId) {
     try {
-        const apiKey = process.env.YOUTUBE_API_KEY;
+        const apiKey = youtubeApiKey.value();
         if (apiKey) {
             // Use YouTube Data API v3
             const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet,contentDetails`);

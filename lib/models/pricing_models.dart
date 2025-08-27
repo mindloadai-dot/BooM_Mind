@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mindload/constants/product_constants.dart';
 
-
 // Product IDs for Pack-A tier system
 // Same IDs on both iOS and Android as specified in requirements
 class ProductIds {
@@ -10,25 +9,25 @@ class ProductIds {
   static const String axonMonthly = 'axon_monthly';
   static const String synapseMonthly = 'synapse_monthly';
   static const String cortexMonthly = 'cortex_monthly';
-  
+
   // MindLoad Logic Pack product IDs (One-Time Purchases)
   static const String sparkLogic = 'mindload_spark_logic';
   static const String neuroLogic = 'mindload_neuro_logic';
   static const String cortexLogic = 'mindload_cortex_logic';
   static const String synapseLogic = 'mindload_synapse_logic';
   static const String quantumLogic = 'mindload_quantum_logic';
-  
+
   // Aliases for backward compatibility
   static const String sparkPack = sparkLogic;
   static const String neuroBurst = neuroLogic;
   static const String cortexPack = cortexLogic;
   static const String synapsePack = synapseLogic;
   static const String quantumPack = quantumLogic;
-  
+
   // Legacy token product IDs (being replaced by new logic packs)
   static const String tokens250 = 'tokens_250';
   static const String tokens600 = 'tokens_600';
-  
+
   // Legacy product IDs for backward compatibility
   static const String logicPack = 'logic_pack';
   static const String singularityMonthly = 'singularity_monthly';
@@ -37,44 +36,44 @@ class ProductIds {
 // Pack-A pricing configuration (base USD prices - stores handle currency localization)
 class PricingConfig {
   // Pack-A tier pricing (monthly only) - STANDARDIZED
-  static const double neuronMonthlyPrice = 9.99;  // Fixed from 3.99
+  static const double neuronMonthlyPrice = 9.99; // Fixed from 3.99
   static const double axonMonthlyPrice = ProductConstants.axonMonthlyPriceUsd;
-  static const double synapseMonthlyPrice = 6.99;  // Added missing tier
+  static const double synapseMonthlyPrice = 6.99; // Added missing tier
   static const double cortexMonthlyPrice = 14.99;
-  static const double singularityMonthlyPrice = 19.99;  // Added missing tier
-  
+  static const double singularityMonthlyPrice = 19.99; // Added missing tier
+
   // MindLoad Logic Pack pricing (One-Time Purchases)
   static const double sparkLogicPrice = ProductConstants.sparkPackPriceUsd;
   static const double neuroLogicPrice = ProductConstants.neuroPackPriceUsd;
   static const double cortexLogicPrice = ProductConstants.cortexPackPriceUsd;
   static const double synapseLogicPrice = ProductConstants.synapsePackPriceUsd;
   static const double quantumLogicPrice = ProductConstants.quantumPackPriceUsd;
-  
+
   // Aliases for backward compatibility
   static const double sparkPackPrice = sparkLogicPrice;
   static const double neuroBurstPrice = neuroLogicPrice;
   static const double cortexPackPrice = cortexLogicPrice;
   static const double synapsePackPrice = synapseLogicPrice;
   static const double quantumPackPrice = quantumLogicPrice;
-  
+
   // MindLoad Logic Pack token amounts
   static const int sparkLogicTokens = ProductConstants.sparkPackTokens;
   static const int neuroLogicTokens = ProductConstants.neuroPackTokens;
   static const int cortexLogicTokens = ProductConstants.cortexPackTokens;
   static const int synapseLogicTokens = ProductConstants.synapsePackTokens;
   static const int quantumLogicTokens = ProductConstants.quantumPackTokens;
-  
+
   // Pack-A tier monthly credits (MindLoad Tokens) - STANDARDIZED
-  static const int neuronMonthlyCredits = 320;  // Fixed from 500
+  static const int neuronMonthlyCredits = 320; // Fixed from 500
   static const int axonMonthlyCredits = ProductConstants.axonMonthlyTokens;
   static const int synapseMonthlyCredits = 200; // Added missing tier
-  static const int cortexMonthlyCredits = 750;  // Fixed from 3500
+  static const int cortexMonthlyCredits = 750; // Fixed from 3500
   static const int singularityMonthlyCredits = 1600; // Fixed from 5000
-  
+
   // Legacy credit quotas
   static const int freeMonthlyCredits = ProductConstants.freeMonthlyTokens;
   static const int maxRolloverCredits = 30;
-  
+
   // Legacy properties for backward compatibility
   static const double tokens250Price = 2.99;
   static const double tokens600Price = 5.99;
@@ -266,9 +265,9 @@ class SubscriptionPlan {
 
   // Get all available plans (Pack-A + legacy during transition)
   static List<SubscriptionPlan> get allPlans => [
-    ...availablePlans,
-    ...legacyPlans,
-  ];
+        ...availablePlans,
+        ...legacyPlans,
+      ];
 
   // Get plan by type
   static SubscriptionPlan? getPlanByType(SubscriptionType type) {
@@ -320,7 +319,7 @@ class MindLoadLogicPack {
   static final List<MindLoadLogicPack> availableLogicPacks = [
     MindLoadLogicPack(
       productId: ProductIds.sparkLogic,
-              title: '⚡ Spark Pack',
+      title: '⚡ Spark Pack',
       subtitle: '50 ML Tokens',
       tokens: PricingConfig.sparkLogicTokens,
       price: PricingConfig.sparkLogicPrice,
@@ -331,7 +330,7 @@ class MindLoadLogicPack {
     ),
     MindLoadLogicPack(
       productId: ProductIds.neuroLogic,
-              title: '🔬 Neuro Pack',
+      title: '🔬 Neuro Pack',
       subtitle: '100 ML Tokens',
       tokens: PricingConfig.neuroLogicTokens,
       price: PricingConfig.neuroLogicPrice,
@@ -347,7 +346,8 @@ class MindLoadLogicPack {
       tokens: PricingConfig.cortexLogicTokens,
       price: PricingConfig.cortexLogicPrice,
       displayPrice: '\$9.99',
-      description: 'Extra bonus kicks in here (125% vs Neuro). Feels like a bargain',
+      description:
+          'Extra bonus kicks in here (125% vs Neuro). Feels like a bargain',
       accentColor: Color(0xFF9C27B0),
       icon: Icons.science,
     ),
@@ -370,7 +370,8 @@ class MindLoadLogicPack {
       tokens: PricingConfig.quantumLogicTokens,
       price: PricingConfig.quantumLogicPrice,
       displayPrice: '\$49.99',
-      description: 'Your "whale" pack. This locks in serious spenders at the lowest token-per-dollar rate',
+      description:
+          'Your "whale" pack. This locks in serious spenders at the lowest token-per-dollar rate',
       accentColor: Color(0xFFE91E63),
       isBestValue: true,
       icon: Icons.auto_awesome,
@@ -441,7 +442,7 @@ class CreditPack {
     price: PricingConfig.logicPackPrice,
     credits: PricingConfig.logicPackCredits,
     title: 'Logic Pack',
-            description: '+50 tokens immediately available',
+    description: '+50 tokens immediately available',
     displayPrice: '\$1.99', // Store handles local currency
     accentColor: Color(0xFF2196F3),
   );
@@ -476,7 +477,9 @@ class UserSubscriptionNew {
     this.hasIntroOfferUsed = false,
   });
 
-  bool get isActive => status == SubscriptionStatus.active || status == SubscriptionStatus.introTrialing;
+  bool get isActive =>
+      status == SubscriptionStatus.active ||
+      status == SubscriptionStatus.introTrialing;
   bool get isPro => false; // Pro Monthly removed
   bool get isIntroTrialing => status == SubscriptionStatus.introTrialing;
   bool get canRollover => false; // Pro Monthly removed
@@ -547,16 +550,28 @@ class UserSubscriptionNew {
   factory UserSubscriptionNew.fromMap(Map<String, dynamic> map, String userId) {
     return UserSubscriptionNew(
       userId: userId,
-      type: SubscriptionType.values.firstWhere((e) => e.name == map['type'], orElse: () => SubscriptionType.free),
-      status: SubscriptionStatus.values.firstWhere((e) => e.name == map['status'], orElse: () => SubscriptionStatus.active),
-      purchaseDate: map['purchaseDate'] != null ? DateTime.fromMillisecondsSinceEpoch(map['purchaseDate']) : null,
-      expiryDate: map['expiryDate'] != null ? DateTime.fromMillisecondsSinceEpoch(map['expiryDate']) : null,
-      renewalDate: map['renewalDate'] != null ? DateTime.fromMillisecondsSinceEpoch(map['renewalDate']) : null,
+      type: SubscriptionType.values.firstWhere((e) => e.name == map['type'],
+          orElse: () => SubscriptionType.free),
+      status: SubscriptionStatus.values.firstWhere(
+          (e) => e.name == map['status'],
+          orElse: () => SubscriptionStatus.active),
+      purchaseDate: map['purchaseDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['purchaseDate'])
+          : null,
+      expiryDate: map['expiryDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['expiryDate'])
+          : null,
+      renewalDate: map['renewalDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['renewalDate'])
+          : null,
       autoRenew: map['autoRenew'] ?? true,
-      creditsRemaining: map['creditsRemaining'] ?? PricingConfig.freeMonthlyCredits,
+      creditsRemaining:
+          map['creditsRemaining'] ?? PricingConfig.freeMonthlyCredits,
       creditsUsedThisMonth: map['creditsUsedThisMonth'] ?? 0,
       rolloverCredits: map['rolloverCredits'] ?? 0,
-      lastCreditRefill: map['lastCreditRefill'] != null ? DateTime.fromMillisecondsSinceEpoch(map['lastCreditRefill']) : null,
+      lastCreditRefill: map['lastCreditRefill'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['lastCreditRefill'])
+          : null,
       hasIntroOfferUsed: map['hasIntroOfferUsed'] ?? false,
     );
   }
@@ -605,9 +620,14 @@ class SystemBudgetNew {
   factory SystemBudgetNew.fromMap(Map<String, dynamic> map) {
     return SystemBudgetNew(
       monthlySpentUsd: map['monthlySpentUsd']?.toDouble() ?? 0.0,
-      monthlyLimitUsd: map['monthlyLimitUsd']?.toDouble() ?? BudgetConfig.monthlyCapUsd,
-      currentThreshold: BudgetThreshold.values.firstWhere((e) => e.name == map['currentThreshold'], orElse: () => BudgetThreshold.normal),
-      currentMode: BudgetMode.values.firstWhere((e) => e.name == map['currentMode'], orElse: () => BudgetMode.standard),
+      monthlyLimitUsd:
+          map['monthlyLimitUsd']?.toDouble() ?? BudgetConfig.monthlyCapUsd,
+      currentThreshold: BudgetThreshold.values.firstWhere(
+          (e) => e.name == map['currentThreshold'],
+          orElse: () => BudgetThreshold.normal),
+      currentMode: BudgetMode.values.firstWhere(
+          (e) => e.name == map['currentMode'],
+          orElse: () => BudgetMode.standard),
       lastReset: DateTime.fromMillisecondsSinceEpoch(map['lastReset']),
       resetDate: DateTime.fromMillisecondsSinceEpoch(map['resetDate']),
     );
@@ -723,7 +743,8 @@ class TelemetryEventData {
 class TokenPricingRules {
   // Equivalence constants
   static const int WORDS_PER_TOKEN = 1000;
-  static const int YOUTUBE_MINUTES_PER_TOKEN = 5;
+  static const int YOUTUBE_TOKENS_PER_VIDEO =
+      5; // Fixed: 5 tokens per YouTube video
   static const int CARD_SET_SIZE = 10;
   static const int MCQ_SET_SIZE = 6;
   static const int MONTHLY_FREE_ACTIONS = 20;
@@ -734,7 +755,8 @@ class TokenPricingRules {
   }
 
   static int calculateYouTubeTokens(int minutes) {
-    return (minutes / YOUTUBE_MINUTES_PER_TOKEN).ceil();
+    // Fixed pricing: 5 tokens per YouTube video regardless of duration
+    return YOUTUBE_TOKENS_PER_VIDEO;
   }
 
   static int calculateRegenerateTokens(int itemCount, bool isCards) {
@@ -754,46 +776,46 @@ class TokenTier {
   final String emoji;
 
   const TokenTier({
-    required this.name, 
-    required this.price, 
+    required this.name,
+    required this.price,
     required this.monthlyTokens,
     required this.emoji,
   });
 
   static final List<TokenTier> tiers = [
     TokenTier(
-      name: 'Dendrite', 
-      price: 0.0, 
+      name: 'Dendrite',
+      price: 0.0,
       monthlyTokens: ProductConstants.freeMonthlyTokens,
       emoji: '🌱',
     ),
     TokenTier(
-      name: 'Axon', 
-      price: ProductConstants.axonMonthlyPriceUsd, 
+      name: 'Axon',
+      price: ProductConstants.axonMonthlyPriceUsd,
       monthlyTokens: ProductConstants.axonMonthlyTokens,
       emoji: '🧩',
     ),
     TokenTier(
-      name: 'Neuron', 
-      price: 9.99, 
+      name: 'Neuron',
+      price: 9.99,
       monthlyTokens: 320,
       emoji: '⚡',
     ),
     TokenTier(
-      name: 'Synapse', 
-      price: 6.99, 
+      name: 'Synapse',
+      price: 6.99,
       monthlyTokens: 200,
       emoji: '🔗',
     ),
     TokenTier(
-      name: 'Cortex', 
-      price: 14.99, 
+      name: 'Cortex',
+      price: 14.99,
       monthlyTokens: 750,
       emoji: '🧬',
     ),
     TokenTier(
-      name: 'Singularity', 
-      price: 19.99, 
+      name: 'Singularity',
+      price: 19.99,
       monthlyTokens: 1600,
       emoji: '🌟',
     ),
@@ -819,33 +841,33 @@ class LogicPack {
 
   static final List<LogicPack> packs = [
     LogicPack(
-      name: ProductConstants.sparkPackName, 
-      price: ProductConstants.sparkPackPriceUsd, 
+      name: ProductConstants.sparkPackName,
+      price: ProductConstants.sparkPackPriceUsd,
       tokens: ProductConstants.sparkPackTokens,
       emoji: '⚡',
     ),
     LogicPack(
-      name: ProductConstants.neuroPackName, 
-      price: ProductConstants.neuroPackPriceUsd, 
+      name: ProductConstants.neuroPackName,
+      price: ProductConstants.neuroPackPriceUsd,
       tokens: ProductConstants.neuroPackTokens,
       emoji: '🔬',
     ),
     LogicPack(
-      name: ProductConstants.cortexPackName, 
-      price: ProductConstants.cortexPackPriceUsd, 
+      name: ProductConstants.cortexPackName,
+      price: ProductConstants.cortexPackPriceUsd,
       tokens: ProductConstants.cortexPackTokens,
       emoji: '📚',
     ),
     LogicPack(
-      name: ProductConstants.synapsePackName, 
-      price: ProductConstants.synapsePackPriceUsd, 
+      name: ProductConstants.synapsePackName,
+      price: ProductConstants.synapsePackPriceUsd,
       tokens: ProductConstants.synapsePackTokens,
       emoji: '🧠',
       isPopular: true,
     ),
     LogicPack(
-      name: ProductConstants.quantumPackName, 
-      price: ProductConstants.quantumPackPriceUsd, 
+      name: ProductConstants.quantumPackName,
+      price: ProductConstants.quantumPackPriceUsd,
       tokens: ProductConstants.quantumPackTokens,
       emoji: '🌩',
       isBestValue: true,
@@ -897,7 +919,7 @@ class UserTokenAccount {
     // Reset on 1st of month, 00:00 America/Chicago
     final now = DateTime.now().toUtc();
     final resetTime = DateTime.utc(now.year, now.month, 1);
-    
+
     if (lastResetDate.isBefore(resetTime)) {
       monthlyTokens = tier.monthlyTokens;
       freeActions = ProductConstants.freeMonthlyTokens;

@@ -1,5 +1,5 @@
-import './youtube';
 export { generateFlashcards, generateQuiz, processWithAI } from './ai-processing';
+export { youtubePreview, youtubeIngest, cleanupYouTubeRateLimit, resetUserRateLimits, getRateLimitStatus, cleanupYouTubeCache } from './youtube';
 export { scheduleNotification, sendNotification, getNotificationPreferences, updateNotificationPreferences, registerDeviceToken, unregisterDeviceToken, getNotificationHistory, markNotificationRead, processNotificationQueue } from './notification-functions';
 export { consumeTokens, cleanupActionHistory } from './token-consumption';
 export { verifyLogicPackPurchase, } from './logic-purchases';
