@@ -186,9 +186,6 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     final earnedAchievements = AchievementService.instance
         .getAchievementsByStatus(AchievementStatus.earned)
         .length;
-    final progressAchievements = AchievementService.instance
-        .getAchievementsByStatus(AchievementStatus.inProgress)
-        .length;
     final completionRate =
         totalAchievements > 0 ? (earnedAchievements / totalAchievements) : 0.0;
 
@@ -196,127 +193,82 @@ class _AchievementsScreenState extends State<AchievementsScreen>
       animation: _headerController,
       builder: (context, child) {
         return Transform.translate(
-          offset: Offset(_headerSlideAnimation.value, 0),
+          offset: Offset(0, _headerSlideAnimation.value),
           child: Opacity(
             opacity: _headerFadeAnimation.value,
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    tokens.primary.withOpacity(0.1),
+                    tokens.surface,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0, 0.5],
+                ),
+              ),
               child: Column(
                 children: [
-                  // Title and Stats
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.emoji_events,
-                        size: 32,
-                        color: tokens.primary,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Achievement Progress',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: tokens.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              '$earnedAchievements of $totalAchievements completed',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: tokens.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Progress Bar
-                  AnimatedBuilder(
-                    animation: _progressController,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _progressScaleAnimation.value,
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Completion Rate',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: tokens.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  '${(completionRate * 100).toInt()}%',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    color: tokens.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: LinearProgressIndicator(
+                  // Title and Animated Progress Ring
+                  ScaleTransition(
+                    scale: _progressScaleAnimation,
+                    child: SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          AnimatedBuilder(
+                            animation: _progressFillAnimation,
+                            builder: (context, child) {
+                              return CircularProgressIndicator(
                                 value: _progressFillAnimation.value *
                                     completionRate,
-                                backgroundColor: tokens.muted,
+                                strokeWidth: 8,
+                                backgroundColor: tokens.muted.withOpacity(0.5),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                     tokens.primary),
-                                minHeight: 8,
+                              );
+                            },
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${(completionRate * 100).toInt()}%',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: tokens.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                              Text(
+                                'Complete',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Quick Stats
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Earned',
-                          earnedAchievements.toString(),
-                          Icons.check_circle,
-                          tokens.success,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          'In Progress',
-                          progressAchievements.toString(),
-                          Icons.trending_up,
-                          tokens.warning,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Locked',
-                          (totalAchievements -
-                                  earnedAchievements -
-                                  progressAchievements)
-                              .toString(),
-                          Icons.lock,
-                          tokens.muted,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 20),
+                  Text(
+                    'Your Achievement Progress',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$earnedAchievements of $totalAchievements completed',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: tokens.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -324,41 +276,6 @@ class _AchievementsScreenState extends State<AchievementsScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildStatCard(
-      String label, String value, IconData icon, Color color) {
-    final tokens = context.tokens;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: tokens.textSecondary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -506,32 +423,36 @@ class _AchievementsScreenState extends State<AchievementsScreen>
         achievement.userState.status == AchievementStatus.inProgress;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: tokens.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isEarned
-              ? tokens.success.withValues(alpha: 0.4)
+              ? tokens.success.withOpacity(0.5)
               : isInProgress
-                  ? tokens.warning.withValues(alpha: 0.4)
-                  : tokens.outline.withValues(alpha: 0.2),
-          width: isEarned || isInProgress ? 2 : 1,
+                  ? tokens.warning.withOpacity(0.5)
+                  : tokens.outline.withOpacity(0.2),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: tokens.outline.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: isEarned
+                ? tokens.success.withOpacity(0.1)
+                : isInProgress
+                    ? tokens.warning.withOpacity(0.1)
+                    : tokens.outline.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         child: InkWell(
           onTap: () => _showAchievementDetails(achievement),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -542,27 +463,25 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                   children: [
                     // Achievement Icon
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
                         color: _getTierColor(achievement.catalog.tier, tokens)
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
+                            .withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(18),
                         border: Border.all(
                           color: _getTierColor(achievement.catalog.tier, tokens)
-                              .withValues(alpha: 0.3),
+                              .withOpacity(0.3),
                         ),
                       ),
                       child: Center(
                         child: Text(
                           achievement.catalog.icon,
-                          style: const TextStyle(fontSize: 28),
+                          style: const TextStyle(fontSize: 32),
                         ),
                       ),
                     ),
-
-                    const SizedBox(width: 16),
-
+                    const SizedBox(width: 20),
                     // Achievement Info
                     Expanded(
                       child: Column(
@@ -575,30 +494,25 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Text(
                             achievement.catalog.description,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: tokens.textSecondary,
-                              height: 1.3,
+                              height: 1.4,
                             ),
                           ),
                         ],
                       ),
                     ),
-
                     // Tier Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: _getTierColor(achievement.catalog.tier, tokens)
-                            .withValues(alpha: 0.2),
+                            .withOpacity(0.15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: _getTierColor(achievement.catalog.tier, tokens)
-                              .withValues(alpha: 0.4),
-                        ),
                       ),
                       child: Text(
                         achievement.catalog.tier.displayName,
@@ -606,242 +520,18 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                           color:
                               _getTierColor(achievement.catalog.tier, tokens),
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
                         ),
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 20),
-
-                // Progress Section
-                if (!isEarned) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Progress',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: tokens.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '${achievement.userState.progress}/${achievement.catalog.threshold}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: tokens.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: progress / 100,
-                      backgroundColor: tokens.muted,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isInProgress ? tokens.warning : tokens.primary,
-                      ),
-                      minHeight: 8,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${progress.toInt()}% Complete',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: tokens.textSecondary,
-                    ),
-                  ),
-                ] else ...[
-                  // Earned Badge
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: tokens.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: tokens.success.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle,
-                            color: tokens.success, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Achievement Unlocked!',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: tokens.success,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 16),
-
-                // Modern How to Obtain Section
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        tokens.primary.withValues(alpha: 0.08),
-                        tokens.primary.withValues(alpha: 0.03),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: tokens.primary.withValues(alpha: 0.15),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: tokens.primary.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Header with icon and title
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: tokens.primary.withValues(alpha: 0.1),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(16),
-                            topRight: Radius.circular(16),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: tokens.primary.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.rocket_launch,
-                                color: tokens.primary,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'How to Unlock',
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      color: tokens.primary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Follow these steps to earn this achievement',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color:
-                                          tokens.primary.withValues(alpha: 0.8),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Content section
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              achievement.catalog.howTo,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: tokens.textPrimary,
-                                height: 1.5,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Modern action button
-                            Container(
-                              width: double.infinity,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    tokens.primary,
-                                    tokens.primary.withValues(alpha: 0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        tokens.primary.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () =>
-                                      _showAchievementDetails(achievement),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        isEarned
-                                            ? Icons.celebration
-                                            : Icons.auto_awesome,
-                                        color: tokens.onPrimary,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        isEarned
-                                            ? 'View Achievement'
-                                            : 'Learn More',
-                                        style: theme.textTheme.labelLarge
-                                            ?.copyWith(
-                                          color: tokens.onPrimary,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 24),
+                // Progress Section or Earned Badge
+                if (!isEarned)
+                  _buildProgressIndicator(
+                      tokens, theme, achievement, isInProgress)
+                else
+                  _buildEarnedBadge(tokens, theme),
               ],
             ),
           ),
@@ -850,27 +540,115 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     );
   }
 
+  Widget _buildEarnedBadge(SemanticTokens tokens, ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: tokens.success.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.success.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle, color: tokens.success, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            'Achievement Unlocked!',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: tokens.success,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getTierColor(AchievementTier tier, SemanticTokens tokens) {
     switch (tier) {
       case AchievementTier.bronze:
-        return const Color(0xFFCD7F32);
+        return tokens.tierBronze;
       case AchievementTier.silver:
-        return const Color(0xFFC0C0C0);
+        return tokens.tierSilver;
       case AchievementTier.gold:
-        return const Color(0xFFFFD700);
+        return tokens.tierGold;
       case AchievementTier.platinum:
-        return const Color(0xFFE5E4E2);
+        return tokens.tierPlatinum;
       case AchievementTier.legendary:
-        return const Color(0xFFFF6B35);
+        return tokens.tierLegendary;
     }
   }
 
   void _showAchievementDetails(AchievementDisplay achievement) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _AchievementDetailsSheet(achievement: achievement),
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            AchievementDetailsScreen(achievement: achievement),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          final tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator(SemanticTokens tokens, ThemeData theme,
+      AchievementDisplay achievement, bool isInProgress) {
+    final progress = achievement.progressPercent;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Progress',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              '${achievement.userState.progress}/${achievement.catalog.threshold}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: progress / 100,
+            backgroundColor: tokens.muted,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              isInProgress ? tokens.warning : tokens.primary,
+            ),
+            minHeight: 8,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${progress.toInt()}% Complete',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: tokens.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -897,305 +675,418 @@ class _AchievementsScreenState extends State<AchievementsScreen>
   }
 }
 
-// Achievement Details Bottom Sheet
-class _AchievementDetailsSheet extends StatelessWidget {
+// Achievement Details Screen
+class AchievementDetailsScreen extends StatefulWidget {
   final AchievementDisplay achievement;
 
-  const _AchievementDetailsSheet({required this.achievement});
+  const AchievementDetailsScreen({super.key, required this.achievement});
+
+  @override
+  State<AchievementDetailsScreen> createState() =>
+      _AchievementDetailsScreenState();
+}
+
+class _AchievementDetailsScreenState extends State<AchievementDetailsScreen>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: tokens.outline.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Achievement Header
-                Row(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: _getTierColor(achievement.catalog.tier, tokens)
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: _getTierColor(achievement.catalog.tier, tokens)
-                              .withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          achievement.catalog.icon,
-                          style: const TextStyle(fontSize: 40),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            achievement.catalog.title,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: tokens.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: _getTierColor(
-                                      achievement.catalog.tier, tokens)
-                                  .withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              achievement.catalog.tier.displayName,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: _getTierColor(
-                                    achievement.catalog.tier, tokens),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Description
-                Text(
-                  'Description',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  achievement.catalog.description,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: tokens.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // How to Obtain
-                Text(
-                  'How to Obtain',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: tokens.primary.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                        color: tokens.primary.withValues(alpha: 0.2)),
-                  ),
+    return Scaffold(
+      backgroundColor: tokens.surface,
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(context, tokens, theme),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.lightbulb_outline,
-                            color: tokens.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Requirements',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: tokens.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      _buildSection(
+                        context,
+                        'Description',
+                        widget.achievement.catalog.description,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 24),
+                      _buildHowToObtainSection(context, tokens, theme),
+                      const SizedBox(height: 24),
+                      if (widget.achievement.userState.status !=
+                          AchievementStatus.earned) ...[
+                        _buildProgressSection(context, tokens, theme),
+                      ] else ...[
+                        _buildUnlockedCelebration(context, tokens, theme),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliverAppBar(
+      BuildContext context, SemanticTokens tokens, ThemeData theme) {
+    return SliverAppBar(
+      backgroundColor: tokens.surface,
+      elevation: 0,
+      pinned: true,
+      leading: IconButton(
+        icon: Icon(Icons.close, color: tokens.textPrimary),
+        onPressed: () => Navigator.pop(context),
+      ),
+      expandedHeight: 250.0,
+      flexibleSpace: FlexibleSpaceBar(
+        background: _buildAppBarBackground(context, tokens, theme),
+      ),
+    );
+  }
+
+  Widget _buildAppBarBackground(
+      BuildContext context, SemanticTokens tokens, ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _getTierColor(widget.achievement.catalog.tier, tokens)
+                .withOpacity(0.2),
+            tokens.surface,
+          ],
+          stops: const [0, 0.8],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color:
+                          _getTierColor(widget.achievement.catalog.tier, tokens)
+                              .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _getTierColor(
+                                widget.achievement.catalog.tier, tokens)
+                            .withValues(alpha: 0.3),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getTierColor(
+                                  widget.achievement.catalog.tier, tokens)
+                              .withOpacity(0.2),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.achievement.catalog.icon,
+                        style: const TextStyle(fontSize: 40),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        achievement.catalog.howTo,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: tokens.textSecondary,
-                          height: 1.5,
+                        widget.achievement.catalog.title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: tokens.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getTierColor(
+                                  widget.achievement.catalog.tier, tokens)
+                              .withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.achievement.catalog.tier.displayName,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: _getTierColor(
+                                widget.achievement.catalog.tier, tokens),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                const SizedBox(height: 24),
+  Widget _buildSection(BuildContext context, String title, String content) {
+    final tokens = context.tokens;
+    final theme = Theme.of(context);
 
-                // Progress Section
-                if (achievement.userState.status !=
-                    AchievementStatus.earned) ...[
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          content,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: tokens.textSecondary,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHowToObtainSection(
+      BuildContext context, SemanticTokens tokens, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'How to Obtain',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: tokens.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: tokens.primary.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    color: tokens.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
                   Text(
-                    'Your Progress',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: tokens.textPrimary,
+                    'Requirements',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: tokens.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: tokens.warning.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: tokens.warning.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Progress',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: tokens.textSecondary,
-                              ),
-                            ),
-                            Text(
-                              '${achievement.userState.progress}/${achievement.catalog.threshold}',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: tokens.warning,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: achievement.progressPercent / 100,
-                            backgroundColor: tokens.muted,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(tokens.warning),
-                            minHeight: 10,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${achievement.progressPercent.toInt()}% Complete',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: tokens.warning,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  // Achievement Unlocked Celebration
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: tokens.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: tokens.success.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.celebration,
-                          color: tokens.success,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Achievement Unlocked!',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: tokens.success,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Congratulations! You\'ve earned this achievement.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: tokens.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.achievement.catalog.howTo,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: tokens.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-                const SizedBox(height: 32),
-
-                // Close Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: tokens.primary,
-                      foregroundColor: tokens.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+  Widget _buildProgressSection(
+      BuildContext context, SemanticTokens tokens, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Your Progress',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: tokens.warning.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: tokens.warning.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Progress',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.textSecondary,
                       ),
                     ),
-                    child: const Text(
-                      'Close',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    Text(
+                      '${widget.achievement.userState.progress}/${widget.achievement.catalog.threshold}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: tokens.warning,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: (_controller.value *
+                            widget.achievement.progressPercent /
+                            100),
+                        backgroundColor: tokens.muted,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(tokens.warning),
+                        minHeight: 10,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${widget.achievement.progressPercent.toInt()}% Complete',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.warning,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnlockedCelebration(
+      BuildContext context, SemanticTokens tokens, ThemeData theme) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              tokens.success.withOpacity(0.2),
+              tokens.success.withOpacity(0.1),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: tokens.success.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.celebration,
+              color: tokens.success,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Achievement Unlocked!',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: tokens.success,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Congratulations! You\'ve earned this achievement.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

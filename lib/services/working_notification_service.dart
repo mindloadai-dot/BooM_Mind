@@ -6,6 +6,8 @@ import 'package:flutter/material.dart' show TimeOfDay, Color;
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/services/notification_style_service.dart';
 import 'dart:io' show Platform;
+import 'package:flutter_timezone/flutter_timezone.dart' as ftz;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
 /// Enhanced notification service with style-based personalization
 /// This is the core notification engine that applies user's preferred style
@@ -30,45 +32,85 @@ class WorkingNotificationService {
 
   bool _isInitialized = false;
 
+  Future<void> _configureLocalTimeZone() async {
+    try {
+      tzdata.initializeTimeZones();
+      try {
+        final name = await ftz.FlutterTimezone.getLocalTimezone();
+        tz.setLocalLocation(tz.getLocation(name));
+      } catch (_) {
+        tz.setLocalLocation(tz.UTC);
+      }
+    } catch (_) {
+      // ignore tz init failure
+    }
+  }
+
   /// Initialize the notification service
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
+      // Configure timezone FIRST for iOS
+      await _configureLocalTimeZone();
+
       // Initialize settings for Android
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      // Initialize settings for iOS with explicit permission request
-      const DarwinInitializationSettings initializationSettingsIOS =
+      // Initialize settings for iOS with ALL presentation flags enabled
+      final DarwinInitializationSettings initializationSettingsIOS =
           DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
         requestCriticalPermission: false,
+        requestProvisionalPermission: false,
+        // Critical: Enable ALL presentation options for foreground
         defaultPresentAlert: true,
         defaultPresentBadge: true,
         defaultPresentSound: true,
+        defaultPresentBanner: true,
+        defaultPresentList: true,
+        // Add notification categories for iOS
+        notificationCategories: [
+          DarwinNotificationCategory(
+            'mindload_notifications',
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain(
+                'study_now',
+                'Study Now',
+                options: {DarwinNotificationActionOption.foreground},
+              ),
+              DarwinNotificationAction.plain(
+                'remind_later',
+                'Remind Later',
+              ),
+            ],
+          ),
+        ],
       );
 
       // Combine initialization settings
-      const InitializationSettings initializationSettings =
+      final InitializationSettings initializationSettings =
           InitializationSettings(
         android: initializationSettingsAndroid,
         iOS: initializationSettingsIOS,
       );
 
-      // Initialize the plugin
+      // Initialize the plugin with background handler
       await _flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
+        onDidReceiveBackgroundNotificationResponse:
+            _onBackgroundNotificationTapped,
       );
 
       // Create notification channels
       await _createNotificationChannels();
-      
+
       // Request iOS permissions explicitly after initialization
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
+      if (Platform.isIOS || defaultTargetPlatform == TargetPlatform.iOS) {
         await _requestIOSPermissions();
       }
 
@@ -76,6 +118,20 @@ class WorkingNotificationService {
 
       if (kDebugMode) {
         debugPrint('✅ WorkingNotificationService initialized successfully');
+        debugPrint('   Platform: ${Platform.operatingSystem}');
+        debugPrint(
+            '   iOS Permissions: Will be requested on first notification');
+      }
+
+      // Test notification on iOS to ensure it's working
+      if (Platform.isIOS && kDebugMode) {
+        Future.delayed(const Duration(seconds: 2), () {
+          showNotificationNow(
+            title: 'Mindload Ready',
+            body: 'Notifications are set up and working perfectly!',
+            payload: 'test_notification',
+          );
+        });
       }
     } catch (e) {
       if (kDebugMode) {
@@ -89,8 +145,9 @@ class WorkingNotificationService {
     try {
       final IOSFlutterLocalNotificationsPlugin? iosPlugin =
           _flutterLocalNotificationsPlugin
-              .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-      
+              .resolvePlatformSpecificImplementation<
+                  IOSFlutterLocalNotificationsPlugin>();
+
       if (iosPlugin != null) {
         final bool? granted = await iosPlugin.requestPermissions(
           alert: true,
@@ -98,9 +155,10 @@ class WorkingNotificationService {
           sound: true,
           critical: false,
         );
-        
+
         if (kDebugMode) {
-          debugPrint('📱 iOS notification permissions requested: ${granted ?? false}');
+          debugPrint(
+              '📱 iOS notification permissions requested: ${granted ?? false}');
         }
       }
     } catch (e) {
@@ -300,15 +358,23 @@ class WorkingNotificationService {
           usesChronometer: timeSensitive,
           chronometerCountDown: timeSensitive,
         ),
-        iOS: const DarwinNotificationDetails(
+        iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
+          presentBanner: true,
+          presentList: true,
           sound: 'default',
           badgeNumber: 1,
           categoryIdentifier: 'mindload_notifications',
           threadIdentifier: 'mindload_thread',
-          interruptionLevel: InterruptionLevel.timeSensitive,
+          interruptionLevel: timeSensitive
+              ? InterruptionLevel.timeSensitive
+              : (isHighPriorityStyle
+                  ? InterruptionLevel.active
+                  : InterruptionLevel.passive),
+          attachments: [],
+          subtitle: styleInfo['name'] as String?,
         ),
       );
 
@@ -405,25 +471,32 @@ class WorkingNotificationService {
           usesChronometer: timeSensitive,
           chronometerCountDown: timeSensitive,
         ),
-        iOS: const DarwinNotificationDetails(
+        iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
+          presentBanner: true,
+          presentList: true,
           sound: 'default',
           badgeNumber: 1,
           categoryIdentifier: 'mindload_notifications',
           threadIdentifier: 'mindload_thread',
-          interruptionLevel: InterruptionLevel.timeSensitive,
+          interruptionLevel: timeSensitive
+              ? InterruptionLevel.timeSensitive
+              : (isHighPriorityStyle
+                  ? InterruptionLevel.active
+                  : InterruptionLevel.passive),
+          attachments: [],
+          subtitle: styleInfo['name'] as String?,
         ),
       );
 
-      // Schedule the notification
+      // Schedule the notification using tz.local
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         DateTime.now().millisecondsSinceEpoch,
         styledNotification['title']!,
         styledNotification['body']!,
-        tz.TZDateTime.from(
-            scheduledTime, tz.getLocation(timezoneName ?? 'UTC')),
+        tz.TZDateTime.from(scheduledTime, tz.local),
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         payload: payload,
@@ -751,11 +824,32 @@ class WorkingNotificationService {
     // TODO: Handle notification taps
   }
 
+  /// Handle background notification tap (required for iOS)
+  @pragma('vm:entry-point')
+  static void _onBackgroundNotificationTapped(NotificationResponse response) {
+    if (kDebugMode) {
+      debugPrint('📱 Background notification tapped: ${response.payload}');
+    }
+    // TODO: Handle background notification taps
+  }
+
   /// Check if service is initialized
   bool get isInitialized => _isInitialized;
 
-  /// Check if permissions are granted (placeholder - implement actual permission check)
-  bool get hasPermissions => true;
+  /// Check if permissions are granted
+  Future<bool> get hasPermissions async {
+    if (Platform.isIOS) {
+      final iOSPlugin = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>();
+      if (iOSPlugin != null) {
+        final permissions = await iOSPlugin.checkPermissions();
+        return permissions?.isEnabled ?? false;
+      }
+      return false;
+    }
+    return true; // Android handles permissions differently
+  }
 
   /// Check if Firebase is available (placeholder - implement actual Firebase check)
   bool get hasFirebase => false;
@@ -764,11 +858,12 @@ class WorkingNotificationService {
   Future<Map<String, dynamic>> checkNotificationPermissions() async {
     try {
       final Map<String, dynamic> permissions = {};
-      
+
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         final iOSPlugin = _flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-        
+            .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin>();
+
         if (iOSPlugin != null) {
           // Check if we can request permissions
           final bool? canRequest = await iOSPlugin.requestPermissions(
@@ -776,10 +871,10 @@ class WorkingNotificationService {
             badge: true,
             sound: true,
           );
-          
+
           permissions['canRequest'] = canRequest;
           permissions['platform'] = 'iOS';
-          
+
           if (kDebugMode) {
             debugPrint('📱 iOS notification permissions check:');
             debugPrint('   Can request permissions: $canRequest');
@@ -790,10 +885,10 @@ class WorkingNotificationService {
         // Android permissions are handled differently
         permissions['canRequest'] = true;
       }
-      
+
       permissions['isInitialized'] = _isInitialized;
       permissions['timestamp'] = DateTime.now().toIso8601String();
-      
+
       return permissions;
     } catch (e) {
       if (kDebugMode) {
@@ -812,28 +907,30 @@ class WorkingNotificationService {
   Future<Map<String, dynamic>> verifyIOSNotifications() async {
     try {
       final Map<String, dynamic> verification = {};
-      
+
       if (!Platform.isIOS) {
         return {'error': 'This method is only available on iOS'};
       }
-      
+
       final iOSPlugin = _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-      
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>();
+
       if (iOSPlugin == null) {
         return {'error': 'iOS notification plugin not available'};
       }
-      
+
       // Check current permissions
       final permissions = await iOSPlugin.checkPermissions();
       verification['current_permissions'] = permissions;
-      
+
       // Check if service is initialized
       verification['service_initialized'] = _isInitialized;
-      
+
       // Check if channels are created
-      verification['channels_created'] = _isInitialized; // This will be true if initialize() was called
-      
+      verification['channels_created'] =
+          _isInitialized; // This will be true if initialize() was called
+
       // Test basic notification functionality
       try {
         await iOSPlugin.requestPermissions(
@@ -847,23 +944,26 @@ class WorkingNotificationService {
         verification['permission_request_success'] = false;
         verification['permission_request_error'] = e.toString();
       }
-      
+
       // Check notification categories
       verification['notification_categories'] = [
         'mindload_study_reminders',
-        'mindload_deadlines', 
+        'mindload_deadlines',
         'mindload_achievements',
         'mindload_notifications'
       ];
-      
+
       if (kDebugMode) {
         debugPrint('🔍 iOS Notification System Verification:');
-        debugPrint('   Service Initialized: ${verification['service_initialized']}');
+        debugPrint(
+            '   Service Initialized: ${verification['service_initialized']}');
         debugPrint('   Channels Created: ${verification['channels_created']}');
-        debugPrint('   Current Permissions: ${verification['current_permissions']}');
-        debugPrint('   Permission Request: ${verification['permission_request_success']}');
+        debugPrint(
+            '   Current Permissions: ${verification['current_permissions']}');
+        debugPrint(
+            '   Permission Request: ${verification['permission_request_success']}');
       }
-      
+
       return verification;
     } catch (e) {
       if (kDebugMode) {
@@ -876,7 +976,6 @@ class WorkingNotificationService {
       };
     }
   }
-
 
   /// Get system status
   Map<String, dynamic> getSystemStatus() {
@@ -923,5 +1022,120 @@ class WorkingNotificationService {
         debugPrint('❌ Failed to cancel notification $id: $e');
       }
     }
+  }
+
+  /// Ensure iOS notifications are properly configured
+  Future<void> ensureIOSNotificationsWork() async {
+    if (!Platform.isIOS) return;
+
+    try {
+      // Re-request permissions if needed
+      final hasPerms = await hasPermissions;
+      if (!hasPerms) {
+        await _requestIOSPermissions();
+      }
+
+      // Configure timezone again to be safe
+      await _configureLocalTimeZone();
+
+      // Send a test notification to verify everything works
+      if (kDebugMode) {
+        await showNotificationNow(
+          title: 'iOS Notifications Active',
+          body: 'Your study reminders are ready to help you learn!',
+          payload: 'ios_test',
+          timeSensitive: false,
+        );
+      }
+
+      if (kDebugMode) {
+        debugPrint('✅ iOS notifications verified and working');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ iOS notification verification failed: $e');
+      }
+    }
+  }
+
+  /// Show immediate notification (simplified for iOS)
+  Future<void> showNow({
+    required String title,
+    required String body,
+    String? payload,
+    bool timeSensitive = false,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    final id = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
+    await _flutterLocalNotificationsPlugin.show(
+      id,
+      title,
+      body,
+      NotificationDetails(
+        android: const AndroidNotificationDetails(
+          'general',
+          'General Notifications',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          presentBanner: true,
+          presentList: true,
+          interruptionLevel: timeSensitive
+              ? InterruptionLevel.timeSensitive
+              : InterruptionLevel.active,
+        ),
+      ),
+      payload: payload,
+    );
+  }
+
+  /// Schedule notification at specific time (simplified for iOS)
+  Future<void> scheduleAt({
+    required String title,
+    required String body,
+    required DateTime when,
+    String? payload,
+    bool timeSensitive = false,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    final id = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(when, tz.local),
+      NotificationDetails(
+        android: const AndroidNotificationDetails(
+          'general',
+          'General Notifications',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          presentBanner: true,
+          presentList: true,
+          interruptionLevel: timeSensitive
+              ? InterruptionLevel.timeSensitive
+              : InterruptionLevel.active,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: payload,
+    );
   }
 }

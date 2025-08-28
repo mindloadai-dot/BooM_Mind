@@ -660,7 +660,7 @@ class _StudyScreenState extends State<StudyScreen>
 
     try {
       // Cancel any scheduled notifications
-              await WorkingNotificationService.instance.cancelAllNotifications();
+      await WorkingNotificationService.instance.cancelAllNotifications();
 
       // Delete from storage
       await EnhancedStorageService.instance.deleteStudySet(_currentStudySet.id);
@@ -1644,88 +1644,192 @@ class _StudyScreenState extends State<StudyScreen>
                             debugPrint(
                                 '🎬 Flip animation value: ${_flipAnimation.value}');
                           }
-                          return Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()
-                              ..setEntry(3, 2, 0.001)
-                              ..rotateY(_flipAnimation.value *
-                                  3.14159), // Full 180-degree rotation
-                            child: Container(
-                              width: double.infinity,
-                              height:
-                                  400, // Increased height for better content
-                              decoration: BoxDecoration(
-                                color: tokens.surface,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: tokens.borderDefault,
-                                  width: 2.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: tokens.overlayDim,
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: Stack(
-                                children: [
-                                  // Shimmer effect overlay
-                                  if (!_showAnswer)
-                                    Positioned.fill(
-                                      child: AnimatedBuilder(
-                                        animation: _shimmerAnimation,
-                                        builder: (context, child) {
-                                          return Transform.translate(
-                                            offset: Offset(
-                                              _shimmerAnimation.value * 400 -
-                                                  200,
-                                              0,
-                                            ),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.centerLeft,
-                                                  end: Alignment.centerRight,
-                                                  colors: [
-                                                    Colors.transparent,
-                                                    tokens.primary
-                                                        .withValues(alpha: 0.1),
-                                                    Colors.transparent,
-                                                  ],
-                                                  stops: const [0.0, 0.5, 1.0],
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
+                          return SizedBox(
+                            width: double.infinity,
+                            child: Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()
+                                  ..setEntry(3, 2, 0.001)
+                                  ..rotateY(_flipAnimation.value *
+                                      3.14159), // Full 180-degree rotation
+                                child: Container(
+                                  width: double.infinity,
+                                  height:
+                                      400, // Increased height for better content
+                                  decoration: BoxDecoration(
+                                    color: tokens.surface,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: tokens.borderDefault,
+                                      width: 2.5,
                                     ),
-
-                                  // Main content
-                                  Transform(
-                                    alignment: Alignment.center,
-                                    transform: Matrix4.identity()
-                                      ..rotateY(isShowingFront ? 0 : 3.14159),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(Spacing.lg),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment
-                                            .start, // Changed to start for better content flow
-                                        crossAxisAlignment: CrossAxisAlignment
-                                            .center, // Center horizontally
-                                        children: [
-                                          // Animated icon with pulse effect
-                                          AnimatedBuilder(
-                                            animation: _pulseAnimation,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: tokens.overlayDim,
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      // Shimmer effect overlay
+                                      if (!_showAnswer)
+                                        Positioned.fill(
+                                          child: AnimatedBuilder(
+                                            animation: _shimmerAnimation,
                                             builder: (context, child) {
-                                              return Transform.scale(
-                                                scale: 1.0,
+                                              return Transform.translate(
+                                                offset: Offset(
+                                                  _shimmerAnimation.value *
+                                                          400 -
+                                                      200,
+                                                  0,
+                                                ),
                                                 child: Container(
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      begin:
+                                                          Alignment.centerLeft,
+                                                      end:
+                                                          Alignment.centerRight,
+                                                      colors: [
+                                                        Colors.transparent,
+                                                        tokens.primary
+                                                            .withValues(
+                                                                alpha: 0.1),
+                                                        Colors.transparent,
+                                                      ],
+                                                      stops: const [
+                                                        0.0,
+                                                        0.5,
+                                                        1.0
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+
+                                      // Main content
+                                      Transform(
+                                        alignment: Alignment.center,
+                                        transform: Matrix4.identity()
+                                          ..rotateY(
+                                              isShowingFront ? 0 : 3.14159),
+                                        child: Padding(
+                                          padding:
+                                              const EdgeInsets.all(Spacing.lg),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .start, // Changed to start for better content flow
+                                            crossAxisAlignment: CrossAxisAlignment
+                                                .center, // Center horizontally
+                                            children: [
+                                              // Animated icon with pulse effect
+                                              AnimatedBuilder(
+                                                animation: _pulseAnimation,
+                                                builder: (context, child) {
+                                                  return Transform.scale(
+                                                    scale: 1.0,
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              16),
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            tokens.surfaceAlt,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16),
+                                                        border: Border.all(
+                                                          color: tokens
+                                                              .borderDefault,
+                                                          width: 2,
+                                                        ),
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.quiz,
+                                                        color: tokens.primary,
+                                                        size: 36,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+
+                                              const SizedBox(
+                                                  height: Spacing.md),
+
+                                              // Animated label with bounce effect
+                                              AnimatedBuilder(
+                                                animation: _bounceAnimation,
+                                                builder: (context, child) {
+                                                  return Transform.scale(
+                                                    scale: _showAnswer
+                                                        ? _bounceAnimation.value
+                                                        : 1.0,
+                                                    child: Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 8,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: tokens.primary
+                                                            .withValues(
+                                                                alpha: 0.1),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                        border: Border.all(
+                                                          color: tokens.primary
+                                                              .withValues(
+                                                                  alpha: 0.2),
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        _showAnswer
+                                                            ? 'ANSWER'
+                                                            : 'QUESTION',
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .labelMedium
+                                                            ?.copyWith(
+                                                              color: tokens
+                                                                  .primary,
+                                                              letterSpacing:
+                                                                  1.5,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+
+                                              const SizedBox(
+                                                  height: Spacing
+                                                      .md), // Reduced spacing
+
+                                              // Content with enhanced typography and better long text handling
+                                              Expanded(
+                                                child: Container(
+                                                  width: double.infinity,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minHeight:
+                                                        120, // Minimum height for short content
+                                                    maxHeight:
+                                                        300, // Maximum height for long content
+                                                  ),
                                                   padding:
-                                                      const EdgeInsets.all(16),
+                                                      const EdgeInsets.all(20),
                                                   decoration: BoxDecoration(
                                                     color: tokens.surfaceAlt,
                                                     borderRadius:
@@ -1734,127 +1838,50 @@ class _StudyScreenState extends State<StudyScreen>
                                                     border: Border.all(
                                                       color:
                                                           tokens.borderDefault,
-                                                      width: 2,
                                                     ),
                                                   ),
-                                                  child: Icon(
-                                                    Icons.quiz,
-                                                    color: tokens.primary,
-                                                    size: 36,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-
-                                          const SizedBox(height: Spacing.md),
-
-                                          // Animated label with bounce effect
-                                          AnimatedBuilder(
-                                            animation: _bounceAnimation,
-                                            builder: (context, child) {
-                                              return Transform.scale(
-                                                scale: _showAnswer
-                                                    ? _bounceAnimation.value
-                                                    : 1.0,
-                                                child: Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 8,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: tokens.primary
-                                                        .withValues(alpha: 0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                    border: Border.all(
-                                                      color: tokens.primary
-                                                          .withValues(
-                                                              alpha: 0.2),
+                                                  child: SingleChildScrollView(
+                                                    physics:
+                                                        const BouncingScrollPhysics(),
+                                                    child: Padding(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 8),
+                                                      child: Text(
+                                                        _showAnswer
+                                                            ? currentCard.answer
+                                                            : currentCard
+                                                                .question,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleLarge
+                                                            ?.copyWith(
+                                                              color: tokens
+                                                                  .textPrimary,
+                                                              height:
+                                                                  1.5, // Increased line height for readability
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        maxLines:
+                                                            null, // Allow unlimited lines
+                                                        overflow: TextOverflow
+                                                            .visible, // Show all text
+                                                      ),
                                                     ),
                                                   ),
-                                                  child: Text(
-                                                    _showAnswer
-                                                        ? 'ANSWER'
-                                                        : 'QUESTION',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .labelMedium
-                                                        ?.copyWith(
-                                                          color: tokens.primary,
-                                                          letterSpacing: 1.5,
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                        ),
-                                                  ),
                                                 ),
-                                              );
-                                            },
+                                              ),
+                                            ],
                                           ),
-
-                                          const SizedBox(
-                                              height: Spacing
-                                                  .md), // Reduced spacing
-
-                                          // Content with enhanced typography and better long text handling
-                                          Expanded(
-                                            child: Container(
-                                              width: double.infinity,
-                                              constraints: const BoxConstraints(
-                                                minHeight:
-                                                    120, // Minimum height for short content
-                                                maxHeight:
-                                                    300, // Maximum height for long content
-                                              ),
-                                              padding: const EdgeInsets.all(20),
-                                              decoration: BoxDecoration(
-                                                color: tokens.surfaceAlt,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                  color: tokens.borderDefault,
-                                                ),
-                                              ),
-                                              child: SingleChildScrollView(
-                                                physics:
-                                                    const BouncingScrollPhysics(),
-                                                child: Padding(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(vertical: 8),
-                                                  child: Text(
-                                                    _showAnswer
-                                                        ? currentCard.answer
-                                                        : currentCard.question,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleLarge
-                                                        ?.copyWith(
-                                                          color: tokens
-                                                              .textPrimary,
-                                                          height:
-                                                              1.5, // Increased line height for readability
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                    textAlign: TextAlign.center,
-                                                    maxLines:
-                                                        null, // Allow unlimited lines
-                                                    overflow: TextOverflow
-                                                        .visible, // Show all text
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
+                                )),
                           );
                         },
                       ),
@@ -2296,22 +2323,25 @@ class _StudyScreenState extends State<StudyScreen>
                             AnimatedBuilder(
                               animation: _pulseAnimation,
                               builder: (context, child) {
-                                return Transform.scale(
-                                  scale: _pulseAnimation.value,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: tokens.surfaceAlt,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: tokens.borderDefault,
-                                        width: 1.5,
+                                return SizedBox(
+                                  width: double.infinity,
+                                  child: Transform.scale(
+                                    scale: _pulseAnimation.value,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: tokens.surfaceAlt,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: tokens.borderDefault,
+                                          width: 1.5,
+                                        ),
                                       ),
-                                    ),
-                                    child: Icon(
-                                      Icons.quiz,
-                                      color: tokens.primary,
-                                      size: 24,
+                                      child: Icon(
+                                        Icons.quiz,
+                                        color: tokens.primary,
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -2329,26 +2359,29 @@ class _StudyScreenState extends State<StudyScreen>
                                   child: AnimatedBuilder(
                                     animation: _pulseAnimation,
                                     builder: (context, child) {
-                                      return Transform.scale(
-                                        scale: 0.98 +
-                                            (_pulseAnimation.value *
-                                                0.02), // Subtle pulse effect
-                                        child: Text(
-                                          question.question,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                color: tokens.textPrimary,
-                                                height:
-                                                    1.5, // Increased line height for readability
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                          textAlign: TextAlign.center,
-                                          maxLines:
-                                              null, // Allow unlimited lines
-                                          overflow: TextOverflow
-                                              .visible, // Show all text
+                                      return SizedBox(
+                                        width: double.infinity,
+                                        child: Transform.scale(
+                                          scale: 0.98 +
+                                              (_pulseAnimation.value *
+                                                  0.02), // Subtle pulse effect
+                                          child: Text(
+                                            question.question,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleLarge
+                                                ?.copyWith(
+                                                  color: tokens.textPrimary,
+                                                  height:
+                                                      1.5, // Increased line height for readability
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                            textAlign: TextAlign.center,
+                                            maxLines:
+                                                null, // Allow unlimited lines
+                                            overflow: TextOverflow
+                                                .visible, // Show all text
+                                          ),
                                         ),
                                       );
                                     },

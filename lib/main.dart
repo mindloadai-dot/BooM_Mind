@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:mindload/config/app_check_config.dart';
 import 'package:mindload/services/working_notification_service.dart';
-import 'package:mindload/services/enhanced_onboarding_service.dart';
-import 'package:mindload/services/mandatory_onboarding_service.dart';
+import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
@@ -18,6 +17,8 @@ import 'package:mindload/config/environment_config.dart';
 
 import 'package:mindload/screens/social_auth_screen.dart';
 import 'package:mindload/screens/home_screen.dart';
+import 'package:mindload/screens/unified_onboarding_screen.dart';
+import 'package:mindload/widgets/welcome_dialog.dart';
 import 'package:mindload/screens/logic_packs_screen.dart';
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/achievements_screen.dart';
@@ -78,20 +79,12 @@ void main() async {
   }
 
   try {
-    // Initialize Enhanced Onboarding Service
-    await EnhancedOnboardingService.initialize();
+    // Initialize Unified Onboarding Service (replaces old services)
+    await UnifiedOnboardingService().initialize();
+    print('Unified Onboarding Service initialized successfully');
   } catch (e) {
-    print('Enhanced Onboarding Service initialization failed: $e');
-    // Continue without enhanced onboarding
-  }
-
-  try {
-    // Initialize Mandatory Onboarding Service
-    await MandatoryOnboardingService.instance.initialize();
-    print('Mandatory Onboarding Service initialized successfully');
-  } catch (e) {
-    print('Mandatory Onboarding Service initialization failed: $e');
-    // Continue without mandatory onboarding
+    print('Unified Onboarding Service initialization failed: $e');
+    // Continue without onboarding
   }
 
   // Initialize critical services in parallel for faster startup
@@ -184,8 +177,8 @@ class MindLoadApp extends StatelessWidget {
         ChangeNotifierProvider<LocalImageStorageService>.value(
           value: LocalImageStorageService.instance,
         ),
-        ChangeNotifierProvider<MandatoryOnboardingService>.value(
-          value: MandatoryOnboardingService.instance,
+        ChangeNotifierProvider<UnifiedOnboardingService>.value(
+          value: UnifiedOnboardingService(),
         ),
         ChangeNotifierProvider<EnhancedStorageService>.value(
           value: EnhancedStorageService.instance,
@@ -322,9 +315,16 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
         builder: (context, authService, child) {
           final user = authService.currentUser;
           if (user != null) {
-            // User is authenticated, show home screen
-            // Onboarding will be handled by the HomeScreen or a separate onboarding flow
-            return const HomeScreen();
+            // User is authenticated, check onboarding
+            return Consumer<UnifiedOnboardingService>(
+              builder: (context, onboardingService, child) {
+                if (onboardingService.needsOnboarding) {
+                  return const UnifiedOnboardingScreen();
+                } else {
+                  return const HomeScreenWithWelcome();
+                }
+              },
+            );
           } else {
             return const SocialAuthScreen();
           }
@@ -450,5 +450,40 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
         ),
       ),
     );
+  }
+}
+
+/// HomeScreen wrapper that shows welcome dialog if needed
+class HomeScreenWithWelcome extends StatefulWidget {
+  const HomeScreenWithWelcome({super.key});
+
+  @override
+  State<HomeScreenWithWelcome> createState() => _HomeScreenWithWelcomeState();
+}
+
+class _HomeScreenWithWelcomeState extends State<HomeScreenWithWelcome> {
+  @override
+  void initState() {
+    super.initState();
+    // Show welcome dialog after build if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showWelcomeDialogIfNeeded();
+    });
+  }
+
+  Future<void> _showWelcomeDialogIfNeeded() async {
+    final onboardingService = UnifiedOnboardingService();
+    if (onboardingService.shouldShowWelcomeDialog) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const WelcomeDialog(),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const HomeScreen();
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mindload/services/enhanced_onboarding_service.dart';
-import 'package:mindload/services/mandatory_onboarding_service.dart';
+import 'package:mindload/services/unified_onboarding_service.dart';
 
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/privacy_security_screen.dart';
@@ -566,16 +565,9 @@ class _SettingsScreenState extends State<SettingsScreen>
           const SizedBox(height: 20),
           _buildPreferenceTile(
             'Reset Onboarding',
-            'Show welcome dialogs again',
+            'Show welcome dialogs and first-time setup again',
             Icons.refresh,
             _showResetOnboardingDialog,
-          ),
-          const SizedBox(height: 12),
-          _buildPreferenceTile(
-            'Reset Mandatory Onboarding',
-            'Show first-time setup again',
-            Icons.settings_backup_restore,
-            _showResetMandatoryOnboardingDialog,
           ),
           const SizedBox(height: 12),
           _buildPreferenceTile(
@@ -802,7 +794,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 1.2,
+                  childAspectRatio: 1.0,
                 ),
                 itemCount: AppTheme.values.length,
                 itemBuilder: (context, index) {
@@ -961,7 +953,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ],
         ),
         content: Text(
-          'This will show the welcome dialogs again the next time you open the app. '
+          'This will show the welcome dialog and first-time setup again the next time you open the app. '
           'Are you sure you want to continue?',
           style: TextStyle(color: context.tokens.textSecondary),
         ),
@@ -999,7 +991,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     });
 
     try {
-      await EnhancedOnboardingService().resetOnboarding();
+      await UnifiedOnboardingService().resetOnboarding();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1012,93 +1004,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to reset onboarding: $e'),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isResettingOnboarding = false;
-        });
-      }
-    }
-  }
-
-  void _showResetMandatoryOnboardingDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.tokens.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.settings_backup_restore,
-              color: context.tokens.primary,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Reset Mandatory Onboarding',
-              style: TextStyle(
-                color: context.tokens.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'This will show the mandatory first-time setup again, requiring you to set up your nickname and learn about features. '
-          'Are you sure you want to continue?',
-          style: TextStyle(color: context.tokens.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: context.tokens.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _resetMandatoryOnboarding();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.tokens.primary,
-              foregroundColor: context.tokens.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _resetMandatoryOnboarding() async {
-    HapticFeedbackService().warning();
-    setState(() {
-      _isResettingOnboarding = true;
-    });
-
-    try {
-      await MandatoryOnboardingService.instance.resetOnboarding();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mandatory onboarding reset successfully'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to reset mandatory onboarding: $e'),
           ),
         );
       }
@@ -1341,10 +1246,11 @@ class _SettingsScreenState extends State<SettingsScreen>
     try {
       // First, sign out from the auth service
       await AuthService.instance.signOut();
-      
+
       if (mounted) {
         // Clear any navigation stack and go to auth screen
-        Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/auth', (route) => false);
       }
     } catch (e) {
       if (mounted) {

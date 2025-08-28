@@ -12,8 +12,7 @@ import 'package:mindload/services/document_processor.dart';
 
 import 'package:mindload/screens/study_screen.dart';
 import 'package:mindload/screens/ultra_mode_screen.dart';
-import 'package:mindload/screens/mandatory_onboarding_screen.dart';
-import 'package:mindload/services/mandatory_onboarding_service.dart';
+
 import 'package:mindload/screens/profile_screen.dart';
 import 'package:mindload/screens/tiers_benefits_screen.dart';
 import 'package:mindload/services/pdf_export_service.dart';
@@ -38,6 +37,7 @@ import 'package:mindload/screens/subscription_settings_screen.dart';
 import 'package:mindload/screens/settings_screen.dart';
 import 'package:mindload/widgets/youtube_preview_card.dart';
 import 'package:mindload/services/youtube_service.dart';
+import 'package:mindload/services/youtube_transcript_processor.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/core/youtube_utils.dart';
 import 'dart:async' show Timer;
@@ -90,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     _checkAuthentication();
     _initializeData();
-    _checkOnboarding();
   }
 
   void _checkAuthentication() {
@@ -102,34 +101,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.of(context).pushReplacementNamed('/auth');
       });
       return;
-    }
-  }
-
-  Future<void> _checkOnboarding() async {
-    // Check if user needs onboarding after authentication
-    final onboardingService = MandatoryOnboardingService.instance;
-
-    if (kDebugMode) {
-      print(
-          '🔍 HomeScreen onboarding check: needsOnboarding=${onboardingService.needsOnboarding}');
-      print('🔍 Onboarding status: ${onboardingService.getOnboardingStatus()}');
-    }
-
-    if (onboardingService.needsOnboarding) {
-      if (kDebugMode) {
-        print('🎯 Showing onboarding after authentication');
-      }
-
-      // Defer navigation to after the current build frame
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const MandatoryOnboardingScreen(),
-            ),
-          );
-        }
-      });
     }
   }
 
@@ -1679,7 +1650,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: tokens.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(Icons.notifications, color: tokens.accent),
@@ -1695,10 +1667,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildStatusRow('Service Initialized', status['serviceInitialized'] ?? false),
-                _buildStatusRow('Platform', status['permissions']?['platform'] ?? 'Unknown'),
-                _buildStatusRow('Can Request Permissions', status['permissions']?['canRequest'] ?? false),
-                _buildStatusRow('Can Send Notifications', status['canSendNotifications'] ?? false),
+                _buildStatusRow('Service Initialized',
+                    status['serviceInitialized'] ?? false),
+                _buildStatusRow('Platform',
+                    status['permissions']?['platform'] ?? 'Unknown'),
+                _buildStatusRow('Can Request Permissions',
+                    status['permissions']?['canRequest'] ?? false),
+                _buildStatusRow('Can Send Notifications',
+                    status['canSendNotifications'] ?? false),
                 if (status['error'] != null)
                   _buildStatusRow('Error', status['error'], isError: true),
                 const SizedBox(height: 16),
@@ -1720,7 +1696,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: TextStyle(color: tokens.primary),
               ),
             ),
-
           ],
         );
       },
@@ -1734,8 +1709,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Row(
         children: [
           Icon(
-            value == true ? Icons.check_circle : (isError ? Icons.error : Icons.info),
-            color: value == true ? tokens.success : (isError ? tokens.error : tokens.accent),
+            value == true
+                ? Icons.check_circle
+                : (isError ? Icons.error : Icons.info),
+            color: value == true
+                ? tokens.success
+                : (isError ? tokens.error : tokens.accent),
             size: 16,
           ),
           const SizedBox(width: 8),
@@ -1869,11 +1848,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Send test notification if enabled
                     if (value) {
-                      await WorkingNotificationService.instance.scheduleNotification(
+                      await WorkingNotificationService.instance
+                          .scheduleNotification(
                         title: 'Study Reminder: ${studySet.title}',
                         body:
                             'Time to review your ${studySet.flashcards.length} flashcards!',
-                        scheduledTime: DateTime.now().add(const Duration(seconds: 3)),
+                        scheduledTime:
+                            DateTime.now().add(const Duration(seconds: 3)),
                       );
 
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1902,7 +1883,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // Quick actions
           Row(
             children: [
-
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
@@ -1910,7 +1890,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Notification settings are now managed through the main settings'),
+                        content: Text(
+                            'Notification settings are now managed through the main settings'),
                         backgroundColor: tokens.primary,
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -2228,7 +2209,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     try {
       // Cancel any scheduled notifications
-              await WorkingNotificationService.instance.cancelAllNotifications();
+      await WorkingNotificationService.instance.cancelAllNotifications();
 
       // Delete from storage
       await EnhancedStorageService.instance.deleteStudySet(studySet.id);
@@ -2573,9 +2554,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               color: tokens.surface,
               onSelected: (value) async {
                 switch (value) {
-
                   case 'status':
-                    final status = WorkingNotificationService.instance.getSystemStatus();
+                    final status =
+                        WorkingNotificationService.instance.getSystemStatus();
                     if (mounted) {
                       _showNotificationStatusDialog(status);
                     }
@@ -2597,13 +2578,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 }
               },
               itemBuilder: (context) => [
-
                 PopupMenuItem(
                   value: 'status',
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline,
-                          color: tokens.accent, size: 20),
+                      Icon(Icons.info_outline, color: tokens.accent, size: 20),
                       const SizedBox(width: 12),
                       Text(
                         'Check Notification Status',
@@ -2673,7 +2652,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: SafeArea(
             child: Container(
               color: tokens.surface,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
               child: Consumer<MindloadEconomyService>(
                 builder: (context, economyService, child) {
                   // Check if user can upload documents (has credits and can generate content)
@@ -2787,7 +2766,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Row(
                               children: [
                                 Expanded(
@@ -2939,96 +2918,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _studySets.isEmpty
-                                    ? 'Start by creating your first study set'
-                                    : '${_studySets.length} study set${_studySets.length != 1 ? 's' : ''} ready to study',
+                                '${_filteredStudySets.length} sets',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
                                     ?.copyWith(
                                       color: tokens.textSecondary,
-                                      fontSize: 14,
                                     ),
                               ),
                             ],
                           ),
                         ),
-                        if (_studySets.isNotEmpty) ...[
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: tokens.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: tokens.primary.withValues(alpha: 0.2),
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$_totalFlashcards',
-                                  style: TextStyle(
-                                    color: tokens.primary,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  'Cards',
-                                  style: TextStyle(
-                                    color:
-                                        tokens.primary.withValues(alpha: 0.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: tokens.secondary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: tokens.secondary.withValues(alpha: 0.2),
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$_totalQuizzes',
-                                  style: TextStyle(
-                                    color: tokens.secondary,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  'Quizzes',
-                                  style: TextStyle(
-                                    color:
-                                        tokens.secondary.withValues(alpha: 0.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        const SizedBox(width: 16),
+                        _buildUsageIndicator(
+                          economyService,
+                          'Monthly Allowance',
+                          economyService.userEconomy?.creditsRemaining ?? 0,
+                          economyService.userEconomy?.monthlyQuota ?? 0,
+                          tokens.primary,
+                        ),
                       ],
                     ),
-                    const SizedBox(height: Spacing.md),
+
+                    const SizedBox(height: 16),
 
                     // Search and filter controls
                     if (_studySets.isNotEmpty) ...[
@@ -3541,14 +3453,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       size: ButtonSize.medium,
       semanticLabel: label,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 1),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: tokens.navIcon),
-            const SizedBox(height: 3),
+            Icon(icon, size: 14, color: tokens.navIcon),
+            const SizedBox(height: 2),
             Flexible(
               child: Text(
                 label,
@@ -3558,7 +3470,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: tokens.navText,
                       fontWeight: FontWeight.w600,
-                      fontSize: 9,
+                      fontSize: 8,
                       height: 1.0,
                     ),
               ),
@@ -3585,7 +3497,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       semanticLabel:
           canPerformAction ? label : '$label - disabled, limit reached',
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 1),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -3593,10 +3505,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             Icon(
               canPerformAction ? icon : Icons.block,
-              size: 16,
+              size: 14,
               color: canPerformAction ? tokens.navIcon : tokens.textTertiary,
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Flexible(
               child: Text(
                 label,
@@ -3608,7 +3520,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ? tokens.navText
                           : tokens.textTertiary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 9,
+                      fontSize: 8,
                       height: 1.0,
                     ),
               ),
@@ -3923,31 +3835,67 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       setState(() => _isLoading = true);
 
-      final request = YouTubeIngestRequest(
+      // Check if already processed
+      final processor = YouTubeTranscriptProcessor();
+      final userId = AuthService.instance.currentUserId;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final existingSet =
+          await processor.getExistingStudySet(preview.videoId, userId);
+
+      if (existingSet != null) {
+        // Already processed, just navigate to it
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('This video has already been processed!'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Navigate to study screen with existing set
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StudyScreen(studySet: existingSet),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Process the video with enhanced subtitle extraction
+      final studySet = await processor.processYouTubeVideo(
         videoId: preview.videoId,
+        userId: userId,
         preferredLanguage: preview.primaryLang,
+        flashcardCount: 20,
+        quizCount: 15,
+        useSubtitlesForQuestions: true,
       );
 
-      final response = await YouTubeService().ingestTranscript(request);
-
-      if (mounted) {
+      if (mounted && studySet != null) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'YouTube video processed successfully! Study materials created.'),
+                'YouTube video processed! ${studySet.flashcards.length} flashcards and ${studySet.quizzes.first.questions.length} questions created from subtitles.'),
             duration: const Duration(seconds: 3),
           ),
         );
 
-        // Navigate to create screen to show the new materials
+        // Navigate to study screen with new materials
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const CreateScreen(),
+            builder: (context) => StudyScreen(studySet: studySet),
           ),
         );
-        // Refresh study sets when returning from create screen
+
+        // Refresh study sets when returning
         await _loadStudySets();
       }
     } catch (e) {
@@ -4073,6 +4021,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Implement proper achievement tracker access
     // For now, return null to avoid circular dependencies
     return null;
+  }
+
+  Widget _buildUsageIndicator(MindloadEconomyService economyService,
+      String label, int remaining, int total, Color color) {
+    final tokens = context.tokens;
+    final percentage = total > 0 ? (remaining / total) : 0.0;
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: percentage,
+                backgroundColor: color.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                strokeWidth: 5,
+              ),
+              Text(
+                '$remaining',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: tokens.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            Text(
+              '$total total',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: tokens.textSecondary,
+                  ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

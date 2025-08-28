@@ -13,11 +13,8 @@ import 'package:mindload/services/entitlement_service.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/local_image_storage_service.dart';
 import 'package:mindload/services/promotional_consent_service.dart';
-import 'package:mindload/services/onboarding_service.dart';
-import 'package:mindload/services/enhanced_onboarding_service.dart';
-import 'package:mindload/services/mandatory_onboarding_service.dart';
+import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
-
 
 enum AuthProvider {
   google,
@@ -522,9 +519,7 @@ class AuthService extends ChangeNotifier {
 
       // Step 5: Clear onboarding data
       try {
-        await OnboardingService().resetOnboarding();
-        await EnhancedOnboardingService().resetOnboarding();
-        await MandatoryOnboardingService.instance.resetOnboarding();
+        await UnifiedOnboardingService().resetOnboarding();
         if (kDebugMode) {
           print('✅ Onboarding data cleared');
         }
@@ -536,7 +531,8 @@ class AuthService extends ChangeNotifier {
 
       // Step 6: Clear enhanced storage data (skip for now - not essential for logout)
       if (kDebugMode) {
-        print('ℹ️ Enhanced storage data clearing skipped (not essential for logout)');
+        print(
+            'ℹ️ Enhanced storage data clearing skipped (not essential for logout)');
       }
 
       // Step 7: Notify listeners of state change
@@ -548,12 +544,12 @@ class AuthService extends ChangeNotifier {
       if (kDebugMode) {
         print('❌ Sign Out Error: $e');
       }
-      
+
       // Even if there's an error, try to clear local state
       _currentUser = null;
       await _clearUserData();
       notifyListeners();
-      
+
       rethrow;
     }
   }
@@ -605,9 +601,7 @@ class AuthService extends ChangeNotifier {
 
         // Step 5: Clear onboarding data
         try {
-          await OnboardingService().resetOnboarding();
-          await EnhancedOnboardingService().resetOnboarding();
-          await MandatoryOnboardingService.instance.resetOnboarding();
+          await UnifiedOnboardingService().resetOnboarding();
           if (kDebugMode) {
             print('🗑️ Onboarding data cleared');
           }

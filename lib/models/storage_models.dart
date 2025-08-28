@@ -1,5 +1,7 @@
 
+import 'dart:convert';
 import 'package:mindload/config/storage_config.dart';
+import 'package:mindload/models/study_data.dart';
 
 // Study set metadata for storage management
 class StudySetMetadata {
@@ -101,6 +103,25 @@ class StudySetMetadata {
   }
 
   // Factory method to create StudySet from metadata
+  factory StudySetMetadata.fromStudySet(StudySet studySet) {
+    final content = studySet.content.isNotEmpty ? studySet.content : null;
+    final totalItems = studySet.flashcards.length + studySet.quizzes.length;
+    final bytes = jsonEncode(studySet.toJson()).length;
+    
+    return StudySetMetadata(
+      setId: studySet.id,
+      title: studySet.title,
+      content: content,
+      isPinned: false,
+      bytes: bytes,
+      items: totalItems,
+      lastOpenedAt: studySet.lastStudied,
+      lastStudied: studySet.lastStudied,
+      createdAt: studySet.createdAt ?? studySet.createdDate,
+      updatedAt: studySet.updatedAt ?? studySet.lastStudied,
+      isArchived: false,
+    );
+  }
   // Note: This creates a minimal StudySet - full data should be loaded separately
   Map<String, dynamic> toStudySetData() {
     return {

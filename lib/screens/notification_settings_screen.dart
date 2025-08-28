@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:mindload/services/user_profile_service.dart';
+import 'package:mindload/services/working_notification_service.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
+import 'package:mindload/widgets/accessible_components.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -33,31 +36,35 @@ class _NotificationSettingsScreenState
 
     return Scaffold(
       appBar: const MindloadAppBar(title: 'Notification Settings'),
-      body: Container(
-        color: tokens.bg,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            _buildHeader(tokens),
-            const SizedBox(height: 24),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            color: tokens.bg,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                _buildHeader(tokens),
+                const SizedBox(height: 24),
 
-            // Notification Style
-            _buildNotificationStyleSection(tokens),
-            const SizedBox(height: 24),
+                // Notification Style
+                _buildNotificationStyleSection(tokens),
+                const SizedBox(height: 24),
 
-            // Notification Categories
-            _buildNotificationCategoriesSection(tokens),
-            const SizedBox(height: 24),
+                // Notification Categories
+                _buildNotificationCategoriesSection(tokens),
+                const SizedBox(height: 24),
 
-            // Permission Status
-            _buildPermissionStatusSection(tokens),
-            const SizedBox(height: 24),
+                // Permission Status
+                _buildPermissionStatusSection(tokens),
+                const SizedBox(height: 24),
 
-            // Save Button
-            _buildSaveButton(tokens),
-          ],
+                // Save Button
+                _buildSaveButton(tokens),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -332,14 +339,75 @@ class _NotificationSettingsScreenState
             ),
           ),
           const SizedBox(height: 20),
-          _buildStatusRow(tokens, 'Notification Permissions', 'GRANTED',
-              Icons.notifications, tokens.success),
-          const SizedBox(height: 12),
-          _buildStatusRow(tokens, 'Background Processing', 'ENABLED',
-              Icons.schedule, tokens.success),
-          const SizedBox(height: 12),
-          _buildStatusRow(tokens, 'WorkingNotificationService', 'ACTIVE',
-              Icons.check_circle, tokens.success),
+
+          // Check actual permissions
+          FutureBuilder<bool>(
+            future: WorkingNotificationService.instance.hasPermissions,
+            builder: (context, snapshot) {
+              final hasPermissions = snapshot.data ?? false;
+              final isServiceActive =
+                  WorkingNotificationService.instance.isInitialized;
+
+              return Column(
+                children: [
+                  _buildStatusRow(
+                    tokens,
+                    'Notification Permissions',
+                    hasPermissions ? 'GRANTED' : 'DENIED',
+                    Icons.notifications,
+                    hasPermissions ? tokens.success : tokens.error,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatusRow(
+                    tokens,
+                    'Background Processing',
+                    Platform.isIOS ? 'ENABLED' : 'N/A',
+                    Icons.schedule,
+                    Platform.isIOS ? tokens.success : tokens.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatusRow(
+                    tokens,
+                    'WorkingNotificationService',
+                    isServiceActive ? 'ACTIVE' : 'INACTIVE',
+                    Icons.check_circle,
+                    isServiceActive ? tokens.success : tokens.error,
+                  ),
+
+                  // Add iOS-specific test button
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: 20),
+                    AccessibleButton(
+                      onPressed: () async {
+                        await WorkingNotificationService.instance
+                            .ensureIOSNotificationsWork();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Test notification sent! Check your notifications.',
+                                style: TextStyle(color: tokens.textPrimary),
+                              ),
+                              backgroundColor: tokens.success,
+                            ),
+                          );
+                        }
+                      },
+                      variant: ButtonVariant.secondary,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.phonelink_ring),
+                          SizedBox(width: 8),
+                          Text('Test iOS Notifications'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
         ],
       ),
     );

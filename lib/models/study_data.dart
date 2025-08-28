@@ -5,7 +5,8 @@ class StudySet {
   final String title;
   final String content;
   final List<Flashcard> flashcards;
-  final List<QuizQuestion> quizQuestions; // Direct quiz questions for generation
+  final List<QuizQuestion>
+      quizQuestions; // Direct quiz questions for generation
   final List<Quiz> quizzes; // Full quiz objects
   final DateTime createdDate;
   final DateTime lastStudied;
@@ -18,6 +19,11 @@ class StudySet {
   final int? sourceLength;
   final List<String> tags;
   final bool isArchived;
+  final String? sourceUrl;
+  final StudySetType? type;
+  final Map<String, dynamic>? metadata;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   StudySet({
     required this.id,
@@ -36,45 +42,74 @@ class StudySet {
     this.sourceLength,
     this.tags = const [],
     this.isArchived = false,
+    this.sourceUrl,
+    this.type,
+    this.metadata,
+    this.createdAt,
+    this.updatedAt,
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'content': content,
-    'flashcards': flashcards.map((f) => f.toJson()).toList(),
-    'quizQuestions': quizQuestions.map((q) => q.toJson()).toList(),
-    'quizzes': quizzes.map((q) => q.toJson()).toList(),
-    'createdDate': createdDate.toIso8601String(),
-    'lastStudied': lastStudied.toIso8601String(),
-    'notificationsEnabled': notificationsEnabled,
-    'deadlineDate': deadlineDate?.toIso8601String(),
-    'category': category,
-    'description': description,
-    'sourceType': sourceType,
-    'sourceLength': sourceLength,
-    'tags': tags,
-    'isArchived': isArchived,
-  };
+        'id': id,
+        'title': title,
+        'content': content,
+        'flashcards': flashcards.map((f) => f.toJson()).toList(),
+        'quizQuestions': quizQuestions.map((q) => q.toJson()).toList(),
+        'quizzes': quizzes.map((q) => q.toJson()).toList(),
+        'createdDate': createdDate.toIso8601String(),
+        'lastStudied': lastStudied.toIso8601String(),
+        'notificationsEnabled': notificationsEnabled,
+        'deadlineDate': deadlineDate?.toIso8601String(),
+        'category': category,
+        'description': description,
+        'sourceType': sourceType,
+        'sourceLength': sourceLength,
+        'tags': tags,
+        'isArchived': isArchived,
+        'sourceUrl': sourceUrl,
+        'type': type?.name,
+        'metadata': metadata,
+        'createdAt': createdAt?.toIso8601String(),
+        'updatedAt': updatedAt?.toIso8601String(),
+      };
 
   factory StudySet.fromJson(Map<String, dynamic> json) => StudySet(
-    id: json['id'],
-    title: json['title'],
-    content: json['content'] ?? '',
-    flashcards: (json['flashcards'] as List? ?? []).map((f) => Flashcard.fromJson(f)).toList(),
-    quizQuestions: (json['quizQuestions'] as List? ?? []).map((q) => QuizQuestion.fromJson(q)).toList(),
-    quizzes: (json['quizzes'] as List? ?? []).map((q) => Quiz.fromJson(q)).toList(),
-    createdDate: DateTime.parse(json['createdDate']),
-    lastStudied: DateTime.parse(json['lastStudied']),
-    notificationsEnabled: json['notificationsEnabled'] ?? true,
-    deadlineDate: json['deadlineDate'] != null ? DateTime.parse(json['deadlineDate']) : null,
-    category: json['category'],
-    description: json['description'],
-    sourceType: json['sourceType'],
-    sourceLength: json['sourceLength'],
-    tags: (json['tags'] as List?)?.cast<String>() ?? [],
-    isArchived: json['isArchived'] ?? false,
-  );
+        id: json['id'],
+        title: json['title'],
+        content: json['content'] ?? '',
+        flashcards: (json['flashcards'] as List? ?? [])
+            .map((f) => Flashcard.fromJson(f))
+            .toList(),
+        quizQuestions: (json['quizQuestions'] as List? ?? [])
+            .map((q) => QuizQuestion.fromJson(q))
+            .toList(),
+        quizzes: (json['quizzes'] as List? ?? [])
+            .map((q) => Quiz.fromJson(q))
+            .toList(),
+        createdDate: DateTime.parse(json['createdDate']),
+        lastStudied: DateTime.parse(json['lastStudied']),
+        notificationsEnabled: json['notificationsEnabled'] ?? true,
+        deadlineDate: json['deadlineDate'] != null
+            ? DateTime.parse(json['deadlineDate'])
+            : null,
+        category: json['category'],
+        description: json['description'],
+        sourceType: json['sourceType'],
+        sourceLength: json['sourceLength'],
+        tags: (json['tags'] as List?)?.cast<String>() ?? [],
+        isArchived: json['isArchived'] ?? false,
+        sourceUrl: json['sourceUrl'],
+        type: json['type'] != null
+            ? StudySetType.values.firstWhere((e) => e.name == json['type'])
+            : null,
+        metadata: json['metadata'] as Map<String, dynamic>?,
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : null,
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.parse(json['updatedAt'])
+            : null,
+      );
 
   StudySet copyWith({
     String? id,
@@ -93,24 +128,25 @@ class StudySet {
     int? sourceLength,
     List<String>? tags,
     bool? isArchived,
-  }) => StudySet(
-    id: id ?? this.id,
-    title: title ?? this.title,
-    content: content ?? this.content,
-    flashcards: flashcards ?? this.flashcards,
-    quizQuestions: quizQuestions ?? this.quizQuestions,
-    quizzes: quizzes ?? this.quizzes,
-    createdDate: createdDate ?? this.createdDate,
-    lastStudied: lastStudied ?? this.lastStudied,
-    notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-    deadlineDate: deadlineDate ?? this.deadlineDate,
-    category: category ?? this.category,
-    description: description ?? this.description,
-    sourceType: sourceType ?? this.sourceType,
-    sourceLength: sourceLength ?? this.sourceLength,
-    tags: tags ?? this.tags,
-    isArchived: isArchived ?? this.isArchived,
-  );
+  }) =>
+      StudySet(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        content: content ?? this.content,
+        flashcards: flashcards ?? this.flashcards,
+        quizQuestions: quizQuestions ?? this.quizQuestions,
+        quizzes: quizzes ?? this.quizzes,
+        createdDate: createdDate ?? this.createdDate,
+        lastStudied: lastStudied ?? this.lastStudied,
+        notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+        deadlineDate: deadlineDate ?? this.deadlineDate,
+        category: category ?? this.category,
+        description: description ?? this.description,
+        sourceType: sourceType ?? this.sourceType,
+        sourceLength: sourceLength ?? this.sourceLength,
+        tags: tags ?? this.tags,
+        isArchived: isArchived ?? this.isArchived,
+      );
 
   // Convert to StudySetMetadata for storage
   StudySetMetadata toMetadata() {
@@ -131,30 +167,35 @@ class StudySet {
 
   // Deadline utility methods
   bool get hasDeadline => deadlineDate != null;
-  
-  bool get isOverdue => deadlineDate != null && deadlineDate!.isBefore(DateTime.now());
-  
+
+  bool get isOverdue =>
+      deadlineDate != null && deadlineDate!.isBefore(DateTime.now());
+
   bool get isDeadlineToday {
     if (deadlineDate == null) return false;
     final now = DateTime.now();
     final deadline = deadlineDate!;
-    return deadline.year == now.year && deadline.month == now.month && deadline.day == now.day;
+    return deadline.year == now.year &&
+        deadline.month == now.month &&
+        deadline.day == now.day;
   }
-  
+
   bool get isDeadlineTomorrow {
     if (deadlineDate == null) return false;
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     final deadline = deadlineDate!;
-    return deadline.year == tomorrow.year && deadline.month == tomorrow.month && deadline.day == tomorrow.day;
+    return deadline.year == tomorrow.year &&
+        deadline.month == tomorrow.month &&
+        deadline.day == tomorrow.day;
   }
-  
+
   Duration? get timeUntilDeadline {
     if (deadlineDate == null) return null;
     final now = DateTime.now();
     if (deadlineDate!.isBefore(now)) return Duration.zero;
     return deadlineDate!.difference(now);
   }
-  
+
   int? get daysUntilDeadline {
     final duration = timeUntilDeadline;
     if (duration == null) return null;
@@ -180,22 +221,25 @@ class Flashcard {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'question': question,
-    'answer': answer,
-    'difficulty': difficulty.name,
-    'lastReviewed': lastReviewed?.toIso8601String(),
-    'reviewCount': reviewCount,
-  };
+        'id': id,
+        'question': question,
+        'answer': answer,
+        'difficulty': difficulty.name,
+        'lastReviewed': lastReviewed?.toIso8601String(),
+        'reviewCount': reviewCount,
+      };
 
   factory Flashcard.fromJson(Map<String, dynamic> json) => Flashcard(
-    id: json['id'],
-    question: json['question'],
-    answer: json['answer'],
-    difficulty: DifficultyLevel.values.firstWhere((e) => e.name == json['difficulty']),
-    lastReviewed: json['lastReviewed'] != null ? DateTime.parse(json['lastReviewed']) : null,
-    reviewCount: json['reviewCount'] ?? 0,
-  );
+        id: json['id'],
+        question: json['question'],
+        answer: json['answer'],
+        difficulty: DifficultyLevel.values
+            .firstWhere((e) => e.name == json['difficulty']),
+        lastReviewed: json['lastReviewed'] != null
+            ? DateTime.parse(json['lastReviewed'])
+            : null,
+        reviewCount: json['reviewCount'] ?? 0,
+      );
 
   Flashcard copyWith({
     String? id,
@@ -204,14 +248,15 @@ class Flashcard {
     DifficultyLevel? difficulty,
     DateTime? lastReviewed,
     int? reviewCount,
-  }) => Flashcard(
-    id: id ?? this.id,
-    question: question ?? this.question,
-    answer: answer ?? this.answer,
-    difficulty: difficulty ?? this.difficulty,
-    lastReviewed: lastReviewed ?? this.lastReviewed,
-    reviewCount: reviewCount ?? this.reviewCount,
-  );
+  }) =>
+      Flashcard(
+        id: id ?? this.id,
+        question: question ?? this.question,
+        answer: answer ?? this.answer,
+        difficulty: difficulty ?? this.difficulty,
+        lastReviewed: lastReviewed ?? this.lastReviewed,
+        reviewCount: reviewCount ?? this.reviewCount,
+      );
 }
 
 class Quiz {
@@ -232,22 +277,26 @@ class Quiz {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'questions': questions.map((q) => q.toJson()).toList(),
-    'type': type.name,
-    'results': results.map((r) => r.toJson()).toList(),
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'title': title,
+        'questions': questions.map((q) => q.toJson()).toList(),
+        'type': type.name,
+        'results': results.map((r) => r.toJson()).toList(),
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Quiz.fromJson(Map<String, dynamic> json) => Quiz(
-    id: json['id'],
-    title: json['title'],
-    questions: (json['questions'] as List).map((q) => QuizQuestion.fromJson(q)).toList(),
-    type: QuizType.values.firstWhere((e) => e.name == json['type']),
-    results: (json['results'] as List).map((r) => QuizResult.fromJson(r)).toList(),
-    createdDate: DateTime.parse(json['createdDate']),
-  );
+        id: json['id'],
+        title: json['title'],
+        questions: (json['questions'] as List)
+            .map((q) => QuizQuestion.fromJson(q))
+            .toList(),
+        type: QuizType.values.firstWhere((e) => e.name == json['type']),
+        results: (json['results'] as List)
+            .map((r) => QuizResult.fromJson(r))
+            .toList(),
+        createdDate: DateTime.parse(json['createdDate']),
+      );
 }
 
 class QuizQuestion {
@@ -255,31 +304,47 @@ class QuizQuestion {
   final String question;
   final List<String> options;
   final String correctAnswer;
+  final int?
+      correctAnswerIndex; // Added for more precise correct answer tracking
+  final String? explanation; // Added for detailed explanations
   final QuizType type;
+  final DifficultyLevel? difficulty; // Added difficulty level
 
   QuizQuestion({
     required this.id,
     required this.question,
     required this.options,
     required this.correctAnswer,
+    this.correctAnswerIndex,
+    this.explanation,
     required this.type,
+    this.difficulty,
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'question': question,
-    'options': options,
-    'correctAnswer': correctAnswer,
-    'type': type.name,
-  };
+        'id': id,
+        'question': question,
+        'options': options,
+        'correctAnswer': correctAnswer,
+        'correctAnswerIndex': correctAnswerIndex,
+        'explanation': explanation,
+        'type': type.name,
+        'difficulty': difficulty?.name,
+      };
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) => QuizQuestion(
-    id: json['id'],
-    question: json['question'],
-    options: List<String>.from(json['options']),
-    correctAnswer: json['correctAnswer'],
-    type: QuizType.values.firstWhere((e) => e.name == json['type']),
-  );
+        id: json['id'],
+        question: json['question'],
+        options: List<String>.from(json['options']),
+        correctAnswer: json['correctAnswer'],
+        correctAnswerIndex: json['correctAnswerIndex'] as int?,
+        explanation: json['explanation']?.toString(),
+        type: QuizType.values.firstWhere((e) => e.name == json['type']),
+        difficulty: json['difficulty'] != null
+            ? DifficultyLevel.values
+                .firstWhere((e) => e.name == json['difficulty'])
+            : null,
+      );
 }
 
 class QuizResult {
@@ -302,22 +367,22 @@ class QuizResult {
   double get percentage => (score / totalQuestions) * 100;
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'score': score,
-    'totalQuestions': totalQuestions,
-    'timeTaken': timeTaken.inMilliseconds,
-    'completedDate': completedDate.toIso8601String(),
-    'incorrectAnswers': incorrectAnswers,
-  };
+        'id': id,
+        'score': score,
+        'totalQuestions': totalQuestions,
+        'timeTaken': timeTaken.inMilliseconds,
+        'completedDate': completedDate.toIso8601String(),
+        'incorrectAnswers': incorrectAnswers,
+      };
 
   factory QuizResult.fromJson(Map<String, dynamic> json) => QuizResult(
-    id: json['id'],
-    score: json['score'],
-    totalQuestions: json['totalQuestions'],
-    timeTaken: Duration(milliseconds: json['timeTaken']),
-    completedDate: DateTime.parse(json['completedDate']),
-    incorrectAnswers: List<String>.from(json['incorrectAnswers']),
-  );
+        id: json['id'],
+        score: json['score'],
+        totalQuestions: json['totalQuestions'],
+        timeTaken: Duration(milliseconds: json['timeTaken']),
+        completedDate: DateTime.parse(json['completedDate']),
+        incorrectAnswers: List<String>.from(json['incorrectAnswers']),
+      );
 }
 
 class UserProgress {
@@ -340,24 +405,26 @@ class UserProgress {
   });
 
   Map<String, dynamic> toJson() => {
-    'currentStreak': currentStreak,
-    'longestStreak': longestStreak,
-    'totalXP': totalXP,
-    'totalStudyTime': totalStudyTime,
-    'recentResults': recentResults.map((r) => r.toJson()).toList(),
-    'lastStudyDate': lastStudyDate.toIso8601String(),
-    'subjectXP': subjectXP,
-  };
+        'currentStreak': currentStreak,
+        'longestStreak': longestStreak,
+        'totalXP': totalXP,
+        'totalStudyTime': totalStudyTime,
+        'recentResults': recentResults.map((r) => r.toJson()).toList(),
+        'lastStudyDate': lastStudyDate.toIso8601String(),
+        'subjectXP': subjectXP,
+      };
 
   factory UserProgress.fromJson(Map<String, dynamic> json) => UserProgress(
-    currentStreak: json['currentStreak'],
-    longestStreak: json['longestStreak'],
-    totalXP: json['totalXP'],
-    totalStudyTime: json['totalStudyTime'],
-    recentResults: (json['recentResults'] as List).map((r) => QuizResult.fromJson(r)).toList(),
-    lastStudyDate: DateTime.parse(json['lastStudyDate']),
-    subjectXP: Map<String, int>.from(json['subjectXP']),
-  );
+        currentStreak: json['currentStreak'],
+        longestStreak: json['longestStreak'],
+        totalXP: json['totalXP'],
+        totalStudyTime: json['totalStudyTime'],
+        recentResults: (json['recentResults'] as List)
+            .map((r) => QuizResult.fromJson(r))
+            .toList(),
+        lastStudyDate: DateTime.parse(json['lastStudyDate']),
+        subjectXP: Map<String, int>.from(json['subjectXP']),
+      );
 
   UserProgress copyWith({
     int? currentStreak,
@@ -367,15 +434,16 @@ class UserProgress {
     List<QuizResult>? recentResults,
     DateTime? lastStudyDate,
     Map<String, int>? subjectXP,
-  }) => UserProgress(
-    currentStreak: currentStreak ?? this.currentStreak,
-    longestStreak: longestStreak ?? this.longestStreak,
-    totalXP: totalXP ?? this.totalXP,
-    totalStudyTime: totalStudyTime ?? this.totalStudyTime,
-    recentResults: recentResults ?? this.recentResults,
-    lastStudyDate: lastStudyDate ?? this.lastStudyDate,
-    subjectXP: subjectXP ?? this.subjectXP,
-  );
+  }) =>
+      UserProgress(
+        currentStreak: currentStreak ?? this.currentStreak,
+        longestStreak: longestStreak ?? this.longestStreak,
+        totalXP: totalXP ?? this.totalXP,
+        totalStudyTime: totalStudyTime ?? this.totalStudyTime,
+        recentResults: recentResults ?? this.recentResults,
+        lastStudyDate: lastStudyDate ?? this.lastStudyDate,
+        subjectXP: subjectXP ?? this.subjectXP,
+      );
 
   int get level => (totalXP / 1000).floor() + 1;
   int get xpToNextLevel => 1000 - (totalXP % 1000);
@@ -389,4 +457,7 @@ enum StudySetType {
   quiz,
   flashcards,
   both,
+  youtube,
+  document,
+  custom,
 }

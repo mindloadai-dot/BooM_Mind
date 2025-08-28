@@ -306,6 +306,12 @@ class CreditService extends ChangeNotifier {
         return CreditLimits.flashcardSetCost;
       case StudySetType.both:
         return CreditLimits.bothSetsCost;
+      case StudySetType.youtube:
+        return CreditLimits.bothSetsCost; // YouTube generates both types
+      case StudySetType.document:
+        return CreditLimits.bothSetsCost; // Documents generate both types
+      case StudySetType.custom:
+        return CreditLimits.flashcardSetCost; // Custom usually single type
     }
   }
 
@@ -317,6 +323,12 @@ class CreditService extends ChangeNotifier {
         return 'flashcard_generation';
       case StudySetType.both:
         return 'both_sets_generation';
+      case StudySetType.youtube:
+        return 'youtube_transcript_generation';
+      case StudySetType.document:
+        return 'document_generation';
+      case StudySetType.custom:
+        return 'custom_generation';
     }
   }
 

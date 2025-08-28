@@ -6,19 +6,20 @@ import 'dart:developer' as developer;
 
 // Exact theme IDs as specified
 enum AppTheme {
-  classic('classic'), 
-  matrix('matrix'), 
-  retro('retro'), 
-  cyberNeon('cyber_neon'), // renamed to match requirement 
+  classic('classic'),
+  matrix('matrix'),
+  retro('retro'),
+  cyberNeon('cyber_neon'), // renamed to match requirement
   darkMode('dark_mode'), // renamed to match requirement
   minimal('minimal'),
   purpleNeon('purple_neon'); // New Purple Neon theme
 
   const AppTheme(this.id);
   final String id;
-  
+
   static AppTheme fromId(String id) {
-    return AppTheme.values.firstWhere((theme) => theme.id == id, orElse: () => AppTheme.classic);
+    return AppTheme.values
+        .firstWhere((theme) => theme.id == id, orElse: () => AppTheme.classic);
   }
 }
 
@@ -30,27 +31,27 @@ class SemanticTokens {
   final Color heroBackground;
   final Color heroOverlay;
   final Color shadowBrandSubtitle;
-  
+
   // Navigation tokens (your specified requirements)
   final Color navIcon;
   final Color navIconPressed;
   final Color navText;
   final Color headerBg;
-  
+
   // Border tokens (your specified requirements)
   final Color borderDefault;
   final Color borderFocus;
-  
+
   // Surface tokens (your specified requirements)
   final Color surface;
   final Color surfaceAlt;
-  
+
   // Text tokens (your specified requirements)
   final Color textPrimary;
   final Color textInverse;
   final Color textSecondary;
   final Color textTertiary;
-  
+
   // Achievement System - Neon Cortex tokens (semantic only)
   final Color achieveBackground;
   final Color achieveGrid;
@@ -65,7 +66,8 @@ class SemanticTokens {
   final Color tierSilver;
   final Color tierGold;
   final Color tierPlatinum;
-  
+  final Color tierLegendary;
+
   // Legacy core semantic roles (preserved for compatibility)
   final Color bg;
   final Color elevatedSurface;
@@ -90,7 +92,7 @@ class SemanticTokens {
   Color get backgroundPrimary => bg;
   Color get backgroundSecondary => elevatedSurface;
   Color get borderPrimary => borderDefault;
-  
+
   const SemanticTokens({
     // Brand/Hero tokens
     required this.brandTitle,
@@ -98,27 +100,27 @@ class SemanticTokens {
     required this.heroBackground,
     required this.heroOverlay,
     required this.shadowBrandSubtitle,
-    
+
     // Navigation tokens
     required this.navIcon,
     required this.navIconPressed,
     required this.navText,
     required this.headerBg,
-    
+
     // Border tokens
     required this.borderDefault,
     required this.borderFocus,
-    
+
     // Surface tokens
     required this.surface,
     required this.surfaceAlt,
-    
+
     // Text tokens
     required this.textPrimary,
     required this.textInverse,
     required this.textSecondary,
     required this.textTertiary,
-    
+
     // Achievement tokens
     required this.achieveBackground,
     required this.achieveGrid,
@@ -133,7 +135,8 @@ class SemanticTokens {
     required this.tierSilver,
     required this.tierGold,
     required this.tierPlatinum,
-    
+    required this.tierLegendary,
+
     // Legacy tokens (preserved for compatibility)
     required this.bg,
     required this.elevatedSurface,
@@ -163,21 +166,19 @@ class ThemeManager extends ChangeNotifier {
 
   AppTheme _currentTheme = AppTheme.classic;
   AppTheme get currentTheme => _currentTheme;
-  
-  
+
   // Runtime safety flags
   bool _isInFallbackMode = false;
   bool get isInFallbackMode => _isInFallbackMode;
-  
+
   // Development diagnostics
   bool _isDiagnosticsModeEnabled = false;
   bool get isDiagnosticsModeEnabled => _isDiagnosticsModeEnabled;
-  
+
   void toggleDiagnosticsMode() {
     _isDiagnosticsModeEnabled = !_isDiagnosticsModeEnabled;
     notifyListeners();
   }
-  
 
   Future<void> loadTheme() async {
     try {
@@ -185,7 +186,7 @@ class ThemeManager extends ChangeNotifier {
       if (savedTheme != null) {
         _currentTheme = _parseThemeFromString(savedTheme);
       }
-      
+
       // Theme validation removed - contrast feature no longer needed
       notifyListeners();
     } catch (e) {
@@ -200,34 +201,34 @@ class ThemeManager extends ChangeNotifier {
       _currentTheme = theme;
       _isInFallbackMode = false;
       await StorageService.instance.saveSelectedTheme(theme.id);
-      
+
       // Emit telemetry
       TelemetryService.instance.logEvent(
         TelemetryEvent.themeApplied.name,
         {'theme_id': theme.id, 'is_fallback': _isInFallbackMode},
       );
-      
+
       notifyListeners();
     } catch (e) {
       _triggerFallback(theme);
     }
   }
-  
+
   void _triggerFallback(AppTheme failedTheme) {
     _currentTheme = AppTheme.classic;
     _isInFallbackMode = true;
-    
+
     TelemetryService.instance.logEvent(
       TelemetryEvent.themeFallbackTriggered.name,
       {'failed_theme_id': failedTheme.id},
     );
-    
+
     developer.log(
       'Theme fallback triggered for theme: ${failedTheme.id}',
       name: 'ThemeManager',
       level: 800, // Warning level
     );
-    
+
     notifyListeners();
   }
 
@@ -292,7 +293,7 @@ class ThemeManager extends ChangeNotifier {
         return AppTheme.classic; // Fallback to classic
     }
   }
-  
+
   SemanticTokens get currentTokens {
     try {
       return _getSemanticTokens(_currentTheme);
@@ -301,10 +302,10 @@ class ThemeManager extends ChangeNotifier {
       return _classicTokens;
     }
   }
-  
+
   // Public method to get tokens for any theme (needed for theme selector previews)
   SemanticTokens getSemanticTokens(AppTheme theme) => _getSemanticTokens(theme);
-  
+
   SemanticTokens _getSemanticTokens(AppTheme theme) {
     switch (theme) {
       case AppTheme.classic:
@@ -333,27 +334,27 @@ const SemanticTokens _classicTokens = SemanticTokens(
   heroBackground: Color(0xFFFFFFFF), // Pure white background
   heroOverlay: Color(0x0A000000), // 4% black overlay for subtle depth
   shadowBrandSubtitle: Color(0xFF666666), // Medium gray shadow
-  
+
   // Navigation tokens - high contrast on white background
   navIcon: Color(0xFF000000), // Pure black for maximum visibility
   navIconPressed: Color(0xFF1565C0), // Deep blue when pressed
   navText: Color(0xFF000000), // Pure black for maximum readability
   headerBg: Color(0xFFFFFFFF), // Pure white header
-  
+
   // Border tokens - visible gray borders on white
   borderDefault: Color(0xFF666666), // Medium gray for visibility
   borderFocus: Color(0xFF1565C0), // Deep blue focus ring
-  
+
   // Surface tokens - clean white surfaces
   surface: Color(0xFFFAFAFA), // Very light gray surface
   surfaceAlt: Color(0xFFFFFFFF), // Pure white alternative
-  
+
   // Text tokens - high contrast black text on white
   textPrimary: Color(0xFF000000), // Pure black for maximum readability
   textInverse: Color(0xFFFFFFFF), // White for dark backgrounds
   textSecondary: Color(0xFF333333), // Dark gray for secondary text
   textTertiary: Color(0xFF666666), // Medium gray for tertiary text
-  
+
   // Achievement System - Light achievement area with high contrast
   achieveBackground: Color(0xFFF5F5F5), // Light gray surface for achievements
   achieveGrid: Color(0xFFE0E0E0), // Light gray grid lines
@@ -367,7 +368,8 @@ const SemanticTokens _classicTokens = SemanticTokens(
   tierSilver: Color(0xFFC0C0C0),
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
-  
+  tierLegendary: Color(0xFFFF6B35),
+
   // Legacy tokens - high contrast classic theme
   bg: Color(0xFFFFFFFF), // Pure white background
   elevatedSurface: Color(0xFFFFFFFF),
@@ -389,7 +391,6 @@ const SemanticTokens _classicTokens = SemanticTokens(
   overlayGlow: Color(0x1A1565C0),
 );
 
-
 // Matrix theme: pure black with bright green neon accents and perfect readability
 const SemanticTokens _matrixTokens = SemanticTokens(
   // Brand/Hero tokens - WCAG AAA compliant Matrix theme with maximum readability
@@ -398,27 +399,27 @@ const SemanticTokens _matrixTokens = SemanticTokens(
   heroBackground: Color(0xFF000000), // Pure black background
   heroOverlay: Color(0x1A00FF00), // 10% green overlay for Matrix aesthetic
   shadowBrandSubtitle: Color(0xFF80FF80), // Light green shadow
-  
+
   // Navigation tokens - bright green and white for maximum visibility
   navIcon: Color(0xFFFFFFFF), // Pure white for maximum visibility
   navIconPressed: Color(0xFF00FF00), // Bright green when pressed
   navText: Color(0xFFFFFFFF), // Pure white for maximum readability
   headerBg: Color(0xFF000000), // Pure black header
-  
+
   // Border tokens - bright green Matrix borders
   borderDefault: Color(0xFF00FF00), // Bright green for visibility
   borderFocus: Color(0xFF80FF80), // Lighter green focus ring
-  
+
   // Surface tokens - true black Matrix surfaces
   surface: Color(0xFF0A0A0A), // Very dark surface
   surfaceAlt: Color(0xFF1A1A1A), // Slightly lighter alternative
-  
+
   // Text tokens - high contrast white text with green accents
   textPrimary: Color(0xFFFFFFFF), // Pure white for maximum readability
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFF80FF80), // Light green for secondary text
   textTertiary: Color(0xFFE0E0E0), // Light gray for tertiary text
-  
+
   // Achievement System - Matrix Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
   achieveGrid: Color(0xFF006600), // Dark green grid lines
@@ -432,7 +433,8 @@ const SemanticTokens _matrixTokens = SemanticTokens(
   tierSilver: Color(0xFFC0C0C0),
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
-  
+  tierLegendary: Color(0xFFFF6B35),
+
   // Legacy tokens - high contrast Matrix theme
   bg: Color(0xFF000000), // Pure black background
   elevatedSurface: Color(0xFF1A1A1A),
@@ -462,29 +464,30 @@ const SemanticTokens _retroTokens = SemanticTokens(
   heroBackground: Color(0xFFF5F5DC), // Classic beige background
   heroOverlay: Color(0x0A8B4513), // 4% brown overlay for subtle warmth
   shadowBrandSubtitle: Color(0xFF8B4513), // Saddle brown shadow
-  
+
   // Navigation tokens - dark brown for retro feel with high contrast
   navIcon: Color(0xFF000000), // Pure black for maximum visibility
   navIconPressed: Color(0xFF8B4513), // Saddle brown when pressed
   navText: Color(0xFF000000), // Pure black for maximum readability
   headerBg: Color(0xFFF5F5DC), // Beige header
-  
+
   // Border tokens - dark brown retro borders
   borderDefault: Color(0xFF8B4513), // Saddle brown for visibility
   borderFocus: Color(0xFF000000), // Black focus ring for contrast
-  
+
   // Surface tokens - warm retro surfaces
   surface: Color(0xFFFAF0E6), // Linen surface
   surfaceAlt: Color(0xFFFFE4B5), // Moccasin alternative
-  
+
   // Text tokens - high contrast dark brown text for perfect readability
   textPrimary: Color(0xFF000000), // Pure black for maximum readability
   textInverse: Color(0xFFFFFFFF), // White for dark backgrounds
   textSecondary: Color(0xFF2F1B14), // Very dark brown for secondary text
   textTertiary: Color(0xFF654321), // Medium brown for tertiary text
-  
+
   // Achievement System - Dark retro achievement area
-  achieveBackground: Color(0xFF2F1B14), // Dark brown retro background (kept themed)
+  achieveBackground:
+      Color(0xFF2F1B14), // Dark brown retro background (kept themed)
   achieveGrid: Color(0xFF8B4513), // Saddle brown grid lines
   achieveNeon: Color(0xFFFFD700), // Gold neon accents for retro feel
   badgeBackground: Color(0xFF3C2415), // Dark brown badge background
@@ -496,7 +499,8 @@ const SemanticTokens _retroTokens = SemanticTokens(
   tierSilver: Color(0xFFC0C0C0),
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
-  
+  tierLegendary: Color(0xFFFF6B35),
+
   // Legacy tokens - high contrast retro theme
   bg: Color(0xFFF5F5DC), // Beige background
   elevatedSurface: Color(0xFFFFE4B5),
@@ -526,27 +530,27 @@ const SemanticTokens _cyberNeonTokens = SemanticTokens(
   heroBackground: Color(0xFF000000), // Pure black background
   heroOverlay: Color(0x1A00FFFF), // 10% cyan overlay for cyber depth
   shadowBrandSubtitle: Color(0xFF80FFFF), // Light cyan shadow
-  
+
   // Navigation tokens - bright cyan and white for maximum visibility
   navIcon: Color(0xFFFFFFFF), // Pure white for maximum visibility
   navIconPressed: Color(0xFF00FFFF), // Bright cyan when pressed
   navText: Color(0xFFFFFFFF), // Pure white for maximum readability
   headerBg: Color(0xFF000000), // Pure black header
-  
+
   // Border tokens - bright cyan cyber borders
   borderDefault: Color(0xFF00FFFF), // Bright cyan for visibility
   borderFocus: Color(0xFF80FFFF), // Lighter cyan focus ring
-  
+
   // Surface tokens - true black cyber surfaces
   surface: Color(0xFF0A0A0A), // Very dark surface
   surfaceAlt: Color(0xFF1A1A1A), // Slightly lighter alternative
-  
+
   // Text tokens - high contrast white text with cyan accents
   textPrimary: Color(0xFFFFFFFF), // Pure white for maximum readability
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFF80FFFF), // Light cyan for secondary text
   textTertiary: Color(0xFFE0E0E0), // Light gray for tertiary text
-  
+
   // Achievement System - Cyber Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
   achieveGrid: Color(0xFF006666), // Dark cyan grid lines
@@ -560,7 +564,8 @@ const SemanticTokens _cyberNeonTokens = SemanticTokens(
   tierSilver: Color(0xFFC0C0C0),
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
-  
+  tierLegendary: Color(0xFFFF6B35),
+
   // Legacy tokens - high contrast cyber theme
   bg: Color(0xFF000000), // Pure black background
   elevatedSurface: Color(0xFF1A1A1A),
@@ -590,27 +595,27 @@ const SemanticTokens _darkModeTokens = SemanticTokens(
   heroBackground: Color(0xFF000000), // Pure black for truly dark theme
   heroOverlay: Color(0x1AFFFFFF), // 10% white overlay for subtle depth
   shadowBrandSubtitle: Color(0xFF9CA3AF), // Light gray shadow
-  
+
   // Navigation tokens - bright elements for dark theme with high contrast
   navIcon: Color(0xFFFFFFFF), // Pure white for maximum visibility
   navIconPressed: Color(0xFF60A5FA), // Light blue when pressed
   navText: Color(0xFFFFFFFF), // Pure white for maximum readability
   headerBg: Color(0xFF000000), // Pure black header
-  
+
   // Border tokens - high contrast on dark surfaces
   borderDefault: Color(0xFF9CA3AF), // Light gray for visibility
   borderFocus: Color(0xFF60A5FA), // Light blue focus ring
-  
+
   // Surface tokens - truly dark surfaces
   surface: Color(0xFF0A0A0A), // Very dark gray surface
   surfaceAlt: Color(0xFF1A1A1A), // Slightly lighter alternative
-  
+
   // Text tokens - high contrast white text on dark backgrounds
   textPrimary: Color(0xFFFFFFFF), // Pure white for maximum readability
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFFE5E7EB), // Very light gray for secondary text
   textTertiary: Color(0xFFD1D5DB), // Light gray for tertiary text
-  
+
   // Achievement System - Dark Mode Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
   achieveGrid: Color(0xFF374151), // Gray grid lines
@@ -624,7 +629,8 @@ const SemanticTokens _darkModeTokens = SemanticTokens(
   tierSilver: Color(0xFFC0C0C0),
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
-  
+  tierLegendary: Color(0xFFFF6B35),
+
   // Legacy tokens - high contrast dark theme
   bg: Color(0xFF000000), // Pure black background
   elevatedSurface: Color(0xFF1A1A1A),
@@ -654,27 +660,27 @@ const SemanticTokens _minimalTokens = SemanticTokens(
   heroBackground: Color(0xFFFFFFFF), // Pure white background
   heroOverlay: Color(0x00000000), // No overlay in minimal design
   shadowBrandSubtitle: Color(0xFF666666), // Medium gray shadow for depth
-  
+
   // Navigation tokens - pure black for maximum contrast
   navIcon: Color(0xFF000000), // Pure black for maximum visibility
   navIconPressed: Color(0xFF333333), // Dark gray when pressed
   navText: Color(0xFF000000), // Pure black for maximum readability
   headerBg: Color(0xFFFFFFFF), // Pure white header
-  
+
   // Border tokens - strong black borders for minimal aesthetic
   borderDefault: Color(0xFF333333), // Dark gray for visibility
   borderFocus: Color(0xFF000000), // Pure black focus ring
-  
+
   // Surface tokens - pure minimalist surfaces
   surface: Color(0xFFFFFFFF), // Pure white surface
   surfaceAlt: Color(0xFFFAFAFA), // Very subtle gray alternative
-  
+
   // Text tokens - maximum contrast black text for minimal design
   textPrimary: Color(0xFF000000), // Pure black for maximum readability
   textInverse: Color(0xFFFFFFFF), // White for dark backgrounds
   textSecondary: Color(0xFF333333), // Dark gray for secondary text
   textTertiary: Color(0xFF666666), // Medium gray for tertiary text
-  
+
   // Achievement System - Minimal dark section with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
   achieveGrid: Color(0xFF333333), // Dark gray grid lines
@@ -688,7 +694,8 @@ const SemanticTokens _minimalTokens = SemanticTokens(
   tierSilver: Color(0xFFC0C0C0),
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
-  
+  tierLegendary: Color(0xFFFF6B35),
+
   // Legacy tokens - ultra-minimal high contrast
   bg: Color(0xFFFFFFFF), // Pure white background
   elevatedSurface: Color(0xFFFFFFFF),
@@ -718,27 +725,27 @@ const SemanticTokens _purpleNeonTokens = SemanticTokens(
   heroBackground: Color(0xFF000000), // Pure black background
   heroOverlay: Color(0x26A855F7), // 15% purple overlay for depth
   shadowBrandSubtitle: Color(0xFFE879F9), // Bright purple shadow effect
-  
+
   // Navigation tokens - bright purple elements with high contrast
   navIcon: Color(0xFFFFFFFF), // Pure white for maximum visibility
   navIconPressed: Color(0xFFDC8AFF), // Bright purple when pressed
   navText: Color(0xFFFFFFFF), // Pure white for maximum readability
   headerBg: Color(0xFF000000), // Pure black header
-  
+
   // Border tokens - visible purple neon borders
   borderDefault: Color(0xFFE879F9), // Bright purple for visibility
   borderFocus: Color(0xFFDC8AFF), // Brighter purple focus ring
-  
+
   // Surface tokens - dark surfaces with purple accents
   surface: Color(0xFF0F0A1A), // Very dark purple-tinted surface
   surfaceAlt: Color(0xFF1A0F2E), // Slightly lighter purple alternative
-  
+
   // Text tokens - high contrast white text for perfect readability
   textPrimary: Color(0xFFFFFFFF), // Pure white for maximum readability
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFFF3E8FF), // Very light purple tint for secondary
   textTertiary: Color(0xFFE9D5FF), // Light purple for tertiary text
-  
+
   // Achievement System - Purple Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
   achieveGrid: Color(0xFF581C87), // Purple grid lines
@@ -752,7 +759,8 @@ const SemanticTokens _purpleNeonTokens = SemanticTokens(
   tierSilver: Color(0xFFC0C0C0),
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
-  
+  tierLegendary: Color(0xFFFF6B35),
+
   // Legacy tokens - high contrast purple theme
   bg: Color(0xFF000000), // Pure black background
   elevatedSurface: Color(0xFF1A0F2E),
@@ -778,7 +786,7 @@ const SemanticTokens _purpleNeonTokens = SemanticTokens(
 class AccessibleTextTheme {
   static TextTheme build(AppTheme themeType) {
     final baseStyle = _getFontFamily(themeType);
-    
+
     return TextTheme(
       displayLarge: baseStyle.copyWith(
         fontSize: 57.0,
@@ -800,7 +808,8 @@ class AccessibleTextTheme {
       ),
       headlineLarge: baseStyle.copyWith(
         fontSize: 32.0,
-        fontWeight: FontWeight.w500, // Headings ≥ 1.2× contrast (handled by colors)
+        fontWeight:
+            FontWeight.w500, // Headings ≥ 1.2× contrast (handled by colors)
         height: 1.3,
         letterSpacing: 0.0,
       ),
@@ -872,7 +881,7 @@ class AccessibleTextTheme {
       ),
     );
   }
-  
+
   static TextStyle _getFontFamily(AppTheme themeType) {
     return switch (themeType) {
       AppTheme.classic => GoogleFonts.inter(),
@@ -889,24 +898,22 @@ class AccessibleTextTheme {
 // Main theme builder with accessibility-first design
 ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
   var tokens = ThemeManager.instance._getSemanticTokens(themeType);
-  
-  
+
   final colorScheme = _buildColorScheme(tokens, brightness);
-  final textTheme = AccessibleTextTheme
-      .build(themeType)
+  final textTheme = AccessibleTextTheme.build(themeType)
       // Ensure all text defaults to token-driven colors (derived from onSurface)
       .apply(
-        bodyColor: tokens.textPrimary,
-        displayColor: tokens.textPrimary,
-        decorationColor: tokens.textPrimary,
-      );
-  
+    bodyColor: tokens.textPrimary,
+    displayColor: tokens.textPrimary,
+    decorationColor: tokens.textPrimary,
+  );
+
   return ThemeData(
     useMaterial3: true,
     brightness: brightness,
     colorScheme: colorScheme,
     textTheme: textTheme,
-    
+
     // AppBar theme with proper navigation contrast (your requirements)
     appBarTheme: AppBarTheme(
       backgroundColor: tokens.headerBg,
@@ -935,11 +942,12 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
         return base;
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        final style = textTheme.labelSmall?.copyWith(color: tokens.navText, fontWeight: FontWeight.w600);
+        final style = textTheme.labelSmall
+            ?.copyWith(color: tokens.navText, fontWeight: FontWeight.w600);
         return style!;
       }),
     ),
-    
+
     // Button themes with minimum hit targets (your requirements: 44×44 pt iOS / 48×48 dp Android)
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -950,7 +958,8 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: tokens.borderDefault, width: 2.0), // Visible border
+          side: BorderSide(
+              color: tokens.borderDefault, width: 2.0), // Visible border
         ),
         textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       ).copyWith(
@@ -972,14 +981,15 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
         }),
       ),
     ),
-    
+
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: tokens.textPrimary,
         backgroundColor: Colors.transparent,
         minimumSize: const Size(48, 48), // Meets hit target requirement
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        side: BorderSide(color: tokens.borderDefault, width: 2.0), // ≥ 3:1 contrast borders
+        side: BorderSide(
+            color: tokens.borderDefault, width: 2.0), // ≥ 3:1 contrast borders
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       ).copyWith(
@@ -992,7 +1002,7 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
         }),
       ),
     ),
-    
+
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: tokens.primary,
@@ -1001,15 +1011,17 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
         textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
     ),
-    
+
     // Input themes with accessible focus rings (your requirements)
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: tokens.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), // Touch-friendly padding
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16, vertical: 16), // Touch-friendly padding
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: tokens.borderDefault, width: 2.0), // ≥ 3:1 contrast
+        borderSide: BorderSide(
+            color: tokens.borderDefault, width: 2.0), // ≥ 3:1 contrast
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -1017,7 +1029,8 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: tokens.borderFocus, width: 2.0), // ≥ 3:1 focus ring
+        borderSide: BorderSide(
+            color: tokens.borderFocus, width: 2.0), // ≥ 3:1 focus ring
         // 2px offset implemented via container padding in components
       ),
       errorBorder: OutlineInputBorder(
@@ -1033,7 +1046,7 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       helperStyle: textTheme.bodySmall?.copyWith(color: tokens.textSecondary),
       errorStyle: textTheme.bodySmall?.copyWith(color: tokens.error),
     ),
-    
+
     // Card theme with visible borders (your requirements)
     cardTheme: CardThemeData(
       color: tokens.surface,
@@ -1041,11 +1054,12 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       elevation: 0, // Use borders instead of shadows for contrast
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: tokens.borderDefault, width: 1.5), // ≥ 3:1 contrast
+        side: BorderSide(
+            color: tokens.borderDefault, width: 1.5), // ≥ 3:1 contrast
       ),
       margin: const EdgeInsets.all(12), // Generous margins
     ),
-    
+
     // List tile theme with focus support
     listTileTheme: ListTileThemeData(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1056,19 +1070,22 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       selectedTileColor: tokens.primary.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: tokens.borderDefault.withValues(alpha: 0.3), width: 1),
+        side: BorderSide(
+            color: tokens.borderDefault.withValues(alpha: 0.3), width: 1),
       ),
       // Focus styling handled by individual list tiles
     ),
-    
+
     // Dialog theme
     dialogTheme: DialogThemeData(
       backgroundColor: tokens.elevatedSurface,
       surfaceTintColor: tokens.primary,
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      titleTextStyle: textTheme.headlineSmall?.copyWith(color: tokens.textPrimary),
-      contentTextStyle: textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
+      titleTextStyle:
+          textTheme.headlineSmall?.copyWith(color: tokens.textPrimary),
+      contentTextStyle:
+          textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
     ),
     // SnackBar theme – strong legibility against app content
     snackBarTheme: SnackBarThemeData(
@@ -1081,8 +1098,8 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       insetPadding: const EdgeInsets.all(12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
-    
-    // Bottom sheet theme  
+
+    // Bottom sheet theme
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: tokens.elevatedSurface,
       surfaceTintColor: tokens.primary,
@@ -1091,14 +1108,14 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
     ),
-    
+
     // Divider theme
     dividerTheme: DividerThemeData(
       color: tokens.divider,
       thickness: 1,
       space: 1,
     ),
-    
+
     // Tooltip theme
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
@@ -1108,7 +1125,7 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       textStyle: textTheme.bodySmall?.copyWith(color: Colors.white),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     ),
-    
+
     // Chip theme
     chipTheme: ChipThemeData(
       backgroundColor: tokens.muted,
@@ -1117,7 +1134,7 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     ),
-    
+
     // Tab bar theme
     tabBarTheme: TabBarThemeData(
       labelColor: tokens.primary,
@@ -1127,14 +1144,14 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
       labelStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       unselectedLabelStyle: textTheme.labelLarge,
     ),
-    
+
     // Progress indicator theme
     progressIndicatorTheme: ProgressIndicatorThemeData(
       color: tokens.primary,
       linearTrackColor: tokens.primary.withValues(alpha: 0.2),
       circularTrackColor: tokens.primary.withValues(alpha: 0.2),
     ),
-    
+
     // Back button theme (your requirements: constrained to prevent overflow)
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
@@ -1155,14 +1172,13 @@ ThemeData _buildTheme(AppTheme themeType, Brightness brightness) {
         }),
       ),
     ),
-    
+
     // Extensions for semantic tokens access
     extensions: <ThemeExtension<dynamic>>[
       SemanticTokensExtension(tokens),
     ],
   );
 }
-
 
 ColorScheme _buildColorScheme(SemanticTokens tokens, Brightness brightness) {
   return brightness == Brightness.dark
@@ -1237,7 +1253,8 @@ class SemanticTokensExtension extends ThemeExtension<SemanticTokensExtension> {
   }
 
   @override
-  SemanticTokensExtension lerp(ThemeExtension<SemanticTokensExtension>? other, double t) {
+  SemanticTokensExtension lerp(
+      ThemeExtension<SemanticTokensExtension>? other, double t) {
     if (other is! SemanticTokensExtension) {
       return this;
     }
@@ -1245,54 +1262,76 @@ class SemanticTokensExtension extends ThemeExtension<SemanticTokensExtension> {
       SemanticTokens(
         // Brand/Hero tokens
         brandTitle: Color.lerp(tokens.brandTitle, other.tokens.brandTitle, t)!,
-        brandSubtitle: Color.lerp(tokens.brandSubtitle, other.tokens.brandSubtitle, t)!,
-        heroBackground: Color.lerp(tokens.heroBackground, other.tokens.heroBackground, t)!,
-        heroOverlay: Color.lerp(tokens.heroOverlay, other.tokens.heroOverlay, t)!,
-        shadowBrandSubtitle: Color.lerp(tokens.shadowBrandSubtitle, other.tokens.shadowBrandSubtitle, t)!,
-        
+        brandSubtitle:
+            Color.lerp(tokens.brandSubtitle, other.tokens.brandSubtitle, t)!,
+        heroBackground:
+            Color.lerp(tokens.heroBackground, other.tokens.heroBackground, t)!,
+        heroOverlay:
+            Color.lerp(tokens.heroOverlay, other.tokens.heroOverlay, t)!,
+        shadowBrandSubtitle: Color.lerp(
+            tokens.shadowBrandSubtitle, other.tokens.shadowBrandSubtitle, t)!,
+
         // Navigation tokens
         navIcon: Color.lerp(tokens.navIcon, other.tokens.navIcon, t)!,
-        navIconPressed: Color.lerp(tokens.navIconPressed, other.tokens.navIconPressed, t)!,
+        navIconPressed:
+            Color.lerp(tokens.navIconPressed, other.tokens.navIconPressed, t)!,
         navText: Color.lerp(tokens.navText, other.tokens.navText, t)!,
         headerBg: Color.lerp(tokens.headerBg, other.tokens.headerBg, t)!,
-        
+
         // Border tokens
-        borderDefault: Color.lerp(tokens.borderDefault, other.tokens.borderDefault, t)!,
-        borderFocus: Color.lerp(tokens.borderFocus, other.tokens.borderFocus, t)!,
-        
+        borderDefault:
+            Color.lerp(tokens.borderDefault, other.tokens.borderDefault, t)!,
+        borderFocus:
+            Color.lerp(tokens.borderFocus, other.tokens.borderFocus, t)!,
+
         // Surface tokens
         surface: Color.lerp(tokens.surface, other.tokens.surface, t)!,
         surfaceAlt: Color.lerp(tokens.surfaceAlt, other.tokens.surfaceAlt, t)!,
-        
+
         // Text tokens
-        textPrimary: Color.lerp(tokens.textPrimary, other.tokens.textPrimary, t)!,
-        textInverse: Color.lerp(tokens.textInverse, other.tokens.textInverse, t)!,
-        textSecondary: Color.lerp(tokens.textSecondary, other.tokens.textSecondary, t)!,
-        textTertiary: Color.lerp(tokens.textTertiary, other.tokens.textTertiary, t)!,
-        
+        textPrimary:
+            Color.lerp(tokens.textPrimary, other.tokens.textPrimary, t)!,
+        textInverse:
+            Color.lerp(tokens.textInverse, other.tokens.textInverse, t)!,
+        textSecondary:
+            Color.lerp(tokens.textSecondary, other.tokens.textSecondary, t)!,
+        textTertiary:
+            Color.lerp(tokens.textTertiary, other.tokens.textTertiary, t)!,
+
         // Achievement tokens
-        achieveBackground: Color.lerp(tokens.achieveBackground, other.tokens.achieveBackground, t)!,
-        achieveGrid: Color.lerp(tokens.achieveGrid, other.tokens.achieveGrid, t)!,
-        achieveNeon: Color.lerp(tokens.achieveNeon, other.tokens.achieveNeon, t)!,
-        badgeBackground: Color.lerp(tokens.badgeBackground, other.tokens.badgeBackground, t)!,
+        achieveBackground: Color.lerp(
+            tokens.achieveBackground, other.tokens.achieveBackground, t)!,
+        achieveGrid:
+            Color.lerp(tokens.achieveGrid, other.tokens.achieveGrid, t)!,
+        achieveNeon:
+            Color.lerp(tokens.achieveNeon, other.tokens.achieveNeon, t)!,
+        badgeBackground: Color.lerp(
+            tokens.badgeBackground, other.tokens.badgeBackground, t)!,
         badgeRing: Color.lerp(tokens.badgeRing, other.tokens.badgeRing, t)!,
-        textEmphasis: Color.lerp(tokens.textEmphasis, other.tokens.textEmphasis, t)!,
+        textEmphasis:
+            Color.lerp(tokens.textEmphasis, other.tokens.textEmphasis, t)!,
         textMuted: Color.lerp(tokens.textMuted, other.tokens.textMuted, t)!,
         focusRing: Color.lerp(tokens.focusRing, other.tokens.focusRing, t)!,
         // Tier colors
         tierBronze: Color.lerp(tokens.tierBronze, other.tokens.tierBronze, t)!,
         tierSilver: Color.lerp(tokens.tierSilver, other.tokens.tierSilver, t)!,
         tierGold: Color.lerp(tokens.tierGold, other.tokens.tierGold, t)!,
-        tierPlatinum: Color.lerp(tokens.tierPlatinum, other.tokens.tierPlatinum, t)!,
-        
+        tierPlatinum:
+            Color.lerp(tokens.tierPlatinum, other.tokens.tierPlatinum, t)!,
+        tierLegendary:
+            Color.lerp(tokens.tierLegendary, other.tokens.tierLegendary, t)!,
+
         // Legacy tokens
         bg: Color.lerp(tokens.bg, other.tokens.bg, t)!,
-        elevatedSurface: Color.lerp(tokens.elevatedSurface, other.tokens.elevatedSurface, t)!,
+        elevatedSurface: Color.lerp(
+            tokens.elevatedSurface, other.tokens.elevatedSurface, t)!,
         primary: Color.lerp(tokens.primary, other.tokens.primary, t)!,
         onPrimary: Color.lerp(tokens.onPrimary, other.tokens.onPrimary, t)!,
-        onPrimaryContainer: Color.lerp(tokens.onPrimaryContainer, other.tokens.onPrimaryContainer, t)!,
+        onPrimaryContainer: Color.lerp(
+            tokens.onPrimaryContainer, other.tokens.onPrimaryContainer, t)!,
         secondary: Color.lerp(tokens.secondary, other.tokens.secondary, t)!,
-        onSecondary: Color.lerp(tokens.onSecondary, other.tokens.onSecondary, t)!,
+        onSecondary:
+            Color.lerp(tokens.onSecondary, other.tokens.onSecondary, t)!,
         muted: Color.lerp(tokens.muted, other.tokens.muted, t)!,
         onMuted: Color.lerp(tokens.onMuted, other.tokens.onMuted, t)!,
         accent: Color.lerp(tokens.accent, other.tokens.accent, t)!,
@@ -1303,7 +1342,8 @@ class SemanticTokensExtension extends ThemeExtension<SemanticTokensExtension> {
         outline: Color.lerp(tokens.outline, other.tokens.outline, t)!,
         divider: Color.lerp(tokens.divider, other.tokens.divider, t)!,
         overlayDim: Color.lerp(tokens.overlayDim, other.tokens.overlayDim, t)!,
-        overlayGlow: Color.lerp(tokens.overlayGlow, other.tokens.overlayGlow, t)!,
+        overlayGlow:
+            Color.lerp(tokens.overlayGlow, other.tokens.overlayGlow, t)!,
       ),
     );
   }

@@ -23,8 +23,16 @@ class OpenAIService {
   Future<List<Flashcard>> generateFlashcardsFromContent(
     String content,
     int count,
-    String difficulty,
-  ) async {
+    String difficulty, {
+    String? questionTypes, // e.g., "concept, application, analysis, synthesis"
+    String?
+        cognitiveLevel, // e.g., "remember, understand, apply, analyze, evaluate, create"
+    String?
+        realWorldContext, // e.g., "business, healthcare, technology, daily life"
+    String? challengeLevel, // e.g., "basic, intermediate, advanced, expert"
+    String? learningStyle, // e.g., "visual, auditory, kinesthetic, reading"
+    String? promptEnhancement, // Custom additional instructions
+  }) async {
     try {
       // Get App Check token for security (with fallback)
       String? appCheckToken;
@@ -132,8 +140,17 @@ class OpenAIService {
   Future<List<QuizQuestion>> generateQuizQuestions(
     String content,
     int count,
-    String difficulty,
-  ) async {
+    String difficulty, {
+    String?
+        questionTypes, // e.g., "multipleChoice, trueFalse, fillInBlanks, scenario"
+    String?
+        cognitiveLevel, // e.g., "remember, understand, apply, analyze, evaluate, create"
+    String?
+        realWorldContext, // e.g., "business, healthcare, technology, daily life"
+    String? challengeLevel, // e.g., "basic, intermediate, advanced, expert"
+    String? learningStyle, // e.g., "visual, auditory, kinesthetic, reading"
+    String? promptEnhancement, // Custom additional instructions
+  }) async {
     try {
       // Get App Check token for security (with fallback)
       String? appCheckToken;
@@ -283,4 +300,52 @@ class OpenAIService {
       'canMakeRequest': _checkRateLimit(),
     };
   }
+
+  // Convenience method for generating intelligent flashcards
+  Future<List<Flashcard>> generateIntelligentFlashcards(
+    String content,
+    int count, {
+    String difficulty = 'medium',
+    String cognitiveLevel = 'analyze, evaluate, create',
+    String realWorldContext = 'business, technology, daily life',
+    String challengeLevel = 'intermediate',
+  }) async {
+    return generateFlashcardsFromContent(
+      content,
+      count,
+      difficulty,
+      questionTypes: 'concept, application, analysis, synthesis',
+      cognitiveLevel: cognitiveLevel,
+      realWorldContext: realWorldContext,
+      challengeLevel: challengeLevel,
+      learningStyle: 'visual, auditory, reading',
+      promptEnhancement:
+          'Focus on critical thinking and real-world applications',
+    );
+  }
+
+  // Convenience method for generating challenging quiz questions
+  Future<List<QuizQuestion>> generateChallengingQuiz(
+    String content,
+    int count, {
+    String difficulty = 'hard',
+    String cognitiveLevel = 'analyze, evaluate, create',
+    String realWorldContext = 'business, healthcare, technology',
+    String challengeLevel = 'advanced',
+  }) async {
+    return generateQuizQuestions(
+      content,
+      count,
+      difficulty,
+      questionTypes: 'multipleChoice, scenario, analysis',
+      cognitiveLevel: cognitiveLevel,
+      realWorldContext: realWorldContext,
+      challengeLevel: challengeLevel,
+      learningStyle: 'visual, reading',
+      promptEnhancement:
+          'Create questions that require deep understanding and application',
+    );
+  }
+
+  // Build enhanced prompt for more intelligent content generation
 }

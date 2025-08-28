@@ -12,7 +12,12 @@
           "package_name": "com.MindLoad.android"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "884947669542-0e07g75hnht2odloge9nns6bmijh8jbe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDSEAnhPEafjt-dXubYp6y61xrQ2ynA2cg"
@@ -20,7 +25,20 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "884947669542-0e07g75hnht2odloge9nns6bmijh8jbe.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "884947669542-qp3ijvvdd9vacvpjp6ldp5r9pf8okejk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.MindLoad.ios",
+                "app_store_id": "6751519015"
+              }
+            }
+          ]
         }
       }
     }

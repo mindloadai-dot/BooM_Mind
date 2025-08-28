@@ -372,6 +372,32 @@ class EnhancedStorageService extends ChangeNotifier {
     });
   }
 
+  // Public method to save study set
+  Future<void> saveStudySet(StudySet studySet) async {
+    try {
+      // Update metadata
+      final metadata = StudySetMetadata.fromStudySet(studySet);
+      _metadata[studySet.id] = metadata;
+      
+      // Store full study set in memory
+      _fullStudySets[studySet.id] = studySet;
+      
+      // Save to storage
+      await _saveStudySetToStorage(studySet);
+      
+      // Update totals
+      _updateTotals();
+      
+      // Notify listeners
+      notifyListeners();
+      
+      debugPrint('✅ Study set saved: ${studySet.id}');
+    } catch (e) {
+      debugPrint('❌ Failed to save study set: $e');
+      rethrow;
+    }
+  }
+
   // Save study set to storage
   Future<void> _saveStudySetToStorage(StudySet studySet) async {
     try {

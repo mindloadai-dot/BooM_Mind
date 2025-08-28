@@ -19,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/screens/settings_screen.dart';
+import 'package:mindload/screens/notification_settings_screen.dart';
 
 import 'package:mindload/screens/privacy_policy_screen.dart';
 import 'package:mindload/screens/privacy_security_screen.dart';
@@ -27,6 +28,7 @@ import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/mindload_button_system.dart';
 import 'package:mindload/widgets/change_password_dialog.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:mindload/widgets/accessible_components.dart' show ButtonSize;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -661,154 +663,198 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: SlideTransition(
         position: _headerSlideAnimation,
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.tokens.primary.withOpacity(0.1),
-                context.tokens.secondary.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
+            color: context.tokens.surface,
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: context.tokens.outline.withOpacity(0.2),
             ),
-          ),
-          child: Row(
-            children: [
-              // Profile Avatar
-              GestureDetector(
-                onTap: _showProfilePictureOptions,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        context.tokens.primary,
-                        context.tokens.secondary,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.tokens.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: FutureBuilder<String?>(
-                      future: LocalImageStorageService.instance
-                          .getProfileImagePath(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData && snapshot.data != null) {
-                          // Show profile picture
-                          return Image.file(
-                            File(snapshot.data!),
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback to initials if image fails to load
-                              return _buildInitialsAvatar(context);
-                            },
-                          );
-                        } else {
-                          // Show initials
-                          return _buildInitialsAvatar(context);
-                        }
-                      },
-                    ),
-                  ),
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: context.tokens.outline.withOpacity(0.1),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
-              const SizedBox(width: 20),
-
-              // User Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getDisplayName(),
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // Profile Avatar
+                  GestureDetector(
+                    onTap: _showProfilePictureOptions,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            context.tokens.primary,
+                            context.tokens.secondary,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.tokens.primary.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: FutureBuilder<String?>(
+                          future: LocalImageStorageService.instance
+                              .getProfileImagePath(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
+                            if (snapshot.hasData && snapshot.data != null) {
+                              return Image.file(
+                                File(snapshot.data!),
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return _buildInitialsAvatar(context);
+                                },
+                              );
+                            } else {
+                              return _buildInitialsAvatar(context);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // User Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getDisplayName(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: context.tokens.textPrimary,
                               ),
-                    ),
-                    const SizedBox(height: 8),
-                    Consumer<MindloadEconomyService>(
-                      builder: (context, economyService, child) {
-                        final userEconomy = economyService.userEconomy;
-                        if (userEconomy == null) {
-                          return Text(
-                            'Loading...',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: context.tokens.textSecondary,
-                                ),
-                          );
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${userEconomy.tier.name} Plan',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: context.tokens.primary,
-                                    fontWeight: FontWeight.w600,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Welcome back!',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: context.tokens.textSecondary,
                                   ),
-                            ),
-                            const SizedBox(height: 4),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Remaining Tokens',
-                                '${userEconomy.creditsRemaining}',
-                                Icons.account_balance_wallet,
-                                context.tokens.success,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-
-              // Edit Profile Button
-              IconButton(
-                onPressed: () {
-                  // For now, show a simple edit dialog since there's no dedicated edit profile screen
-                  _showEditProfileDialog();
-                },
-                icon: Icon(
-                  Icons.edit,
-                  color: context.tokens.primary,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: context.tokens.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
+                  // Edit Profile Button
+                  SecondaryButton(
+                    onPressed: () {
+                      HapticFeedbackService().lightImpact();
+                      _showEditProfileDialog();
+                    },
+                    size: ButtonSize.small,
+                    child: const Icon(Icons.edit),
+                  ),
+                ],
               ),
+              const SizedBox(height: 20),
+              _buildAccountStatusCard(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAccountStatusCard() {
+    return Consumer<MindloadEconomyService>(
+      builder: (context, economyService, child) {
+        final userEconomy = economyService.userEconomy;
+        if (userEconomy == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.tokens.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: context.tokens.primary.withOpacity(0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildInfoChip(
+                  'Plan',
+                  '${userEconomy.tier.name} Plan',
+                  Icons.shield,
+                  context.tokens.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInfoChip(
+                  'Tokens',
+                  '${userEconomy.creditsRemaining} remaining',
+                  Icons.token,
+                  context.tokens.success,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoChip(
+      String label, String value, IconData icon, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: context.tokens.textSecondary,
+                  ),
+            ),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: context.tokens.textPrimary,
+                  ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -988,14 +1034,11 @@ class _ProfileScreenState extends State<ProfileScreen>
               'Notification Settings',
               'Customize your study reminders',
               Icons.notifications,
-              context.tokens.outline,
+              context.tokens.secondary,
               () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => Scaffold(
-                      appBar: AppBar(title: const Text('Notification Settings')),
-                      body: const Center(child: Text('Notification settings are now managed through the main settings')),
-                    )),
+                    builder: (context) => const NotificationSettingsScreen()),
               ),
             ),
           ],
@@ -1930,10 +1973,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     );
   }
 
-
-
   /// Build comprehensive notification settings section
-
 
   /// Build notification categories section
   Widget _buildNotificationCategoriesSection(SemanticTokens tokens) {
@@ -1956,19 +1996,26 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildCategoryToggle('Study Reminders', 'Study session notifications', Icons.school, true),
-          _buildCategoryToggle('Streak Alerts', 'Daily streak maintenance', Icons.local_fire_department, true),
-          _buildCategoryToggle('Exam Deadlines', 'Important exam reminders', Icons.event, true),
-          _buildCategoryToggle('Inactivity Nudges', 'Gentle reminders to study', Icons.notifications_active, false),
-          _buildCategoryToggle('Event Triggers', 'Special event notifications', Icons.celebration, true),
-          _buildCategoryToggle('Promotional', 'App updates and features', Icons.campaign, false),
+          _buildCategoryToggle('Study Reminders', 'Study session notifications',
+              Icons.school, true),
+          _buildCategoryToggle('Streak Alerts', 'Daily streak maintenance',
+              Icons.local_fire_department, true),
+          _buildCategoryToggle(
+              'Exam Deadlines', 'Important exam reminders', Icons.event, true),
+          _buildCategoryToggle('Inactivity Nudges', 'Gentle reminders to study',
+              Icons.notifications_active, false),
+          _buildCategoryToggle('Event Triggers', 'Special event notifications',
+              Icons.celebration, true),
+          _buildCategoryToggle(
+              'Promotional', 'App updates and features', Icons.campaign, false),
         ],
       ),
     );
   }
 
   /// Build individual category toggle
-  Widget _buildCategoryToggle(String title, String description, IconData icon, bool defaultValue) {
+  Widget _buildCategoryToggle(
+      String title, String description, IconData icon, bool defaultValue) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -2101,8 +2148,6 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       ),
     );
   }
-
-
 
   /// Build profile picture section for edit dialog
   Widget _buildEditProfilePictureSection(SemanticTokens tokens) {
@@ -2545,8 +2590,6 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     }
   }
 
-
-
   Widget _buildAchievementsSection(SemanticTokens tokens) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2638,7 +2681,6 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       ),
       child: Column(
         children: [
-
           // Action Buttons Row
           ButtonRow(
             children: [
@@ -2844,8 +2886,6 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       }
     }
   }
-
-
 
   /// Test nickname system functionality
   void _testNicknameSystem() async {
