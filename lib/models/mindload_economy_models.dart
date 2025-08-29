@@ -101,7 +101,8 @@ class MindloadEconomyConfig {
       activeSetLimits: 3,
       rolloverLimits: 0,
       tierPrice: 0.0,
-      monthlyYoutubeIngests: 0,
+      monthlyYoutubeIngests:
+          2, // Allow 2 YouTube videos per month for free tier
       hasUltraAccess: true, // Ultra Mode now available for all tiers
     ),
     MindloadTier.axon: MindloadEconomyConfig(

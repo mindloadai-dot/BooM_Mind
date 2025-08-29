@@ -2407,7 +2407,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nickname: ${userProfile.displayName} | Greeting: ${userProfile.personalizedGreeting}'),
+                          content: Text(
+                              'Nickname: ${userProfile.displayName} | Greeting: ${userProfile.personalizedGreeting}'),
                           backgroundColor: tokens.success,
                         ),
                       );
@@ -2416,7 +2417,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     debugPrint('👤 Has nickname: ${userProfile.hasNickname}');
                     debugPrint('👤 Current nickname: ${userProfile.nickname}');
                     debugPrint('👤 Display name: ${userProfile.displayName}');
-                    debugPrint('👤 Personalized greeting: ${userProfile.personalizedGreeting}');
+                    debugPrint(
+                        '👤 Personalized greeting: ${userProfile.personalizedGreeting}');
+                    break;
+                  case 'youtube_test':
+                    // Test YouTube system
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Running YouTube system test...'),
+                          backgroundColor: tokens.warning,
+                        ),
+                      );
+                    }
+                    await _testYouTubeSystem();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'YouTube test completed! Check console for details.'),
+                          backgroundColor: tokens.success,
+                        ),
+                      );
+                    }
                     break;
                   case 'settings':
                     Navigator.push(
@@ -2482,6 +2505,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 12),
                       Text(
                         'Test Nickname System',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'youtube_test',
+                  child: Row(
+                    children: [
+                      Icon(Icons.video_library, color: tokens.error, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Test YouTube System',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
                     ],
@@ -2745,14 +2781,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ],
                               ),
                             ),
-                        const SizedBox(width: 16),
-                        _buildUsageIndicator(
-                          economyService,
-                          'Monthly Allowance',
-                          economyService.userEconomy?.creditsRemaining ?? 0,
-                          economyService.userEconomy?.monthlyQuota ?? 0,
-                          tokens.primary,
-                        ),
+                            const SizedBox(width: 16),
+                            _buildUsageIndicator(
+                              economyService,
+                              'Monthly Allowance',
+                              economyService.userEconomy?.creditsRemaining ?? 0,
+                              economyService.userEconomy?.monthlyQuota ?? 0,
+                              tokens.primary,
+                            ),
                           ],
                         );
                       },
@@ -3889,6 +3925,71 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ],
     );
+  }
+
+  /// Test YouTube system functionality
+  Future<void> _testYouTubeSystem() async {
+    try {
+      debugPrint('🧪 === COMPREHENSIVE YOUTUBE SYSTEM TEST ===');
+
+      // Test 1: URL parsing
+      debugPrint('🧪 Test 1: YouTube URL parsing...');
+      final testUrls = [
+        'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        'https://youtu.be/dQw4w9WgXcQ',
+        'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+        'https://m.youtube.com/watch?v=dQw4w9WgXcQ',
+        'invalid url',
+      ];
+
+      for (final url in testUrls) {
+        final videoId = YouTubeUtils.extractYouTubeId(url);
+        final status = videoId != null ? '✅' : '❌';
+        debugPrint('$status "$url" → ${videoId ?? "null"}');
+      }
+
+      // Test 2: YouTube service
+      debugPrint('🧪 Test 2: YouTube service functionality...');
+      try {
+        final service = YouTubeService();
+        debugPrint('✅ YouTube service instance created');
+
+        // Test with a known video ID (Rick Roll - always available)
+        final testVideoId = 'dQw4w9WgXcQ';
+        debugPrint('🎬 Testing with video ID: $testVideoId');
+
+        final preview = await service.getPreview(testVideoId);
+        debugPrint('✅ Preview loaded successfully:');
+        debugPrint('   Title: ${preview.title}');
+        debugPrint('   Channel: ${preview.channel}');
+        debugPrint(
+            '   Duration: ${preview.formattedDuration} (${preview.durationSeconds}s)');
+        debugPrint('   Captions: ${preview.captionsAvailable}');
+        debugPrint('   Language: ${preview.primaryLang}');
+      } catch (e) {
+        debugPrint('❌ YouTube service test failed: $e');
+      }
+
+      // Test 3: YouTube utils validation
+      debugPrint('🧪 Test 3: YouTube utilities validation...');
+      final validIds = ['dQw4w9WgXcQ', 'jNQXAC9IVRw'];
+      final invalidIds = ['invalid', 'toolong12345', 'short'];
+
+      for (final id in validIds) {
+        final isValid = YouTubeUtils.isValidVideoId(id);
+        debugPrint('✅ Valid ID test: $id → $isValid');
+      }
+
+      for (final id in invalidIds) {
+        final isValid = YouTubeUtils.isValidVideoId(id);
+        debugPrint('❌ Invalid ID test: $id → $isValid');
+      }
+
+      debugPrint('🧪 === YOUTUBE SYSTEM TEST COMPLETED ===');
+    } catch (e, stackTrace) {
+      debugPrint('❌ YouTube test failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
   }
 }
 

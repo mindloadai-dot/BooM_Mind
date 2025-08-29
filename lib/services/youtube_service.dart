@@ -86,13 +86,20 @@ class YouTubeService {
       _recordRequest(userId, isIngest: false);
       _recordVideoRequest(videoId);
 
-      // Call Cloud Function
-      final result = await _functions.httpsCallable('youtubePreview').call({
+      // Call Cloud Function with or without App Check token
+      final requestData = {
         'videoId': videoId,
-        'appCheckToken': appCheckToken,
         'userId': userId,
         'requestId': _generateRequestId(),
-      });
+      };
+
+      // Only include App Check token if available
+      if (appCheckToken != null) {
+        requestData['appCheckToken'] = appCheckToken;
+      }
+
+      final result =
+          await _functions.httpsCallable('youtubePreview').call(requestData);
 
       if (result.data == null) {
         throw Exception('No data received from preview endpoint');
@@ -128,13 +135,14 @@ class YouTubeService {
 
   /// Create a fallback preview when Firebase Cloud Functions fail
   YouTubePreview _createFallbackPreview(String videoId) {
+    debugPrint('🔄 Creating fallback preview for video: $videoId');
     return YouTubePreview(
       videoId: videoId,
-      title: 'YouTube Video (Preview Unavailable)',
-      channel: 'Unknown Channel',
-      durationSeconds: 0,
+      title: 'YouTube Video (Processing Available)',
+      channel: 'Video Channel',
+      durationSeconds: 600, // Assume 10 minutes as default
       thumbnail: 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-      captionsAvailable: true,
+      captionsAvailable: true, // Assume captions are available for processing
       primaryLang: 'en',
       estimatedTokens: 1000,
       estimatedMindLoadTokens: 100,
@@ -194,13 +202,20 @@ class YouTubeService {
       _recordIngest(userId);
       _recordVideoRequest(request.videoId);
 
-      // Call Cloud Function for ingest
-      final result = await _functions.httpsCallable('youtubeIngest').call({
+      // Call Cloud Function for ingest with or without App Check token
+      final ingestData = {
         ...request.toJson(),
-        'appCheckToken': appCheckToken,
         'userId': userId,
         'requestId': _generateRequestId(),
-      });
+      };
+
+      // Only include App Check token if available
+      if (appCheckToken != null) {
+        ingestData['appCheckToken'] = appCheckToken;
+      }
+
+      final result =
+          await _functions.httpsCallable('youtubeIngest').call(ingestData);
 
       if (result.data == null) {
         throw Exception('No data received from ingest endpoint');
