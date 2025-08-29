@@ -53,6 +53,7 @@ class MindloadEconomyService extends ChangeNotifier {
   /// Initialize the economy service
   Future<void> initialize() async {
     try {
+      debugPrint('💰 Initializing MindloadEconomyService...');
       await _loadUserEconomy();
       await _loadBudgetController();
       await _checkMonthlyResets();
@@ -62,14 +63,23 @@ class MindloadEconomyService extends ChangeNotifier {
       notifyListeners();
 
       if (kDebugMode) {
-        print(
-            'Economy initialized: ${currentTier.displayName}, $creditsRemaining credits');
+        debugPrint(
+            '✅ Economy initialized: ${currentTier.displayName}, $creditsRemaining credits');
+        debugPrint('💰 User economy: ${_userEconomy?.toJson()}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error initializing economy: $e');
+        debugPrint('❌ Error initializing economy: $e');
+        debugPrint('💰 Creating default economy state...');
       }
-      _isInitialized = true; // Use defaults
+
+      // Ensure we have a working economy even if initialization fails
+      _userEconomy = MindloadUserEconomy.createDefault('fallback_user');
+      _isInitialized = true;
+      notifyListeners();
+
+      debugPrint(
+          '✅ Economy initialized with default state: $creditsRemaining credits');
     }
   }
 
@@ -109,8 +119,10 @@ class MindloadEconomyService extends ChangeNotifier {
     try {
       // Ensure we have a working state
       if (_userEconomy == null) {
-        print('⚠️ User economy not loaded, creating default state');
+        debugPrint('⚠️ User economy not loaded, creating default state');
         _userEconomy = MindloadUserEconomy.createDefault('fallback');
+        debugPrint(
+            '✅ Default economy created with ${_userEconomy!.creditsRemaining} credits');
       }
 
       // Check budget controller first
@@ -286,13 +298,22 @@ class MindloadEconomyService extends ChangeNotifier {
 
   /// Use credits for generation (after validation)
   Future<bool> useCreditsForGeneration(GenerationRequest request) async {
+    debugPrint('💰 Attempting to use credits for generation...');
+    debugPrint('💰 Current economy state: ${_userEconomy?.toJson()}');
+
     final enforcement = canGenerateContent(request);
-    if (!enforcement.canProceed) return false;
+    if (!enforcement.canProceed) {
+      debugPrint('❌ Generation blocked: ${enforcement.blockReason}');
+      return false;
+    }
 
     // Free retry if last attempt failed
     int creditsToUse = request.isRecreate && request.lastAttemptFailed ? 0 : 1;
+    debugPrint(
+        '💰 Credits to use: $creditsToUse (isRecreate: ${request.isRecreate}, lastFailed: ${request.lastAttemptFailed})');
 
     if (creditsToUse > 0 && _userEconomy != null) {
+      final oldCredits = _userEconomy!.creditsRemaining;
       _userEconomy = _userEconomy!.copyWith(
         creditsRemaining: _userEconomy!.creditsRemaining - creditsToUse,
         creditsUsedThisMonth: _userEconomy!.creditsUsedThisMonth + creditsToUse,
@@ -308,10 +329,10 @@ class MindloadEconomyService extends ChangeNotifier {
       await _saveUserEconomy();
       notifyListeners();
 
-      if (kDebugMode) {
-        print(
-            'Used $creditsToUse credits, ${_userEconomy!.creditsRemaining} remaining');
-      }
+      debugPrint(
+          '✅ Used $creditsToUse credits: $oldCredits → ${_userEconomy!.creditsRemaining} remaining');
+    } else {
+      debugPrint('ℹ️ No credits used (free retry or no economy state)');
     }
 
     return true;
@@ -430,7 +451,7 @@ class MindloadEconomyService extends ChangeNotifier {
 
   /// Calculate credits needed for auto-split based on content size
   int calculateAutoSplitCredits(int totalCharCount) {
-          final pasteLimit = _userEconomy?.getPasteCharLimit(budgetState) ?? 500000;
+    final pasteLimit = _userEconomy?.getPasteCharLimit(budgetState) ?? 500000;
     if (totalCharCount <= pasteLimit) return 0;
 
     // Calculate how many chunks we need

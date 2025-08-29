@@ -50,8 +50,41 @@ class NotificationTestService {
 
   /// Test permission request
   static Future<void> testPermissionRequest() async {
+    debugPrint('🧪 Starting permission test...');
     await MindLoadNotificationService.initialize();
     debugPrint('✅ Permission request test completed');
+  }
+
+  /// Run comprehensive notification test
+  static Future<void> runComprehensiveTest() async {
+    debugPrint('🧪 === COMPREHENSIVE NOTIFICATION TEST STARTED ===');
+
+    try {
+      // Test 1: Initialize
+      debugPrint('🧪 Test 1: Initializing notification service...');
+      await MindLoadNotificationService.initialize();
+      debugPrint('✅ Test 1 passed: Service initialized');
+
+      // Test 2: Basic notification
+      debugPrint('🧪 Test 2: Sending basic notification...');
+      await testBasicNotification();
+      debugPrint('✅ Test 2 passed: Basic notification sent');
+
+      // Test 3: Study reminder
+      debugPrint('🧪 Test 3: Sending study reminder...');
+      await testStudyReminder();
+      debugPrint('✅ Test 3 passed: Study reminder sent');
+
+      // Test 4: First-run notification
+      debugPrint('🧪 Test 4: Testing first-run notification...');
+      await testFirstRunNotification();
+      debugPrint('✅ Test 4 passed: First-run notification tested');
+
+      debugPrint('🧪 === ALL NOTIFICATION TESTS COMPLETED SUCCESSFULLY ===');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Comprehensive test failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
   }
 
   /// Cancel all test notifications

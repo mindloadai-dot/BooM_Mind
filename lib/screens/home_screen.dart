@@ -30,6 +30,7 @@ import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
+import 'package:mindload/services/notification_test_service.dart';
 
 import 'package:mindload/screens/create_screen.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
@@ -162,7 +163,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     if (kDebugMode) {
       print('🔍 Applied search: search="$_searchQuery"');
-      print('📊 Filtered study sets: ${filtered.length} out of ${_studySets.length}');
+      print(
+          '📊 Filtered study sets: ${filtered.length} out of ${_studySets.length}');
       for (final studySet in filtered) {
         print('  📚 ${studySet.title}');
       }
@@ -302,8 +304,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
     );
   }
-
-
 
   Widget _buildEmptyStateAction({
     required IconData icon,
@@ -2357,6 +2357,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       );
                     }
                     break;
+                  case 'test':
+                    // Test notifications
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Running notification test...'),
+                          backgroundColor: tokens.primary,
+                        ),
+                      );
+                    }
+                    await NotificationTestService.runComprehensiveTest();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Notification test completed! Check console for details.'),
+                          backgroundColor: tokens.success,
+                        ),
+                      );
+                    }
+                    break;
+                  case 'token_test':
+                    // Test token system
+                    final economyService = MindloadEconomyService.instance;
+                    final userEconomy = economyService.userEconomy;
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Token Status: ${userEconomy?.creditsRemaining ?? 0} credits available'),
+                          backgroundColor: tokens.primary,
+                        ),
+                      );
+                    }
+                    debugPrint('💰 Token System Status:');
+                    debugPrint(
+                        '💰 Economy initialized: ${economyService.isInitialized}');
+                    debugPrint('💰 User economy: ${userEconomy?.toJson()}');
+                    debugPrint(
+                        '💰 Credits remaining: ${economyService.creditsRemaining}');
+                    debugPrint(
+                        '💰 Current tier: ${economyService.currentTier.displayName}');
+                    break;
                   case 'settings':
                     Navigator.push(
                       context,
@@ -2382,6 +2425,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 12),
                       Text(
                         'Check Notification Status',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'test',
+                  child: Row(
+                    children: [
+                      Icon(Icons.bug_report, color: tokens.warning, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Test Notifications',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'token_test',
+                  child: Row(
+                    children: [
+                      Icon(Icons.token, color: tokens.success, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Test Token System',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
                     ],

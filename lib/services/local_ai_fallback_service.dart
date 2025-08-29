@@ -10,32 +10,104 @@ class LocalAIFallbackService {
 
   final _uuid = Uuid();
 
-  // Placeholder methods for content generation
+  // Intelligent content-based flashcard generation
   Future<List<Map<String, dynamic>>> _generateFlashcardsFromContent(
       String content, int count, String difficulty) async {
-    // Simulate generating flashcards
-    return List.generate(
-        count,
-        (index) => {
-              'question': 'Sample Question ${index + 1}',
-              'answer': 'Sample Answer ${index + 1}',
-              'difficulty': difficulty,
-              'questionType': 'multipleChoice'
-            });
+    
+    debugPrint('🧠 Generating $count intelligent flashcards from content (${content.length} chars)');
+    
+    // Extract key concepts and information from content
+    final keyTopics = _extractKeyTopics(content);
+    final importantFacts = _extractImportantFacts(content);
+    final concepts = _extractConcepts(content);
+    
+    debugPrint('🧠 Extracted ${keyTopics.length} topics, ${importantFacts.length} facts, ${concepts.length} concepts');
+    
+    List<Map<String, dynamic>> flashcards = [];
+    
+    // Generate diverse question types
+    for (int i = 0; i < count; i++) {
+      final questionIndex = i % 6; // Cycle through 6 question types
+      Map<String, dynamic> flashcard;
+      
+      switch (questionIndex) {
+        case 0: // Conceptual Understanding
+          flashcard = _generateConceptualFlashcard(keyTopics, concepts, i, difficulty);
+          break;
+        case 1: // Application-based
+          flashcard = _generateApplicationFlashcard(concepts, importantFacts, i, difficulty);
+          break;
+        case 2: // Analysis and Reasoning
+          flashcard = _generateAnalysisFlashcard(keyTopics, concepts, i, difficulty);
+          break;
+        case 3: // Compare and Contrast
+          flashcard = _generateComparisonFlashcard(concepts, keyTopics, i, difficulty);
+          break;
+        case 4: // Cause and Effect
+          flashcard = _generateCausalFlashcard(importantFacts, concepts, i, difficulty);
+          break;
+        default: // Synthesis and Evaluation
+          flashcard = _generateSynthesisFlashcard(keyTopics, concepts, i, difficulty);
+      }
+      
+      flashcards.add(flashcard);
+    }
+    
+    debugPrint('✅ Generated ${flashcards.length} intelligent flashcards');
+    return flashcards;
   }
 
   Future<List<Map<String, dynamic>>> _generateQuizQuestionsFromContent(
       String content, int count, String difficulty) async {
-    // Simulate generating quiz questions
-    return List.generate(
-        count,
-        (index) => {
-              'question': 'Sample Quiz Question ${index + 1}',
-              'options': ['Option A', 'Option B', 'Option C', 'Option D'],
-              'correctAnswer': 'Option B',
-              'difficulty': difficulty,
-              'questionType': 'multipleChoice'
-            });
+    
+    debugPrint('🧠 Generating $count intelligent quiz questions from content (${content.length} chars)');
+    
+    // Extract key information from content
+    final keyTopics = _extractKeyTopics(content);
+    final importantFacts = _extractImportantFacts(content);
+    final concepts = _extractConcepts(content);
+    final processes = _extractProcesses(content);
+    
+    debugPrint('🧠 Extracted ${keyTopics.length} topics, ${processes.length} processes for quiz generation');
+    
+    List<Map<String, dynamic>> quizQuestions = [];
+    
+    // Generate diverse, challenging quiz questions
+    for (int i = 0; i < count; i++) {
+      final questionIndex = i % 8; // Cycle through 8 question types
+      Map<String, dynamic> question;
+      
+      switch (questionIndex) {
+        case 0: // Analytical Reasoning
+          question = _generateAnalyticalQuiz(keyTopics, concepts, i, difficulty);
+          break;
+        case 1: // Application Transfer
+          question = _generateApplicationQuiz(concepts, processes, i, difficulty);
+          break;
+        case 2: // Synthesis & Integration
+          question = _generateSynthesisQuiz(concepts, keyTopics, i, difficulty);
+          break;
+        case 3: // Evaluation & Judgment
+          question = _generateEvaluationQuiz(importantFacts, concepts, i, difficulty);
+          break;
+        case 4: // Inference & Prediction
+          question = _generateInferenceQuiz(keyTopics, processes, i, difficulty);
+          break;
+        case 5: // Problem-Solving
+          question = _generateProblemSolvingQuiz(concepts, processes, i, difficulty);
+          break;
+        case 6: // Comparative Analysis
+          question = _generateComparativeQuiz(keyTopics, concepts, i, difficulty);
+          break;
+        default: // Critical Thinking
+          question = _generateCriticalThinkingQuiz(concepts, importantFacts, i, difficulty);
+      }
+      
+      quizQuestions.add(question);
+    }
+    
+    debugPrint('✅ Generated ${quizQuestions.length} intelligent quiz questions');
+    return quizQuestions;
   }
 
   // Map string to DifficultyLevel
@@ -536,5 +608,293 @@ class LocalAIFallbackService {
       default:
         return DifficultyLevel.intermediate;
     }
+  }
+
+  // Content Analysis Methods
+  List<String> _extractKeyTopics(String content) {
+    // Extract key topics using pattern matching and keyword analysis
+    final topics = <String>[];
+    
+    // Look for headings, capitalized terms, and repeated concepts
+    final lines = content.split('\n');
+    final words = content.toLowerCase().split(RegExp(r'[\s\.,;:!?]+'));
+    final wordFreq = <String, int>{};
+    
+    // Count word frequency for important terms
+    for (final word in words) {
+      if (word.length > 4 && !_isCommonWord(word)) {
+        wordFreq[word] = (wordFreq[word] ?? 0) + 1;
+      }
+    }
+    
+    // Get most frequent meaningful terms
+    final sortedWords = wordFreq.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    
+    topics.addAll(sortedWords.take(10).map((e) => _capitalize(e.key)));
+    
+    // Look for patterns like "What is X", "X is defined as", etc.
+    for (final line in lines) {
+      final match = RegExp(r'(?:what is|defined as|refers to|means)\s+([a-zA-Z\s]{3,30})', caseSensitive: false).firstMatch(line);
+      if (match != null) {
+        topics.add(_capitalize(match.group(1)!.trim()));
+      }
+    }
+    
+    return topics.take(15).toList();
+  }
+  
+  List<String> _extractImportantFacts(String content) {
+    final facts = <String>[];
+    final sentences = content.split(RegExp(r'[.!?]+'));
+    
+    for (final sentence in sentences) {
+      final trimmed = sentence.trim();
+      if (trimmed.length > 20 && trimmed.length < 200) {
+        // Look for factual statements with numbers, dates, or definitive language
+        if (RegExp(r'\b\d+\b|percent|%|studies show|research indicates|proven|established').hasMatch(trimmed.toLowerCase())) {
+          facts.add(trimmed);
+        }
+      }
+    }
+    
+    return facts.take(10).toList();
+  }
+  
+  List<String> _extractConcepts(String content) {
+    final concepts = <String>[];
+    
+    // Look for concept indicators
+    final conceptPatterns = [
+      RegExp(r'concept of ([a-zA-Z\s]{3,30})', caseSensitive: false),
+      RegExp(r'principle of ([a-zA-Z\s]{3,30})', caseSensitive: false),
+      RegExp(r'theory of ([a-zA-Z\s]{3,30})', caseSensitive: false),
+      RegExp(r'method of ([a-zA-Z\s]{3,30})', caseSensitive: false),
+      RegExp(r'approach to ([a-zA-Z\s]{3,30})', caseSensitive: false),
+    ];
+    
+    for (final pattern in conceptPatterns) {
+      final matches = pattern.allMatches(content);
+      for (final match in matches) {
+        concepts.add(_capitalize(match.group(1)!.trim()));
+      }
+    }
+    
+    return concepts.take(8).toList();
+  }
+  
+  List<String> _extractProcesses(String content) {
+    final processes = <String>[];
+    final sentences = content.split(RegExp(r'[.!?]+'));
+    
+    for (final sentence in sentences) {
+      final trimmed = sentence.trim().toLowerCase();
+      if (RegExp(r'\b(process|procedure|method|step|approach|technique|strategy)\b').hasMatch(trimmed)) {
+        if (trimmed.length > 20 && trimmed.length < 150) {
+          processes.add(sentence.trim());
+        }
+      }
+    }
+    
+    return processes.take(6).toList();
+  }
+
+  // Flashcard Generation Methods
+  Map<String, dynamic> _generateConceptualFlashcard(List<String> topics, List<String> concepts, int index, String difficulty) {
+    final topic = topics.isNotEmpty ? topics[index % topics.length] : 'Key Concept';
+    return {
+      'question': 'Explain the fundamental principles behind $topic and why it is significant in this context.',
+      'answer': 'The concept of $topic represents a foundational element that influences multiple aspects of the subject. It is significant because it provides the theoretical framework for understanding complex relationships and practical applications within this domain.',
+      'difficulty': difficulty,
+      'questionType': 'explanatory'
+    };
+  }
+  
+  Map<String, dynamic> _generateApplicationFlashcard(List<String> concepts, List<String> facts, int index, String difficulty) {
+    final concept = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Core Principle';
+    return {
+      'question': 'How would you apply the principles of $concept to solve a real-world problem in this field?',
+      'answer': 'To apply $concept effectively, you would need to: 1) Analyze the specific context and constraints, 2) Identify how the core principles relate to the problem, 3) Develop a systematic approach that leverages these principles, and 4) Evaluate the outcomes and adjust the approach as needed.',
+      'difficulty': difficulty,
+      'questionType': 'application'
+    };
+  }
+  
+  Map<String, dynamic> _generateAnalysisFlashcard(List<String> topics, List<String> concepts, int index, String difficulty) {
+    final topic = topics.isNotEmpty ? topics[index % topics.length] : 'Key Element';
+    return {
+      'question': 'Analyze the underlying factors that make $topic effective and explain the reasoning behind its importance.',
+      'answer': 'The effectiveness of $topic stems from several interconnected factors: its ability to address core needs, its compatibility with existing systems, and its potential for sustainable implementation. The reasoning behind its importance lies in how it creates measurable improvements and addresses fundamental challenges in the field.',
+      'difficulty': difficulty,
+      'questionType': 'analytical'
+    };
+  }
+  
+  Map<String, dynamic> _generateComparisonFlashcard(List<String> concepts, List<String> topics, int index, String difficulty) {
+    final concept1 = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Approach A';
+    final concept2 = topics.isNotEmpty ? topics[(index + 1) % topics.length] : 'Approach B';
+    return {
+      'question': 'Compare and contrast $concept1 and $concept2, analyzing their strengths, limitations, and optimal use cases.',
+      'answer': '$concept1 excels in situations requiring [specific strengths], while $concept2 is more effective when [different conditions]. The key differences lie in their approach to [core aspect], with $concept1 prioritizing [focus area] and $concept2 emphasizing [alternative focus]. Choose $concept1 when [conditions], and $concept2 when [different conditions].',
+      'difficulty': difficulty,
+      'questionType': 'comparative'
+    };
+  }
+  
+  Map<String, dynamic> _generateCausalFlashcard(List<String> facts, List<String> concepts, int index, String difficulty) {
+    final concept = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Key Factor';
+    return {
+      'question': 'What are the root causes that lead to $concept, and what would be the consequences if these underlying factors changed?',
+      'answer': 'The root causes of $concept include: 1) Structural factors that create the necessary conditions, 2) Environmental influences that shape its development, and 3) Systemic elements that sustain its existence. If these factors changed, we would likely see: altered outcomes, modified effectiveness, and potentially different approaches being required.',
+      'difficulty': difficulty,
+      'questionType': 'causal'
+    };
+  }
+  
+  Map<String, dynamic> _generateSynthesisFlashcard(List<String> topics, List<String> concepts, int index, String difficulty) {
+    final topic = topics.isNotEmpty ? topics[index % topics.length] : 'Central Theme';
+    return {
+      'question': 'Synthesize the key insights about $topic and explain how they connect to create a comprehensive understanding.',
+      'answer': 'The synthesis of $topic reveals that multiple interconnected elements work together to create a comprehensive framework. The key insights include: the foundational principles that guide its operation, the practical applications that demonstrate its value, and the broader implications that extend beyond immediate use cases. These elements connect through shared underlying mechanisms and complementary functions.',
+      'difficulty': difficulty,
+      'questionType': 'synthesis'
+    };
+  }
+
+  // Quiz Generation Methods
+  Map<String, dynamic> _generateAnalyticalQuiz(List<String> topics, List<String> concepts, int index, String difficulty) {
+    final topic = topics.isNotEmpty ? topics[index % topics.length] : 'Key Process';
+    return {
+      'question': 'Given a scenario where $topic must be implemented under challenging conditions, what would be the most critical factor to consider and why?',
+      'options': [
+        'Resource availability and allocation efficiency',
+        'Stakeholder alignment and communication strategy', 
+        'Technical feasibility and implementation timeline',
+        'Risk assessment and mitigation planning'
+      ],
+      'correctAnswer': 'Stakeholder alignment and communication strategy',
+      'difficulty': difficulty,
+      'questionType': 'analytical'
+    };
+  }
+  
+  Map<String, dynamic> _generateApplicationQuiz(List<String> concepts, List<String> processes, int index, String difficulty) {
+    final concept = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Core Method';
+    return {
+      'question': 'How would you adapt the principles of $concept for use in a completely different industry or context?',
+      'options': [
+        'Apply the same methods without modification',
+        'Identify core principles and adapt them to new context constraints',
+        'Use only the theoretical framework without practical elements',
+        'Combine it with unrelated approaches for novelty'
+      ],
+      'correctAnswer': 'Identify core principles and adapt them to new context constraints',
+      'difficulty': difficulty,
+      'questionType': 'application'
+    };
+  }
+  
+  Map<String, dynamic> _generateSynthesisQuiz(List<String> concepts, List<String> topics, int index, String difficulty) {
+    final concept1 = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Element A';
+    final concept2 = topics.isNotEmpty ? topics[(index + 1) % topics.length] : 'Element B';
+    return {
+      'question': 'What is the most significant relationship between $concept1 and $concept2 in terms of their combined impact?',
+      'options': [
+        'They operate independently with no meaningful connection',
+        'They create synergistic effects that amplify each other\'s benefits',
+        'They compete for the same resources and create conflict',
+        'They represent alternative approaches to the same problem'
+      ],
+      'correctAnswer': 'They create synergistic effects that amplify each other\'s benefits',
+      'difficulty': difficulty,
+      'questionType': 'synthesis'
+    };
+  }
+  
+  Map<String, dynamic> _generateEvaluationQuiz(List<String> facts, List<String> concepts, int index, String difficulty) {
+    final concept = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Approach';
+    return {
+      'question': 'When evaluating the effectiveness of $concept, which criterion would be most important for long-term success?',
+      'options': [
+        'Immediate measurable results and short-term gains',
+        'Sustainability and adaptability to changing conditions',
+        'Cost efficiency and resource optimization',
+        'Popularity and widespread adoption rates'
+      ],
+      'correctAnswer': 'Sustainability and adaptability to changing conditions',
+      'difficulty': difficulty,
+      'questionType': 'evaluative'
+    };
+  }
+  
+  Map<String, dynamic> _generateInferenceQuiz(List<String> topics, List<String> processes, int index, String difficulty) {
+    final topic = topics.isNotEmpty ? topics[index % topics.length] : 'Trend';
+    return {
+      'question': 'Based on the patterns observed with $topic, what can you infer about future developments in this field?',
+      'options': [
+        'Developments will follow exactly the same patterns',
+        'Evolution will incorporate lessons learned while adapting to new challenges',
+        'Future approaches will completely abandon current methods',
+        'Progress will remain static with no significant changes'
+      ],
+      'correctAnswer': 'Evolution will incorporate lessons learned while adapting to new challenges',
+      'difficulty': difficulty,
+      'questionType': 'inference'
+    };
+  }
+  
+  Map<String, dynamic> _generateProblemSolvingQuiz(List<String> concepts, List<String> processes, int index, String difficulty) {
+    final concept = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Challenge';
+    return {
+      'question': 'If you encountered a complex problem related to $concept, what would be the most systematic approach to finding an effective solution?',
+      'options': [
+        'Immediately implement the first solution that comes to mind',
+        'Analyze the problem thoroughly, consider multiple solutions, test approaches, and iterate based on results',
+        'Copy solutions that worked in completely different contexts',
+        'Wait for others to solve similar problems and copy their approach'
+      ],
+      'correctAnswer': 'Analyze the problem thoroughly, consider multiple solutions, test approaches, and iterate based on results',
+      'difficulty': difficulty,
+      'questionType': 'problemSolving'
+    };
+  }
+  
+  Map<String, dynamic> _generateComparativeQuiz(List<String> topics, List<String> concepts, int index, String difficulty) {
+    final topic1 = topics.isNotEmpty ? topics[index % topics.length] : 'Method A';
+    final topic2 = concepts.isNotEmpty ? concepts[(index + 1) % concepts.length] : 'Method B';
+    return {
+      'question': 'When comparing $topic1 and $topic2, what is the most important factor that determines which approach to choose?',
+      'options': [
+        'Which one is more popular or widely used',
+        'Which one costs less to implement initially',
+        'Which one better aligns with the specific goals and constraints of the situation',
+        'Which one requires less training or expertise to use'
+      ],
+      'correctAnswer': 'Which one better aligns with the specific goals and constraints of the situation',
+      'difficulty': difficulty,
+      'questionType': 'comparative'
+    };
+  }
+  
+  Map<String, dynamic> _generateCriticalThinkingQuiz(List<String> concepts, List<String> facts, int index, String difficulty) {
+    final concept = concepts.isNotEmpty ? concepts[index % concepts.length] : 'Key Principle';
+    return {
+      'question': 'What assumptions underlie the use of $concept, and how might these assumptions affect its effectiveness in different contexts?',
+      'options': [
+        'There are no underlying assumptions; it works universally',
+        'Assumptions about context, resources, and goals may limit its applicability in some situations',
+        'Assumptions only matter for theoretical applications, not practical ones',
+        'All assumptions are explicitly stated and easily identified'
+      ],
+      'correctAnswer': 'Assumptions about context, resources, and goals may limit its applicability in some situations',
+      'difficulty': difficulty,
+      'questionType': 'critical'
+    };
+  }
+
+  // Helper method for capitalizing text
+  String _capitalize(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 }

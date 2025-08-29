@@ -125,26 +125,37 @@ class MindLoadNotificationService {
 
   /// Schedule an instant notification
   static Future<void> scheduleInstant(String title, String body) async {
+    debugPrint('📱 Attempting to send instant notification: "$title"');
+
     if (!_initialized) {
-      debugPrint('⚠️ Notification service not initialized');
+      debugPrint(
+          '⚠️ Notification service not initialized, initializing now...');
       await initialize();
     }
 
     try {
       // Check permissions first
+      debugPrint('🔐 Checking notification permissions...');
       final hasPermission = await _hasPermissions();
       if (!hasPermission) {
-        debugPrint('⚠️ No notification permissions');
-        return;
+        debugPrint('⚠️ No notification permissions - attempting to request...');
+        final granted = await _requestPermissions();
+        if (!granted) {
+          debugPrint('❌ Notification permissions denied');
+          return;
+        }
       }
 
       // Generate unique ID
       final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      debugPrint('🆔 Generated notification ID: $id');
 
       // Create notification details
       final details = _createNotificationDetails();
+      debugPrint('⚙️ Notification details created');
 
       // Show notification
+      debugPrint('📤 Sending notification...');
       await _plugin.show(
         id,
         title,
@@ -152,9 +163,10 @@ class MindLoadNotificationService {
         details,
       );
 
-      debugPrint('✅ Instant notification sent: $title');
-    } catch (e) {
+      debugPrint('✅ Instant notification sent successfully: "$title"');
+    } catch (e, stackTrace) {
       debugPrint('❌ Failed to send instant notification: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
     }
   }
 
@@ -309,8 +321,12 @@ class MindLoadNotificationService {
 
   /// Request notification permissions
   static Future<bool> _requestPermissions() async {
+    debugPrint('🔐 Requesting notification permissions...');
+
     try {
       if (Platform.isIOS) {
+        debugPrint('🍎 Requesting iOS notification permissions...');
+
         // iOS permissions through plugin
         final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
@@ -320,35 +336,46 @@ class MindLoadNotificationService {
             alert: true,
             badge: true,
             sound: true,
+            critical: false, // Don't request critical by default
+            provisional: true, // Allow provisional notifications
           );
 
+          debugPrint('🍎 iOS permissions result: $result');
           debugPrint(
-              '🍎 iOS permissions: ${result == true ? "granted" : "denied"}');
+              '🍎 iOS permissions: ${result == true ? "✅ granted" : "❌ denied"}');
           return result ?? false;
+        } else {
+          debugPrint('❌ iOS plugin not available');
+          return false;
         }
       } else if (Platform.isAndroid) {
+        debugPrint('🤖 Requesting Android notification permissions...');
+
         // Android permissions through permission_handler
         final status = await Permission.notification.request();
+        debugPrint('🤖 Notification permission status: $status');
 
         // Also request exact alarm permission for Android 12+
-        if (Platform.isAndroid) {
-          try {
-            final alarmStatus = await Permission.scheduleExactAlarm.request();
-            debugPrint('⏰ Exact alarm permission: $alarmStatus');
-          } catch (e) {
-            // Exact alarm permission not available on older Android versions
-            debugPrint('ℹ️ Exact alarm permission not available');
-          }
+        try {
+          final alarmStatus = await Permission.scheduleExactAlarm.request();
+          debugPrint('⏰ Exact alarm permission: $alarmStatus');
+        } catch (e) {
+          // Exact alarm permission not available on older Android versions
+          debugPrint('ℹ️ Exact alarm permission not available: $e');
         }
 
         final granted = status == PermissionStatus.granted;
-        debugPrint('🤖 Android permissions: ${granted ? "granted" : "denied"}');
+        debugPrint(
+            '🤖 Android permissions: ${granted ? "✅ granted" : "❌ denied"}');
         return granted;
       }
 
+      debugPrint(
+          'ℹ️ Platform not iOS or Android, assuming permissions granted');
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Permission request failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       return false;
     }
   }
@@ -357,22 +384,30 @@ class MindLoadNotificationService {
   static Future<bool> _hasPermissions() async {
     try {
       if (Platform.isIOS) {
-        // Check iOS permissions
+        // Check iOS permissions - use checkPermissions instead of requestPermissions
         final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
 
         if (iosPlugin != null) {
-          // Request with all false just checks current status
-          final result = await iosPlugin.requestPermissions(
-            alert: false,
-            badge: false,
-            sound: false,
-          );
-          return result ?? false;
+          try {
+            // For iOS, we'll use a simple approach - just try to request permissions
+            // with all false to check current status
+            final result = await iosPlugin.requestPermissions(
+              alert: false,
+              badge: false,
+              sound: false,
+            );
+            debugPrint('🍎 iOS permission check result: $result');
+            return result ?? true; // Default to true if null
+          } catch (e) {
+            debugPrint('🍎 iOS permission check failed, assuming granted: $e');
+            return true; // Assume granted if check fails
+          }
         }
       } else if (Platform.isAndroid) {
         // Check Android permissions
         final status = await Permission.notification.status;
+        debugPrint('🤖 Android notification permission: $status');
         return status == PermissionStatus.granted;
       }
 

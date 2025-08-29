@@ -81,6 +81,10 @@ void main() async {
   await MindLoadNotificationService.initialize();
   print('✅ MindLoad notification service initialized');
 
+  // Initialize the economy service
+  await MindloadEconomyService.instance.initialize();
+  print('✅ MindLoad economy service initialized');
+
   // Run the app
   runApp(const MindLoadApp());
 }
