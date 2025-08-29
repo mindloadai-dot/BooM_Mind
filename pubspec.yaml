@@ -1,7 +1,7 @@
 name: mindload
 description: "Mindload - AI Study Companion for focused learning with flashcards, quizzes, and ultra study mode with binaural beats"
 publish_to: "none"
-version: 1.0.0+8
+version: 1.0.0+10
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
@@ -49,6 +49,7 @@ dependencies:
   http: ^1.2.2
   cached_network_image: ^3.3.1
   connectivity_plus: ^6.0.5
+  uuid: ^4.1.0
   
   # Notifications - Stable Versions
   flutter_local_notifications: ^19.4.1
@@ -59,10 +60,11 @@ dependencies:
   # iOS Live Activities (ActivityKit) plugin
   live_activities: ^2.3.0
   
-  # Audio
+  # Audio & Video
   just_audio: ^0.10.4
   audio_session: ^0.2.2
   audio_service: ^0.18.18
+  video_player: ^2.8.1
   
   # In-App Purchases - StoreKit 2 Support
   in_app_purchase: ^3.1.11
@@ -73,6 +75,7 @@ dependencies:
   intl: ^0.20.2
   image_picker: ^1.2.0
   image: ^4.5.4
+  share_plus: ^11.1.0
 
 dependency_overrides:
   # Work around Android build issues in latest sqflite_android by pinning to a compatible version
