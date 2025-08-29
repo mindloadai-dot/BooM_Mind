@@ -2,7 +2,7 @@
 // Tiers: free (dendrite), axon, neuron, cortex, singularity
 // All plans include MindLoad Tokens as single currency
 
-enum PlanId { free, axon, neuron, synapse, cortex, singularity }
+enum PlanId { free, axon, neuron, cortex, singularity }
 enum SubscriptionType { monthly, annual }
 
 class PlanDefinition {
@@ -63,17 +63,7 @@ const Map<PlanId, PlanDefinition> PLAN_DEFS = {
     name: 'Neuron',
     description: 'Popular plan with Ultra Mode',
   ),
-  PlanId.synapse: PlanDefinition(
-    monthly: 6.99,
-    annual: 75,
-    tokens: 200,
-    ytIngests: 2,
-    welcomeTokens: 0,
-    ytPreview: false,
-    ultra: true,
-    name: 'Synapse',
-    description: 'Advanced plan with Ultra Mode',
-  ),
+
   PlanId.cortex: PlanDefinition(
     monthly: 14.99,
     annual: 159,
@@ -107,10 +97,7 @@ const Map<PlanId, Map<SubscriptionType, String>> SKU = {
     SubscriptionType.monthly: 'neuron_monthly',
     SubscriptionType.annual: 'neuron_annual',
   },
-  PlanId.synapse: {
-    SubscriptionType.monthly: 'synapse_monthly',
-    SubscriptionType.annual: 'synapse_annual',
-  },
+
   PlanId.cortex: {
     SubscriptionType.monthly: 'cortex_monthly',
     SubscriptionType.annual: 'cortex_annual',

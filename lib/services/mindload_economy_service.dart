@@ -700,7 +700,6 @@ class MindloadEconomyService extends ChangeNotifier {
         return 70; // Paid tiers
       case MindloadTier.cortex:
       case MindloadTier.singularity:
-      case MindloadTier.synapse:
         return 100; // Advanced tiers
     }
   }
@@ -715,7 +714,6 @@ class MindloadEconomyService extends ChangeNotifier {
         return 50; // Paid tiers
       case MindloadTier.cortex:
       case MindloadTier.singularity:
-      case MindloadTier.synapse:
         return 70; // Advanced tiers
     }
   }
@@ -733,8 +731,6 @@ class MindloadEconomyService extends ChangeNotifier {
         return 45; // 45 minutes
       case MindloadTier.singularity:
         return 45; // 45 minutes
-      case MindloadTier.synapse:
-        return 45; // Legacy tier: 45 minutes
     }
   }
 

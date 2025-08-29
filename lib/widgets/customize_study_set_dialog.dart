@@ -2,11 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mindload/services/credit_service.dart';
+import 'package:mindload/models/study_data.dart';
 
 class CustomizeStudySetDialog extends StatefulWidget {
   final String topicDifficulty;
   final Function(int quizCount, int flashcardCount) onGenerate;
-  
+
   const CustomizeStudySetDialog({
     super.key,
     this.topicDifficulty = 'medium',
@@ -14,12 +15,13 @@ class CustomizeStudySetDialog extends StatefulWidget {
   });
 
   @override
-  State<CustomizeStudySetDialog> createState() => _CustomizeStudySetDialogState();
+  State<CustomizeStudySetDialog> createState() =>
+      _CustomizeStudySetDialogState();
 }
 
 class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
   final CreditService _creditService = CreditService.instance;
-  
+
   int _quizCount = 0; // Initialize with default value
   int _flashcardCount = 0; // Initialize with default value
   Map<String, int> _optimalCounts = {};
@@ -33,17 +35,36 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
 
   Future<void> _initializeCountsWithOptimal() async {
     setState(() => _isLoading = true);
-    
+
     // Simulate a brief delay for AI calculation
     await Future.delayed(const Duration(milliseconds: 300));
-    
-    _optimalCounts = _creditService.calculateOptimalCounts(widget.topicDifficulty);
-    
+
+    _optimalCounts = _creditService
+        .calculateOptimalCounts(_parseDifficulty(widget.topicDifficulty));
+
     setState(() {
       _quizCount = _optimalCounts['quiz'] ?? _creditService.lastQuizCount;
-      _flashcardCount = _optimalCounts['flashcards'] ?? _creditService.lastFlashcardCount;
+      _flashcardCount =
+          _optimalCounts['flashcards'] ?? _creditService.lastFlashcardCount;
       _isLoading = false;
     });
+  }
+
+  DifficultyLevel _parseDifficulty(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'beginner':
+        return DifficultyLevel.beginner;
+      case 'intermediate':
+      case 'medium':
+        return DifficultyLevel.intermediate;
+      case 'advanced':
+      case 'hard':
+        return DifficultyLevel.advanced;
+      case 'expert':
+        return DifficultyLevel.expert;
+      default:
+        return DifficultyLevel.intermediate;
+    }
   }
 
   int get _totalCreditsNeeded {
@@ -58,7 +79,7 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
     final tier = _creditService.currentPlan;
     int totalCredits = 0;
     int totalTokens = 0;
-    
+
     // Calculate credits and tokens for quiz questions
     if (_quizCount > 0) {
       final quizCredits = CreditLimits.quizSetCost;
@@ -66,7 +87,7 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
       totalCredits += quizCredits;
       totalTokens += quizTokensPerCredit;
     }
-    
+
     // Calculate credits and tokens for flashcards
     if (_flashcardCount > 0) {
       final flashcardCredits = CreditLimits.flashcardSetCost;
@@ -74,14 +95,16 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
       totalCredits += flashcardCredits;
       totalTokens += flashcardTokensPerCredit;
     }
-    
+
     return {
       'totalCredits': totalCredits,
       'totalTokens': totalTokens,
       'quizCredits': _quizCount > 0 ? CreditLimits.quizSetCost : 0,
-      'flashcardCredits': _flashcardCount > 0 ? CreditLimits.flashcardSetCost : 0,
+      'flashcardCredits':
+          _flashcardCount > 0 ? CreditLimits.flashcardSetCost : 0,
       'quizTokens': _quizCount > 0 ? _getQuizTokensPerCredit(tier) : 0,
-      'flashcardTokens': _flashcardCount > 0 ? _getFlashcardTokensPerCredit(tier) : 0,
+      'flashcardTokens':
+          _flashcardCount > 0 ? _getFlashcardTokensPerCredit(tier) : 0,
     };
   }
 
@@ -124,7 +147,7 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Dialog(
       backgroundColor: theme.scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -156,7 +179,7 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             Expanded(
               child: _isLoading
                   ? Center(
@@ -167,7 +190,9 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                           const SizedBox(height: 16),
                           Text(
                             'Calculating optimal counts...',
-                            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                            style: TextStyle(
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.6)),
                           ),
                         ],
                       ),
@@ -188,7 +213,7 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                             }),
                           ),
                           const SizedBox(height: 24),
-                          
+
                           // Flashcards Slider
                           _buildSliderSection(
                             'Flashcards',
@@ -201,7 +226,7 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                             }),
                           ),
                           const SizedBox(height: 32),
-                          
+
                           // Credit Usage Display
                           Container(
                             padding: const EdgeInsets.all(16),
@@ -225,11 +250,13 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             'Cost Breakdown',
-                                            style: theme.textTheme.titleSmall?.copyWith(
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -237,19 +264,24 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                                             _creditService.isUnlimited
                                                 ? 'Unlimited credits available'
                                                 : '${_creditService.creditsRemaining} credits remaining',
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.7),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    if (!_canGenerate && !_creditService.isUnlimited)
+                                    if (!_canGenerate &&
+                                        !_creditService.isUnlimited)
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: Colors.red[100],
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
                                         ),
                                         child: Text(
                                           'Not enough credits',
@@ -262,9 +294,9 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                                       ),
                                   ],
                                 ),
-                                
+
                                 const SizedBox(height: 16),
-                                
+
                                 // Detailed cost breakdown
                                 if (_quizCount > 0 || _flashcardCount > 0) ...[
                                   Container(
@@ -273,7 +305,8 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                                       color: theme.colorScheme.surface,
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: theme.primaryColor.withOpacity(0.2),
+                                        color:
+                                            theme.primaryColor.withOpacity(0.2),
                                       ),
                                     ),
                                     child: Column(
@@ -282,17 +315,21 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                                         if (_quizCount > 0) ...[
                                           Row(
                                             children: [
-                                              Icon(Icons.quiz, size: 16, color: theme.primaryColor),
+                                              Icon(Icons.quiz,
+                                                  size: 16,
+                                                  color: theme.primaryColor),
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
                                                   '$_quizCount Quiz Questions',
-                                                  style: theme.textTheme.bodySmall,
+                                                  style:
+                                                      theme.textTheme.bodySmall,
                                                 ),
                                               ),
                                               Text(
                                                 '${_detailedCostBreakdown['quizCredits']} credit',
-                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
                                                   fontWeight: FontWeight.bold,
                                                   color: theme.primaryColor,
                                                 ),
@@ -300,23 +337,28 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                                             ],
                                           ),
                                         ],
-                                        
+
                                         // Flashcard cost
                                         if (_flashcardCount > 0) ...[
-                                          if (_quizCount > 0) const SizedBox(height: 8),
+                                          if (_quizCount > 0)
+                                            const SizedBox(height: 8),
                                           Row(
                                             children: [
-                                              Icon(Icons.style, size: 16, color: theme.primaryColor),
+                                              Icon(Icons.style,
+                                                  size: 16,
+                                                  color: theme.primaryColor),
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
                                                   '$_flashcardCount Flashcards',
-                                                  style: theme.textTheme.bodySmall,
+                                                  style:
+                                                      theme.textTheme.bodySmall,
                                                 ),
                                               ),
                                               Text(
                                                 '${_detailedCostBreakdown['flashcardCredits']} credit',
-                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
                                                   fontWeight: FontWeight.bold,
                                                   color: theme.primaryColor,
                                                 ),
@@ -327,29 +369,33 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                                       ],
                                     ),
                                   ),
-                                  
+
                                   const SizedBox(height: 12),
-                                  
+
                                   // Total cost
                                   Row(
                                     children: [
                                       Expanded(
                                         child: Text(
                                           'Total Cost:',
-                                          style: theme.textTheme.titleSmall?.copyWith(
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
                                         decoration: BoxDecoration(
                                           color: theme.primaryColor,
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                         ),
                                         child: Text(
                                           '${_detailedCostBreakdown['totalCredits']} Credit${_detailedCostBreakdown['totalCredits'] != 1 ? 's' : ''}',
-                                          style: theme.textTheme.bodySmall?.copyWith(
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -364,27 +410,27 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
                         ],
                       ),
                     ),
+            ),
+
+            const SizedBox(height: 24),
+
+            if (!_creditService.isUnlimited && !_canGenerate) ...[
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showUpgradeDialog();
+                  },
+                  icon: const Icon(Icons.upgrade, size: 18),
+                  label: const Text('Upgrade for unlimited credits'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.primaryColor,
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  if (!_creditService.isUnlimited && !_canGenerate) ...[
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _showUpgradeDialog();
-                        },
-                        icon: const Icon(Icons.upgrade, size: 18),
-                        label: const Text('Upgrade for unlimited credits'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: theme.primaryColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-            
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Action Buttons - Fixed at bottom
             Row(
               children: [
@@ -421,9 +467,10 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
     );
   }
 
-  Widget _buildSliderSection(String title, IconData icon, int currentValue, int optimalValue, Function(double) onChanged) {
+  Widget _buildSliderSection(String title, IconData icon, int currentValue,
+      int optimalValue, Function(double) onChanged) {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -477,43 +524,45 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog> {
         ),
         // Quick select buttons
         Row(
-          children: [0, 5, 10, 15, 20, 25].map((count) => 
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: OutlinedButton(
-                  onPressed: () {
-                    onChanged(count.toDouble());
-                    HapticFeedback.lightImpact();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    minimumSize: Size.zero,
-                    side: BorderSide(
-                      color: currentValue == count 
-                        ? theme.primaryColor 
-                        : theme.primaryColor.withOpacity(0.3),
-                    ),
-                    backgroundColor: currentValue == count 
-                      ? theme.primaryColor.withOpacity(0.1) 
-                      : null,
-                  ),
-                  child: Text(
-                    count.toString(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: currentValue == count 
-                        ? theme.primaryColor 
-                        : theme.colorScheme.onSurface.withOpacity(0.6),
-                      fontWeight: currentValue == count 
-                        ? FontWeight.bold 
-                        : FontWeight.normal,
+          children: [0, 5, 10, 15, 20, 25]
+              .map(
+                (count) => Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: OutlinedButton(
+                      onPressed: () {
+                        onChanged(count.toDouble());
+                        HapticFeedback.lightImpact();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        minimumSize: Size.zero,
+                        side: BorderSide(
+                          color: currentValue == count
+                              ? theme.primaryColor
+                              : theme.primaryColor.withOpacity(0.3),
+                        ),
+                        backgroundColor: currentValue == count
+                            ? theme.primaryColor.withOpacity(0.1)
+                            : null,
+                      ),
+                      child: Text(
+                        count.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: currentValue == count
+                              ? theme.primaryColor
+                              : theme.colorScheme.onSurface.withOpacity(0.6),
+                          fontWeight: currentValue == count
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ).toList(),
+              )
+              .toList(),
         ),
       ],
     );

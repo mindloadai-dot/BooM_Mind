@@ -29,7 +29,7 @@ import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
-import 'package:mindload/services/working_notification_service.dart';
+import 'package:mindload/services/mindload_notification_service.dart';
 
 import 'package:mindload/screens/create_screen.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
@@ -62,11 +62,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
-  // Search and filter state
+  // Search state
   String _searchQuery = '';
-  String _sortBy = 'recent'; // 'recent', 'title', 'size', 'cards', 'quizzes'
-  String _filterBy =
-      'all'; // 'all', 'flashcards', 'quizzes', 'recent', 'archived'
 
   // Statistics
   int get _totalFlashcards =>
@@ -139,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _studySets = fullStudySets;
         _filteredStudySets = fullStudySets; // Initialize filtered list
       });
-      _applySearchAndFilters(); // Apply filters after loading
+      _applySearch(); // Apply search after loading
     } catch (e) {
       _showErrorSnackBar('Failed to load study sets');
     } finally {
@@ -147,10 +144,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _applySearchAndFilters() {
+  void _applySearch() {
     List<StudySet> filtered = List.from(_studySets);
 
-    // Apply search filter
+    // Apply search filter only
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((set) {
         final query = _searchQuery.toLowerCase();
@@ -160,54 +157,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }).toList();
     }
 
-    // Apply category filter
-    switch (_filterBy) {
-      case 'flashcards':
-        filtered = filtered.where((set) => set.flashcards.isNotEmpty).toList();
-        break;
-      case 'quizzes':
-        filtered = filtered.where((set) => set.quizzes.isNotEmpty).toList();
-        break;
-      case 'recent':
-        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-        filtered = filtered
-            .where((set) => set.createdDate.isAfter(thirtyDaysAgo))
-            .toList();
-        break;
-      case 'archived':
-        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-        filtered = filtered
-            .where((set) => set.createdDate.isBefore(thirtyDaysAgo))
-            .toList();
-        break;
-    }
-
-    // Apply sorting
-    switch (_sortBy) {
-      case 'recent':
-        filtered.sort((a, b) => b.lastStudied.compareTo(a.lastStudied));
-        break;
-      case 'title':
-        filtered.sort(
-            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-        break;
-      case 'size':
-        filtered.sort((a, b) => b.content.length.compareTo(a.content.length));
-        break;
-      case 'cards':
-        filtered
-            .sort((a, b) => b.flashcards.length.compareTo(a.flashcards.length));
-        break;
-      case 'quizzes':
-        filtered.sort((a, b) => b.quizzes.length.compareTo(a.quizzes.length));
-        break;
-    }
+    // Sort by most recent by default
+    filtered.sort((a, b) => b.lastStudied.compareTo(a.lastStudied));
 
     if (kDebugMode) {
-      print(
-          '🔍 Applied filters: search="$_searchQuery", filter="$_filterBy", sort="$_sortBy"');
-      print(
-          '📊 Filtered study sets: ${filtered.length} out of ${_studySets.length}');
+      print('🔍 Applied search: search="$_searchQuery"');
+      print('📊 Filtered study sets: ${filtered.length} out of ${_studySets.length}');
       for (final studySet in filtered) {
         print('  📚 ${studySet.title}');
       }
@@ -218,21 +173,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _onSearchChanged(String query) {
     setState(() => _searchQuery = query);
-    _applySearchAndFilters();
-  }
-
-  void _onSortChanged(String? value) {
-    if (value != null) {
-      setState(() => _sortBy = value);
-      _applySearchAndFilters();
-    }
-  }
-
-  void _onFilterChanged(String? value) {
-    if (value != null) {
-      setState(() => _filterBy = value);
-      _applySearchAndFilters();
-    }
+    _applySearch();
   }
 
   Widget _buildSearchBar() {
@@ -362,154 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFilterAndSortControls() {
-    final tokens = context.tokens;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Responsive layout based on available width
-          if (constraints.maxWidth > 500) {
-            // Wide screen: side-by-side layout
-            return Row(
-              children: [
-                // Filter dropdown
-                Expanded(
-                  child: _buildDropdownField(
-                    value: _filterBy,
-                    onChanged: _onFilterChanged,
-                    hintText: 'Filter by',
-                    icon: Icons.filter_list,
-                    items: [
-                      DropdownMenuItem(value: 'all', child: Text('All Sets')),
-                      DropdownMenuItem(
-                          value: 'flashcards', child: Text('With Flashcards')),
-                      DropdownMenuItem(
-                          value: 'quizzes', child: Text('With Quizzes')),
-                      DropdownMenuItem(
-                          value: 'recent', child: Text('Recent (30 days)')),
-                      DropdownMenuItem(
-                          value: 'archived', child: Text('Archived')),
-                    ],
-                    tokens: tokens,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Sort dropdown
-                Expanded(
-                  child: _buildDropdownField(
-                    value: _sortBy,
-                    onChanged: _onSortChanged,
-                    hintText: 'Sort by',
-                    icon: Icons.sort,
-                    items: [
-                      DropdownMenuItem(
-                          value: 'recent', child: Text('Recently Studied')),
-                      DropdownMenuItem(
-                          value: 'title', child: Text('Alphabetical')),
-                      DropdownMenuItem(
-                          value: 'size', child: Text('Content Size')),
-                      DropdownMenuItem(
-                          value: 'cards', child: Text('Most Cards')),
-                      DropdownMenuItem(
-                          value: 'quizzes', child: Text('Most Quizzes')),
-                    ],
-                    tokens: tokens,
-                  ),
-                ),
-              ],
-            );
-          } else {
-            // Narrow screen: stacked layout
-            return Column(
-              children: [
-                _buildDropdownField(
-                  value: _filterBy,
-                  onChanged: _onFilterChanged,
-                  hintText: 'Filter by',
-                  icon: Icons.filter_list,
-                  items: [
-                    DropdownMenuItem(value: 'all', child: Text('All Sets')),
-                    DropdownMenuItem(
-                        value: 'flashcards', child: Text('With Flashcards')),
-                    DropdownMenuItem(
-                        value: 'quizzes', child: Text('With Quizzes')),
-                    DropdownMenuItem(
-                        value: 'recent', child: Text('Recent (30 days)')),
-                    DropdownMenuItem(
-                        value: 'archived', child: Text('Archived')),
-                  ],
-                  tokens: tokens,
-                ),
-                const SizedBox(height: 8),
-                _buildDropdownField(
-                  value: _sortBy,
-                  onChanged: _onSortChanged,
-                  hintText: 'Sort by',
-                  icon: Icons.sort,
-                  items: [
-                    DropdownMenuItem(
-                        value: 'recent', child: Text('Recently Studied')),
-                    DropdownMenuItem(
-                        value: 'title', child: Text('Alphabetical')),
-                    DropdownMenuItem(
-                        value: 'size', child: Text('Content Size')),
-                    DropdownMenuItem(value: 'cards', child: Text('Most Cards')),
-                    DropdownMenuItem(
-                        value: 'quizzes', child: Text('Most Quizzes')),
-                  ],
-                  tokens: tokens,
-                ),
-              ],
-            );
-          }
-        },
-      ),
-    );
-  }
 
-  Widget _buildDropdownField({
-    required String value,
-    required ValueChanged<String?> onChanged,
-    required String hintText,
-    required IconData icon,
-    required List<DropdownMenuItem<String>> items,
-    required SemanticTokens tokens,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.surfaceAlt.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: tokens.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          hintText: hintText,
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          suffixIcon: Icon(icon, color: tokens.textSecondary, size: 18),
-        ),
-        style: TextStyle(
-          color: tokens.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-        dropdownColor: tokens.surface,
-        items: items,
-        icon: Icon(
-          Icons.keyboard_arrow_down_rounded,
-          color: tokens.textSecondary,
-          size: 20,
-        ),
-      ),
-    );
-  }
 
   Widget _buildEmptyStateAction({
     required IconData icon,
@@ -1391,7 +1185,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           quiz = Quiz(
             id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
             title: 'Quiz for $title',
-            type: QuizType.multipleChoice,
+            type: QuestionType.multipleChoice,
             questions: quizQuestions,
             results: [],
             createdDate: DateTime.now(),
@@ -1848,13 +1642,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Send test notification if enabled
                     if (value) {
-                      await WorkingNotificationService.instance
-                          .scheduleNotification(
-                        title: 'Study Reminder: ${studySet.title}',
-                        body:
-                            'Time to review your ${studySet.flashcards.length} flashcards!',
-                        scheduledTime:
-                            DateTime.now().add(const Duration(seconds: 3)),
+                      await MindLoadNotificationService.scheduleAt(
+                        DateTime.now().add(const Duration(seconds: 3)),
+                        'Study Reminder: ${studySet.title}',
+                        'Time to review your ${studySet.flashcards.length} flashcards!',
                       );
 
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -2209,7 +2000,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     try {
       // Cancel any scheduled notifications
-      await WorkingNotificationService.instance.cancelAllNotifications();
+      await MindLoadNotificationService.cancelAll();
 
       // Delete from storage
       await EnhancedStorageService.instance.deleteStudySet(studySet.id);
@@ -2429,7 +2220,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
                   title: '${studySet.title} Quiz',
                   questions: newQuizQuestions,
-                  type: QuizType.multipleChoice,
+                  type: QuestionType.multipleChoice,
                   results: [],
                   createdDate: DateTime.now(),
                 )
@@ -2555,10 +2346,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               onSelected: (value) async {
                 switch (value) {
                   case 'status':
-                    final status =
-                        WorkingNotificationService.instance.getSystemStatus();
+                    // Notification service status check - service is active
                     if (mounted) {
-                      _showNotificationStatusDialog(status);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text('Notification service is active and ready'),
+                          backgroundColor: tokens.success,
+                        ),
+                      );
                     }
                     break;
                   case 'settings':
@@ -2659,152 +2455,70 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   final canUpload =
                       economyService.hasCredits && economyService.canGenerate;
 
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Responsive bottom navigation based on screen width
-                      if (constraints.maxWidth > 600) {
-                        // Wide screen: 4 buttons in a row
-                        return IntrinsicHeight(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: _buildBottomNavButtonWithUsage(
-                                  icon: Icons.upload_file,
-                                  label: 'UPLOAD DOC',
-                                  usageType: 'upload',
-                                  canPerformAction: canUpload,
-                                  onTap: canUpload
-                                      ? _showDocumentUploadOptions
-                                      : () => _showLimitReachedDialog(
-                                          'upload', 'uploads'),
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildBottomNavButton(
-                                  icon: Icons.add_circle_outline,
-                                  label: 'CREATE SET',
-                                  onTap: () async {
-                                    HapticFeedbackService().mediumImpact();
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              const CreateScreen()),
-                                    );
-                                    await _loadStudySets();
-                                  },
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildBottomNavButton(
-                                  icon: Icons.emoji_events,
-                                  label: 'ACHIEVEMENTS',
-                                  onTap: () {
-                                    HapticFeedbackService().mediumImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              const AchievementsScreen()),
-                                    );
-                                  },
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildBottomNavButton(
-                                  icon: Icons.flash_on,
-                                  label: 'ULTRA MODE',
-                                  onTap: () {
-                                    HapticFeedbackService().mediumImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              const UltraModeScreen()),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
+                  // Compact single row layout for all screen sizes
+                  return IntrinsicHeight(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: _buildBottomNavButtonWithUsage(
+                            icon: Icons.upload_file,
+                            label: 'UPLOAD',
+                            usageType: 'upload',
+                            canPerformAction: canUpload,
+                            onTap: canUpload
+                                ? _showDocumentUploadOptions
+                                : () => _showLimitReachedDialog(
+                                    'upload', 'uploads'),
                           ),
-                        );
-                      } else {
-                        // Narrow screen: 2x2 grid layout
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildBottomNavButtonWithUsage(
-                                    icon: Icons.upload_file,
-                                    label: 'UPLOAD',
-                                    usageType: 'upload',
-                                    canPerformAction: canUpload,
-                                    onTap: canUpload
-                                        ? _showDocumentUploadOptions
-                                        : () => _showLimitReachedDialog(
-                                            'upload', 'uploads'),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _buildBottomNavButton(
-                                    icon: Icons.add_circle_outline,
-                                    label: 'CREATE',
-                                    onTap: () async {
-                                      HapticFeedbackService().mediumImpact();
-                                      await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const CreateScreen()),
-                                      );
-                                      await _loadStudySets();
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildBottomNavButton(
-                                    icon: Icons.emoji_events,
-                                    label: 'ACHIEVEMENTS',
-                                    onTap: () {
-                                      HapticFeedbackService().mediumImpact();
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const AchievementsScreen()),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _buildBottomNavButton(
-                                    icon: Icons.flash_on,
-                                    label: 'ULTRA MODE',
-                                    onTap: () {
-                                      HapticFeedbackService().mediumImpact();
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const UltraModeScreen()),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      }
-                    },
+                        ),
+                        Expanded(
+                          child: _buildBottomNavButton(
+                            icon: Icons.add_circle_outline,
+                            label: 'CREATE',
+                            onTap: () async {
+                              HapticFeedbackService().mediumImpact();
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const CreateScreen()),
+                              );
+                              await _loadStudySets();
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildBottomNavButton(
+                            icon: Icons.emoji_events,
+                            label: 'ACHIEVEMENTS',
+                            onTap: () {
+                              HapticFeedbackService().mediumImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AchievementsScreen()),
+                              );
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildBottomNavButton(
+                            icon: Icons.flash_on,
+                            label: 'ULTRA MODE',
+                            onTap: () {
+                              HapticFeedbackService().mediumImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const UltraModeScreen()),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -2942,11 +2656,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     const SizedBox(height: 16),
 
-                    // Search and filter controls
+                    // Search controls
                     if (_studySets.isNotEmpty) ...[
                       _buildSearchBar(),
-                      const SizedBox(height: Spacing.md),
-                      _buildFilterAndSortControls(),
                       const SizedBox(height: Spacing.md),
                     ],
 

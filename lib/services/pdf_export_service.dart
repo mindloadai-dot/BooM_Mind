@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:mindload/models/pdf_export_models.dart';
 import 'package:mindload/models/pdf_audit_models.dart';
@@ -421,6 +422,21 @@ class PdfExportService extends ChangeNotifier {
     }
   }
 
+  Future<void> sharePdf(String filePath) async {
+    try {
+      final result = await Share.shareXFiles([XFile(filePath)],
+          text: 'Here is your exported study set.');
+
+      if (result.status == ShareResultStatus.success) {
+        debugPrint('✅ PDF shared successfully');
+      } else {
+        debugPrint('⚠️ PDF share dismissed or failed: ${result.status}');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to share PDF: $e');
+    }
+  }
+
   // Get export history for user
   Future<List<PdfAuditRecord>> getExportHistory(String uid) async {
     return await _auditService.getAuditRecords(uid);
@@ -529,6 +545,35 @@ class PdfExportService extends ChangeNotifier {
         debugPrint('Export cancelled');
       },
     );
+  }
+
+  // New method to handle the full export and share flow
+  Future<void> exportAndShareStudySet({
+    required String uid,
+    required String setId,
+    required String setTitle,
+    required int flashcardCount,
+    required int quizCount,
+    required String appVersion,
+    PdfExportOptions? customOptions,
+  }) async {
+    final result = await exportStudySet(
+      uid: uid,
+      setId: setId,
+      setTitle: setTitle,
+      flashcardCount: flashcardCount,
+      quizCount: quizCount,
+      appVersion: appVersion,
+      customOptions: customOptions,
+    );
+
+    if (result.success && result.filePath != null) {
+      await sharePdf(result.filePath!);
+    } else {
+      // Optionally, show an error message to the user
+      debugPrint(
+          'Export failed, so not sharing. Error: ${result.errorMessage}');
+    }
   }
 
   // Legacy export methods for backward compatibility

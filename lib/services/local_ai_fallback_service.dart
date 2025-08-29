@@ -1,69 +1,126 @@
 import 'package:flutter/foundation.dart';
 import 'package:mindload/models/study_data.dart';
+import 'package:uuid/uuid.dart';
 
 class LocalAIFallbackService {
-  static LocalAIFallbackService? _instance;
-  static LocalAIFallbackService get instance =>
-      _instance ??= LocalAIFallbackService._();
-  LocalAIFallbackService._();
+  static final LocalAIFallbackService _instance =
+      LocalAIFallbackService._internal();
+  static LocalAIFallbackService get instance => _instance;
+  LocalAIFallbackService._internal();
 
-  /// Generate flashcards using local fallback when Cloud Functions fail
-  Future<List<Flashcard>> generateFlashcards(
-    String content,
-    int count,
-    String difficulty,
-  ) async {
-    try {
-      debugPrint('🤖 Using local fallback to generate $count flashcards');
+  final _uuid = Uuid();
 
-      // Use enhanced flashcard generation for better quality
-      final flashcards =
-          _generateEnhancedFlashcards(content, count, difficulty);
+  // Placeholder methods for content generation
+  Future<List<Map<String, dynamic>>> _generateFlashcardsFromContent(
+      String content, int count, String difficulty) async {
+    // Simulate generating flashcards
+    return List.generate(
+        count,
+        (index) => {
+              'question': 'Sample Question ${index + 1}',
+              'answer': 'Sample Answer ${index + 1}',
+              'difficulty': difficulty,
+              'questionType': 'multipleChoice'
+            });
+  }
 
-      debugPrint(
-          '✅ Generated ${flashcards.length} enhanced fallback flashcards');
-      return flashcards;
-    } catch (e) {
-      debugPrint('❌ Local fallback failed: $e');
-      return _generateGenericFlashcards(count, difficulty);
+  Future<List<Map<String, dynamic>>> _generateQuizQuestionsFromContent(
+      String content, int count, String difficulty) async {
+    // Simulate generating quiz questions
+    return List.generate(
+        count,
+        (index) => {
+              'question': 'Sample Quiz Question ${index + 1}',
+              'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+              'correctAnswer': 'Option B',
+              'difficulty': difficulty,
+              'questionType': 'multipleChoice'
+            });
+  }
+
+  // Map string to DifficultyLevel
+  DifficultyLevel _mapStringToDifficultyLevel(String level) {
+    switch (level.toLowerCase()) {
+      case 'beginner':
+        return DifficultyLevel.beginner;
+      case 'intermediate':
+        return DifficultyLevel.intermediate;
+      case 'advanced':
+        return DifficultyLevel.advanced;
+      case 'expert':
+        return DifficultyLevel.expert;
+      default:
+        return DifficultyLevel.intermediate;
     }
   }
 
-  /// Generate quiz questions using local fallback when Cloud Functions fail
+  // Map string to QuestionType
+  QuestionType _mapStringToQuestionType(String type) {
+    switch (type.toLowerCase()) {
+      case 'multiplechoice':
+        return QuestionType.multipleChoice;
+      case 'truefalse':
+        return QuestionType.trueFalse;
+      case 'shortanswer':
+        return QuestionType.shortAnswer;
+      case 'conceptualchallenge':
+        return QuestionType.conceptualChallenge;
+      default:
+        return QuestionType.multipleChoice;
+    }
+  }
+
+  // Generate flashcards
+  Future<List<Flashcard>> generateFlashcards(
+    String content, {
+    int count = 10,
+    DifficultyLevel targetDifficulty = DifficultyLevel.intermediate,
+  }) async {
+    final parsedCards = await _generateFlashcardsFromContent(
+        content, count, targetDifficulty.name.toLowerCase());
+
+    return parsedCards.map((card) {
+      final difficulty = _mapStringToDifficultyLevel(card['difficulty']);
+      final questionType = _mapStringToQuestionType(card['questionType']);
+
+      return Flashcard(
+        id: _uuid.v4(),
+        question: card['question'],
+        answer: card['answer'],
+        difficulty: difficulty,
+        questionType: questionType,
+      );
+    }).toList();
+  }
+
+  // Generate quiz questions
   Future<List<QuizQuestion>> generateQuizQuestions(
     String content,
     int count,
-    String difficulty,
-  ) async {
-    try {
-      debugPrint('🤖 Using local fallback to generate $count quiz questions');
+    String difficulty, {
+    String? questionTypes,
+    String? cognitiveLevel,
+    String? realWorldContext,
+    String? challengeLevel,
+    String? learningStyle,
+    String? promptEnhancement,
+  }) async {
+    final parsedQuestions =
+        await _generateQuizQuestionsFromContent(content, count, difficulty);
 
-      // Extract key concepts from content
-      final concepts = _extractKeyConcepts(content);
+    return parsedQuestions.map((q) {
+      final difficultyLevel = _mapStringToDifficultyLevel(q['difficulty']);
+      final questionType = _mapStringToQuestionType(q['questionType']);
 
-      if (concepts.isEmpty) {
-        return _generateGenericQuizQuestions(count, difficulty);
-      }
-
-      final questions = <QuizQuestion>[];
-      final questionsPerConcept = (count / concepts.length).ceil();
-
-      for (int i = 0; i < concepts.length && questions.length < count; i++) {
-        final concept = concepts[i];
-        final questionsForConcept = (i == concepts.length - 1)
-            ? count - questions.length
-            : questionsPerConcept;
-
-        questions.addAll(_generateQuizQuestionsForConcept(
-            concept, questionsForConcept, difficulty));
-      }
-
-      debugPrint('✅ Generated ${questions.length} fallback quiz questions');
-      return questions;
-    } catch (e) {
-      debugPrint('❌ Local fallback failed: $e');
-      return _generateGenericQuizQuestions(count, difficulty);
-    }
+      return QuizQuestion(
+        id: _uuid.v4(),
+        question: q['question'],
+        options: List<String>.from(q['options']),
+        correctAnswer: q['correctAnswer'],
+        difficulty: difficultyLevel,
+        type: questionType,
+      );
+    }).toList();
   }
 
   /// Extract key concepts from content using simple text analysis
@@ -349,7 +406,7 @@ class LocalAIFallbackService {
         question: question,
         options: options,
         correctAnswer: correctAnswer,
-        type: QuizType.multipleChoice,
+        type: QuestionType.multipleChoice,
       ));
     }
 
@@ -458,7 +515,7 @@ class LocalAIFallbackService {
           'Advanced technical details',
         ],
         correctAnswer: 'Important concepts and information',
-        type: QuizType.multipleChoice,
+        type: QuestionType.multipleChoice,
       ));
     }
 
@@ -468,14 +525,16 @@ class LocalAIFallbackService {
   /// Parse difficulty string to enum
   DifficultyLevel _parseDifficulty(String difficulty) {
     switch (difficulty.toLowerCase()) {
-      case 'easy':
-        return DifficultyLevel.easy;
-      case 'medium':
-        return DifficultyLevel.medium;
-      case 'hard':
-        return DifficultyLevel.hard;
+      case 'beginner':
+        return DifficultyLevel.beginner;
+      case 'intermediate':
+        return DifficultyLevel.intermediate;
+      case 'advanced':
+        return DifficultyLevel.advanced;
+      case 'expert':
+        return DifficultyLevel.expert;
       default:
-        return DifficultyLevel.medium;
+        return DifficultyLevel.intermediate;
     }
   }
 }

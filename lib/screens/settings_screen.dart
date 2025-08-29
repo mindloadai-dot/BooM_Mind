@@ -303,7 +303,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ),
                   IconButton(
-                    onPressed: _showEnhancedThemeDialog,
+                    onPressed: () {
+                      HapticFeedbackService().lightImpact();
+                      _showEnhancedThemeDialog();
+                    },
                     icon: Icon(
                       Icons.edit,
                       color: context.tokens.primary,
@@ -646,7 +649,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedbackService().lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -756,6 +762,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showEnhancedThemeDialog() {
+    HapticFeedbackService().lightImpact();
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -829,6 +836,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          HapticFeedbackService().selectionClick();
           ThemeManager.instance.setTheme(theme);
           Navigator.of(context).pop();
         },
@@ -930,6 +938,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showResetOnboardingDialog() {
+    HapticFeedbackService().mediumImpact();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -967,6 +976,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           ElevatedButton(
             onPressed: () async {
+              HapticFeedbackService().mediumImpact();
               Navigator.pop(context);
               await _resetOnboarding();
             },
@@ -985,7 +995,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _resetOnboarding() async {
-    HapticFeedbackService().warning();
+    HapticFeedbackService().success();
     setState(() {
       _isResettingOnboarding = true;
     });
@@ -1017,6 +1027,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showAboutDialog() {
+    HapticFeedbackService().lightImpact();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1096,6 +1107,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showDeleteAccountDialog() {
+    HapticFeedbackService().heavyImpact();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1224,6 +1236,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           ElevatedButton(
             onPressed: () async {
+              HapticFeedbackService().heavyImpact();
               Navigator.pop(context);
               await _signOut();
             },
@@ -1265,6 +1278,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _deleteAccount() async {
+    HapticFeedbackService().error();
     try {
       // Show loading dialog
       showDialog(

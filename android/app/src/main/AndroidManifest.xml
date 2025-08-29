@@ -16,7 +16,10 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Exact alarm permissions removed to comply with Play policy -->
+    <!-- Exact alarm permissions for Android 12+ (with API level restrictions for Play Store compliance) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     
     <application
         android:label="Mindload"
@@ -79,29 +82,29 @@
             </intent-filter>
         </service>
 
-        <!-- Boot receiver for scheduled notifications - Temporarily disabled to fix crash -->
-        <!--
+        <!-- Boot receiver for scheduled notifications (enhanced with better error handling) -->
         <receiver
             android:name="io.flutter.plugins.flutter_local_notifications.ScheduledNotificationBootReceiver"
             android:enabled="true"
             android:exported="false"
+            android:directBootAware="true"
             tools:ignore="ExportedReceiver">
-            <intent-filter>
+            <intent-filter android:priority="100">
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
-        -->
         
-        <!-- Notification receiver - Temporarily disabled to fix crash -->
-        <!--
+        <!-- Notification receiver (enhanced with better configuration) -->
         <receiver
             android:name="io.flutter.plugins.flutter_local_notifications.ScheduledNotificationReceiver"
+            android:enabled="true"
             android:exported="false"
+            android:directBootAware="true"
             tools:ignore="ExportedReceiver" />
-        -->
         
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

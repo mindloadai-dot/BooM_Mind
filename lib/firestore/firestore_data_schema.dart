@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mindload/models/study_data.dart';
 
 /// Firestore Data Schema for CogniFlow App
-/// 
+///
 /// Collections:
 /// - users: User profile and settings data
-/// - study_sets: User's study materials and generated content  
+/// - study_sets: User's study materials and generated content
 /// - quiz_results: Results from completed quizzes
 /// - user_progress: User's learning progress, streaks, and XP
 /// - credit_usage: Daily credit usage tracking for the credit system
@@ -22,9 +22,11 @@ class FirestoreSchema {
   static const String userProgressCollection = 'user_progress';
   static const String creditUsageCollection = 'credit_usage';
   static const String notificationsCollection = 'notifications';
-  static const String notificationPreferencesCollection = 'notification_preferences';
+  static const String notificationPreferencesCollection =
+      'notification_preferences';
   static const String notificationRecordsCollection = 'notification_records';
-  static const String notificationSchedulesCollection = 'notification_schedules';
+  static const String notificationSchedulesCollection =
+      'notification_schedules';
   static const String scheduleRecomputeCollection = 'schedule_recompute';
 }
 
@@ -57,19 +59,19 @@ class UserProfileFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'uid': uid,
-    'email': email,
-    'displayName': displayName,
-    'photoURL': photoURL,
-    'phoneNumber': phoneNumber,
-    'provider': provider,
-    'createdAt': Timestamp.fromDate(createdAt),
-    'lastLoginAt': Timestamp.fromDate(lastLoginAt),
-    'preferences': preferences,
-    'subscriptionPlan': subscriptionPlan,
-    'isActive': isActive,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
+        'uid': uid,
+        'email': email,
+        'displayName': displayName,
+        'photoURL': photoURL,
+        'phoneNumber': phoneNumber,
+        'provider': provider,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'lastLoginAt': Timestamp.fromDate(lastLoginAt),
+        'preferences': preferences,
+        'subscriptionPlan': subscriptionPlan,
+        'isActive': isActive,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
 
   factory UserProfileFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -126,23 +128,23 @@ class StudySetFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'id': id,
-    'userId': userId,
-    'title': title,
-    'content': content,
-    'originalFileName': originalFileName,
-    'fileType': fileType,
-    'flashcards': flashcards,
-    'quizzes': quizzes,
-    'createdDate': Timestamp.fromDate(createdDate),
-    'lastStudied': Timestamp.fromDate(lastStudied),
-    'studyCount': studyCount,
-    'tags': tags,
-    'difficulty': difficulty,
-    'isPublic': isPublic,
-    'metadata': metadata,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
+        'id': id,
+        'userId': userId,
+        'title': title,
+        'content': content,
+        'originalFileName': originalFileName,
+        'fileType': fileType,
+        'flashcards': flashcards,
+        'quizzes': quizzes,
+        'createdDate': Timestamp.fromDate(createdDate),
+        'lastStudied': Timestamp.fromDate(lastStudied),
+        'studyCount': studyCount,
+        'tags': tags,
+        'difficulty': difficulty,
+        'isPublic': isPublic,
+        'metadata': metadata,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
 
   factory StudySetFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -179,7 +181,9 @@ class StudySetFirestore {
   }
 
   // Create from local StudySet model
-  factory StudySetFirestore.fromStudySet(StudySet studySet, String userId, {
+  factory StudySetFirestore.fromStudySet(
+    StudySet studySet,
+    String userId, {
     String originalFileName = '',
     String fileType = 'txt',
     List<String> tags = const [],
@@ -241,22 +245,22 @@ class QuizResultFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'id': id,
-    'userId': userId,
-    'studySetId': studySetId,
-    'quizId': quizId,
-    'quizTitle': quizTitle,
-    'score': score,
-    'totalQuestions': totalQuestions,
-    'percentage': percentage,
-    'timeTaken': timeTaken,
-    'completedDate': Timestamp.fromDate(completedDate),
-    'incorrectAnswers': incorrectAnswers,
-    'quizType': quizType,
-    'answers': answers,
-    'xpEarned': xpEarned,
-    'createdAt': FieldValue.serverTimestamp(),
-  };
+        'id': id,
+        'userId': userId,
+        'studySetId': studySetId,
+        'quizId': quizId,
+        'quizTitle': quizTitle,
+        'score': score,
+        'totalQuestions': totalQuestions,
+        'percentage': percentage,
+        'timeTaken': timeTaken,
+        'completedDate': Timestamp.fromDate(completedDate),
+        'incorrectAnswers': incorrectAnswers,
+        'quizType': quizType,
+        'answers': answers,
+        'xpEarned': xpEarned,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
 
   factory QuizResultFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -281,12 +285,11 @@ class QuizResultFirestore {
   // Convert to local QuizResult model
   QuizResult toQuizResult() {
     return QuizResult(
-      id: id,
-      score: score,
-      totalQuestions: totalQuestions,
-      timeTaken: Duration(milliseconds: timeTaken),
-      completedDate: completedDate,
-      incorrectAnswers: incorrectAnswers,
+      questionId: id, // Use id as questionId
+      wasCorrect:
+          score == totalQuestions, // Determine correctness based on score
+      answeredAt: completedDate,
+      responseTime: Duration(milliseconds: timeTaken),
     );
   }
 }
@@ -324,21 +327,21 @@ class UserProgressFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'userId': userId,
-    'currentStreak': currentStreak,
-    'longestStreak': longestStreak,
-    'totalXP': totalXP,
-    'totalStudyTime': totalStudyTime,
-    'lastStudyDate': Timestamp.fromDate(lastStudyDate),
-    'subjectXP': subjectXP,
-    'achievements': achievements,
-    'totalQuizzesTaken': totalQuizzesTaken,
-    'totalFlashcardsReviewed': totalFlashcardsReviewed,
-    'averageQuizScore': averageQuizScore,
-    'level': level,
-    'unlockedFeatures': unlockedFeatures,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
+        'userId': userId,
+        'currentStreak': currentStreak,
+        'longestStreak': longestStreak,
+        'totalXP': totalXP,
+        'totalStudyTime': totalStudyTime,
+        'lastStudyDate': Timestamp.fromDate(lastStudyDate),
+        'subjectXP': subjectXP,
+        'achievements': achievements,
+        'totalQuizzesTaken': totalQuizzesTaken,
+        'totalFlashcardsReviewed': totalFlashcardsReviewed,
+        'averageQuizScore': averageQuizScore,
+        'level': level,
+        'unlockedFeatures': unlockedFeatures,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
 
   factory UserProgressFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -348,7 +351,8 @@ class UserProgressFirestore {
       longestStreak: data['longestStreak'] ?? 0,
       totalXP: data['totalXP'] ?? 0,
       totalStudyTime: data['totalStudyTime'] ?? 0,
-      lastStudyDate: (data['lastStudyDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      lastStudyDate:
+          (data['lastStudyDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       subjectXP: Map<String, int>.from(data['subjectXP'] ?? {}),
       achievements: data['achievements'] ?? {},
       totalQuizzesTaken: data['totalQuizzesTaken'] ?? 0,
@@ -396,18 +400,17 @@ class CreditUsageFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'userId': userId,
-    'date': Timestamp.fromDate(date),
-    'creditsUsed': creditsUsed,
-    'dailyQuota': dailyQuota,
-    'subscriptionPlan': subscriptionPlan,
-    'transactions': transactions,
-    'remainingCredits': remainingCredits,
-    'quotaResetTime': quotaResetTime != null 
-        ? Timestamp.fromDate(quotaResetTime!)
-        : null,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
+        'userId': userId,
+        'date': Timestamp.fromDate(date),
+        'creditsUsed': creditsUsed,
+        'dailyQuota': dailyQuota,
+        'subscriptionPlan': subscriptionPlan,
+        'transactions': transactions,
+        'remainingCredits': remainingCredits,
+        'quotaResetTime':
+            quotaResetTime != null ? Timestamp.fromDate(quotaResetTime!) : null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
 
   factory CreditUsageFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -447,16 +450,16 @@ class NotificationFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'userId': userId,
-    'dailyReminders': dailyReminders,
-    'surpriseQuizzes': surpriseQuizzes,
-    'streakReminders': streakReminders,
-    'achievementAlerts': achievementAlerts,
-    'reminderTime': reminderTime,
-    'deviceTokens': deviceTokens,
-    'preferences': preferences,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
+        'userId': userId,
+        'dailyReminders': dailyReminders,
+        'surpriseQuizzes': surpriseQuizzes,
+        'streakReminders': streakReminders,
+        'achievementAlerts': achievementAlerts,
+        'reminderTime': reminderTime,
+        'deviceTokens': deviceTokens,
+        'preferences': preferences,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
 
   factory NotificationFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -504,19 +507,19 @@ class NotificationPreferencesFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'uid': uid,
-    'notificationStyle': notificationStyle,
-    'frequencyPerDay': frequencyPerDay,
-    'timeWindows': timeWindows,
-    'quietHours': quietHours,
-    'timezone': timezone,
-    'allowTimeSensitive': allowTimeSensitive,
-    'exams': exams,
-    'analytics': analytics,
-    'pushTokens': pushTokens,
-    'createdAt': Timestamp.fromDate(createdAt),
-    'updatedAt': Timestamp.fromDate(updatedAt),
-  };
+        'uid': uid,
+        'notificationStyle': notificationStyle,
+        'frequencyPerDay': frequencyPerDay,
+        'timeWindows': timeWindows,
+        'quietHours': quietHours,
+        'timezone': timezone,
+        'allowTimeSensitive': allowTimeSensitive,
+        'exams': exams,
+        'analytics': analytics,
+        'pushTokens': pushTokens,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'updatedAt': Timestamp.fromDate(updatedAt),
+      };
 
   factory NotificationPreferencesFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -537,7 +540,7 @@ class NotificationPreferencesFirestore {
   }
 }
 
-/// Notification Record Document Structure  
+/// Notification Record Document Structure
 class NotificationRecordFirestore {
   final String id;
   final String uid;
@@ -568,19 +571,19 @@ class NotificationRecordFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'id': id,
-    'uid': uid,
-    'title': title,
-    'body': body,
-    'style': style,
-    'category': category,
-    'sentAt': Timestamp.fromDate(sentAt),
-    'openedAt': openedAt != null ? Timestamp.fromDate(openedAt!) : null,
-    'action': action,
-    'deepLink': deepLink,
-    'platform': platform,
-    'metadata': metadata,
-  };
+        'id': id,
+        'uid': uid,
+        'title': title,
+        'body': body,
+        'style': style,
+        'category': category,
+        'sentAt': Timestamp.fromDate(sentAt),
+        'openedAt': openedAt != null ? Timestamp.fromDate(openedAt!) : null,
+        'action': action,
+        'deepLink': deepLink,
+        'platform': platform,
+        'metadata': metadata,
+      };
 
   factory NotificationRecordFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -592,7 +595,9 @@ class NotificationRecordFirestore {
       style: data['style'],
       category: data['category'],
       sentAt: (data['sentAt'] as Timestamp).toDate(),
-      openedAt: data['openedAt'] != null ? (data['openedAt'] as Timestamp).toDate() : null,
+      openedAt: data['openedAt'] != null
+          ? (data['openedAt'] as Timestamp).toDate()
+          : null,
       action: data['action'],
       deepLink: data['deepLink'],
       platform: data['platform'],
@@ -614,17 +619,18 @@ class NotificationScheduleFirestore {
   });
 
   Map<String, dynamic> toFirestore() => {
-    'uid': uid,
-    'next48h': next48h,
-    'computedAt': Timestamp.fromDate(computedAt),
-  };
+        'uid': uid,
+        'next48h': next48h,
+        'computedAt': Timestamp.fromDate(computedAt),
+      };
 
   factory NotificationScheduleFirestore.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return NotificationScheduleFirestore(
       uid: data['uid'],
       next48h: List<Map<String, dynamic>>.from(data['next48h'] ?? []),
-      computedAt: (data['computedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      computedAt:
+          (data['computedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 }

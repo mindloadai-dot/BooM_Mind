@@ -41,6 +41,7 @@ class SemanticTokens {
   // Border tokens (your specified requirements)
   final Color borderDefault;
   final Color borderFocus;
+  final Color borderMuted;
 
   // Surface tokens (your specified requirements)
   final Color surface;
@@ -51,6 +52,7 @@ class SemanticTokens {
   final Color textInverse;
   final Color textSecondary;
   final Color textTertiary;
+  final Color shadow;
 
   // Achievement System - Neon Cortex tokens (semantic only)
   final Color achieveBackground;
@@ -110,6 +112,7 @@ class SemanticTokens {
     // Border tokens
     required this.borderDefault,
     required this.borderFocus,
+    required this.borderMuted,
 
     // Surface tokens
     required this.surface,
@@ -120,6 +123,7 @@ class SemanticTokens {
     required this.textInverse,
     required this.textSecondary,
     required this.textTertiary,
+    required this.shadow,
 
     // Achievement tokens
     required this.achieveBackground,
@@ -344,6 +348,7 @@ const SemanticTokens _classicTokens = SemanticTokens(
   // Border tokens - visible gray borders on white
   borderDefault: Color(0xFF666666), // Medium gray for visibility
   borderFocus: Color(0xFF1565C0), // Deep blue focus ring
+  borderMuted: Color(0xFF999999), // Medium gray muted border
 
   // Surface tokens - clean white surfaces
   surface: Color(0xFFFAFAFA), // Very light gray surface
@@ -354,6 +359,7 @@ const SemanticTokens _classicTokens = SemanticTokens(
   textInverse: Color(0xFFFFFFFF), // White for dark backgrounds
   textSecondary: Color(0xFF333333), // Dark gray for secondary text
   textTertiary: Color(0xFF666666), // Medium gray for tertiary text
+  shadow: Color(0x1A000000), // Medium shadow
 
   // Achievement System - Light achievement area with high contrast
   achieveBackground: Color(0xFFF5F5F5), // Light gray surface for achievements
@@ -409,6 +415,7 @@ const SemanticTokens _matrixTokens = SemanticTokens(
   // Border tokens - bright green Matrix borders
   borderDefault: Color(0xFF00FF00), // Bright green for visibility
   borderFocus: Color(0xFF80FF80), // Lighter green focus ring
+  borderMuted: Color(0xFF00FF00), // Bright green muted border
 
   // Surface tokens - true black Matrix surfaces
   surface: Color(0xFF0A0A0A), // Very dark surface
@@ -419,6 +426,7 @@ const SemanticTokens _matrixTokens = SemanticTokens(
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFF80FF80), // Light green for secondary text
   textTertiary: Color(0xFFE0E0E0), // Light gray for tertiary text
+  shadow: Color(0x1A00FF00), // Bright green shadow
 
   // Achievement System - Matrix Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
@@ -474,6 +482,7 @@ const SemanticTokens _retroTokens = SemanticTokens(
   // Border tokens - dark brown retro borders
   borderDefault: Color(0xFF8B4513), // Saddle brown for visibility
   borderFocus: Color(0xFF000000), // Black focus ring for contrast
+  borderMuted: Color(0xFFD2B48C), // Light tan muted border
 
   // Surface tokens - warm retro surfaces
   surface: Color(0xFFFAF0E6), // Linen surface
@@ -484,6 +493,7 @@ const SemanticTokens _retroTokens = SemanticTokens(
   textInverse: Color(0xFFFFFFFF), // White for dark backgrounds
   textSecondary: Color(0xFF2F1B14), // Very dark brown for secondary text
   textTertiary: Color(0xFF654321), // Medium brown for tertiary text
+  shadow: Color(0x0A8B4513), // Saddle brown shadow
 
   // Achievement System - Dark retro achievement area
   achieveBackground:
@@ -540,6 +550,7 @@ const SemanticTokens _cyberNeonTokens = SemanticTokens(
   // Border tokens - bright cyan cyber borders
   borderDefault: Color(0xFF00FFFF), // Bright cyan for visibility
   borderFocus: Color(0xFF80FFFF), // Lighter cyan focus ring
+  borderMuted: Color(0xFF00FFFF), // Bright cyan muted border
 
   // Surface tokens - true black cyber surfaces
   surface: Color(0xFF0A0A0A), // Very dark surface
@@ -550,6 +561,7 @@ const SemanticTokens _cyberNeonTokens = SemanticTokens(
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFF80FFFF), // Light cyan for secondary text
   textTertiary: Color(0xFFE0E0E0), // Light gray for tertiary text
+  shadow: Color(0x1A00FFFF), // Bright cyan shadow
 
   // Achievement System - Cyber Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
@@ -605,6 +617,7 @@ const SemanticTokens _darkModeTokens = SemanticTokens(
   // Border tokens - high contrast on dark surfaces
   borderDefault: Color(0xFF9CA3AF), // Light gray for visibility
   borderFocus: Color(0xFF60A5FA), // Light blue focus ring
+  borderMuted: Color(0xFF6B7280), // Medium gray muted border
 
   // Surface tokens - truly dark surfaces
   surface: Color(0xFF0A0A0A), // Very dark gray surface
@@ -615,6 +628,7 @@ const SemanticTokens _darkModeTokens = SemanticTokens(
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFFE5E7EB), // Very light gray for secondary text
   textTertiary: Color(0xFFD1D5DB), // Light gray for tertiary text
+  shadow: Color(0x1AFFFFFF), // White shadow
 
   // Achievement System - Dark Mode Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
@@ -670,6 +684,7 @@ const SemanticTokens _minimalTokens = SemanticTokens(
   // Border tokens - strong black borders for minimal aesthetic
   borderDefault: Color(0xFF333333), // Dark gray for visibility
   borderFocus: Color(0xFF000000), // Pure black focus ring
+  borderMuted: Color(0xFF666666), // Medium gray muted border
 
   // Surface tokens - pure minimalist surfaces
   surface: Color(0xFFFFFFFF), // Pure white surface
@@ -680,6 +695,7 @@ const SemanticTokens _minimalTokens = SemanticTokens(
   textInverse: Color(0xFFFFFFFF), // White for dark backgrounds
   textSecondary: Color(0xFF333333), // Dark gray for secondary text
   textTertiary: Color(0xFF666666), // Medium gray for tertiary text
+  shadow: Color(0x1A000000), // Medium shadow
 
   // Achievement System - Minimal dark section with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
@@ -735,6 +751,7 @@ const SemanticTokens _purpleNeonTokens = SemanticTokens(
   // Border tokens - visible purple neon borders
   borderDefault: Color(0xFFE879F9), // Bright purple for visibility
   borderFocus: Color(0xFFDC8AFF), // Brighter purple focus ring
+  borderMuted: Color(0xFF7C3AED), // Dark purple muted border
 
   // Surface tokens - dark surfaces with purple accents
   surface: Color(0xFF0F0A1A), // Very dark purple-tinted surface
@@ -745,6 +762,7 @@ const SemanticTokens _purpleNeonTokens = SemanticTokens(
   textInverse: Color(0xFF000000), // Black for bright backgrounds
   textSecondary: Color(0xFFF3E8FF), // Very light purple tint for secondary
   textTertiary: Color(0xFFE9D5FF), // Light purple for tertiary text
+  shadow: Color(0x26A855F7), // Purple shadow
 
   // Achievement System - Purple Neon Cortex style with high contrast
   achieveBackground: Color(0xFF0A0A0A), // Softer dark surface for achievements
@@ -1203,7 +1221,7 @@ ColorScheme _buildColorScheme(SemanticTokens tokens, Brightness brightness) {
           onSurfaceVariant: tokens.textSecondary,
           outline: tokens.outline,
           outlineVariant: tokens.divider,
-          shadow: Colors.black,
+          shadow: tokens.shadow,
           scrim: tokens.overlayDim,
           inversePrimary: tokens.accent,
           inverseSurface: tokens.textPrimary,
@@ -1231,7 +1249,7 @@ ColorScheme _buildColorScheme(SemanticTokens tokens, Brightness brightness) {
           onSurfaceVariant: tokens.textSecondary,
           outline: tokens.outline,
           outlineVariant: tokens.divider,
-          shadow: Colors.black,
+          shadow: tokens.shadow,
           scrim: tokens.overlayDim,
           inversePrimary: tokens.accent,
           inverseSurface: tokens.textPrimary,
@@ -1283,6 +1301,8 @@ class SemanticTokensExtension extends ThemeExtension<SemanticTokensExtension> {
             Color.lerp(tokens.borderDefault, other.tokens.borderDefault, t)!,
         borderFocus:
             Color.lerp(tokens.borderFocus, other.tokens.borderFocus, t)!,
+        borderMuted:
+            Color.lerp(tokens.borderMuted, other.tokens.borderMuted, t)!,
 
         // Surface tokens
         surface: Color.lerp(tokens.surface, other.tokens.surface, t)!,
@@ -1297,6 +1317,7 @@ class SemanticTokensExtension extends ThemeExtension<SemanticTokensExtension> {
             Color.lerp(tokens.textSecondary, other.tokens.textSecondary, t)!,
         textTertiary:
             Color.lerp(tokens.textTertiary, other.tokens.textTertiary, t)!,
+        shadow: Color.lerp(tokens.shadow, other.tokens.shadow, t)!,
 
         // Achievement tokens
         achieveBackground: Color.lerp(

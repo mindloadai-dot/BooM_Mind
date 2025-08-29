@@ -12,7 +12,7 @@ enum SubscriptionTier {
   free, // Dendrite tier
   axon,
   neuron,
-  synapse,
+
   cortex,
   singularity,
 
@@ -96,20 +96,7 @@ class TierLimits {
       examWeekBoosts: 0,
       maxYouTubeDurationMinutes: 45, // 45 minute videos
     ),
-    SubscriptionTier.synapse: TierLimits(
-      dailyQuizQuestions: 999999, // Unlimited - token-based
-      dailyFlashcards: 999999, // Unlimited - token-based
-      dailyPdfPages: 999999, // Unlimited - token-based
-      dailyUploads: 999999, // Unlimited - token-based
-      aiModel: 'gpt-4-turbo',
-      priorityProcessing: true,
-      monthlyTokens: 500,
-      monthlyYoutubeIngests: 2,
-      hasUltraAccess: true,
-      maxPdfPages: 35,
-      examWeekBoosts: 0,
-      maxYouTubeDurationMinutes: 45, // 45 minute videos
-    ),
+
     SubscriptionTier.cortex: TierLimits(
       dailyQuizQuestions: 999999, // Unlimited - token-based
       dailyFlashcards: 999999, // Unlimited - token-based
@@ -240,13 +227,7 @@ class TierInfo {
       isRecommended: true,
       price: 9.99,
     ),
-    TierInfo(
-      tier: SubscriptionTier.synapse,
-      name: 'Synapse',
-      description: 'Advanced plan with Ultra Mode',
-      color: Color(0xFF9C27B0),
-      price: 6.99,
-    ),
+
     TierInfo(
       tier: SubscriptionTier.cortex,
       name: 'Cortex',

@@ -26,6 +26,7 @@ import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
+import 'package:mindload/services/mindload_notification_service.dart';
 
 /// Create Screen - Demonstrates the complete credits economy integration
 ///
@@ -2253,7 +2254,7 @@ class _CreateScreenState extends State<CreateScreen> {
                 id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
                 title: 'Quiz for $title',
                 questions: quizQuestions,
-                type: QuizType.multipleChoice,
+                type: QuestionType.multipleChoice,
                 results: [],
                 createdDate: DateTime.now(),
               )
@@ -2316,6 +2317,10 @@ class _CreateScreenState extends State<CreateScreen> {
               .scheduleDeadlineNotifications(studySet);
         }
 
+        // Fire first-run notification if this is the first study set
+        await MindLoadNotificationService
+            .fireFirstStudySetNotificationIfNeeded();
+
         // Show success message with generation details
         final generationDetails = <String>[];
         if (_generateFlashcards && flashcards.isNotEmpty) {
@@ -2339,11 +2344,34 @@ class _CreateScreenState extends State<CreateScreen> {
           ),
         );
 
+        // Consume credits for generation
+        final generationRequest = GenerationRequest(
+          sourceContent: _contentController.text,
+          sourceCharCount: _contentController.text.length,
+          isRecreate: false,
+          lastAttemptFailed: false,
+        );
+
+        final creditsConsumed =
+            await economy.useCreditsForGeneration(generationRequest);
+
+        if (!creditsConsumed) {
+          // Handle credit consumption failure
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to consume credits. Please try again.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+
         // Show credits feedback
         CreditsFeedbackSnackbar.showSuccess(
           context: context,
           creditsUsed: 1,
-          creditsRemaining: economy.creditsRemaining - 1,
+          creditsRemaining: economy.creditsRemaining,
           onAddBrainpower: _handleBuyCredits,
           onViewLedger: _handleViewLedger,
         );

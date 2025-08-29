@@ -6,7 +6,7 @@ import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/widgets/notification_settings_dialog.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/pdf_export_models.dart';
-import 'package:mindload/services/working_notification_service.dart';
+import 'package:mindload/services/mindload_notification_service.dart';
 // Removed import: study_set_notification_service - service removed
 import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/theme.dart';
@@ -66,6 +66,14 @@ class _StudyScreenState extends State<StudyScreen>
   // Study set reference (to handle updates)
   late StudySet _currentStudySet;
   late DateTime _studyStartTime; // Track when study session starts
+
+  // Adaptive learning tracking
+  final Map<String, int> _difficultyScores = {
+    'beginner': 0,
+    'intermediate': 0,
+    'advanced': 0,
+    'expert': 0
+  };
 
   @override
   void initState() {
@@ -342,27 +350,31 @@ class _StudyScreenState extends State<StudyScreen>
     HapticFeedbackService().success();
     final Quiz quiz = _currentQuiz!;
     int correctAnswers = 0;
-    final List<String> incorrectQuestions = [];
+    final List<String> incorrectQuestionIds = [];
 
     for (int i = 0; i < quiz.questions.length; i++) {
-      if (_userAnswers[i] == quiz.questions[i].correctAnswer) {
+      final question = quiz.questions[i];
+      if (_userAnswers[i] == question.correctAnswer) {
         correctAnswers++;
       } else {
-        incorrectQuestions.add(quiz.questions[i].id);
+        incorrectQuestionIds.add(question.id);
       }
     }
 
-    final QuizResult result = QuizResult(
-      id: 'result_${DateTime.now().millisecondsSinceEpoch}',
-      score: correctAnswers,
-      totalQuestions: quiz.questions.length,
-      timeTaken: DateTime.now().difference(_quizStartTime),
-      completedDate: DateTime.now(),
-      incorrectAnswers: incorrectQuestions,
+    // Calculate quiz difficulty based on performance
+    final overallDifficulty =
+        _calculateQuizDifficulty(correctAnswers, quiz.questions.length);
+
+    final quizResult = QuizResult(
+      questionId: quiz.id,
+      wasCorrect: correctAnswers == quiz.questions.length,
+      answeredAt: DateTime.now(),
+      responseTime: DateTime.now().difference(_quizStartTime),
     );
 
-    // Quiz result tracking - using enhanced storage service
-    // EnhancedStorageService.instance.addQuizResult(result);
+    // Provide adaptive feedback
+    _provideAdaptiveFeedback(
+        correctAnswers, quiz.questions.length, overallDifficulty);
 
     setState(() {
       _showResults = true;
@@ -660,7 +672,7 @@ class _StudyScreenState extends State<StudyScreen>
 
     try {
       // Cancel any scheduled notifications
-      await WorkingNotificationService.instance.cancelAllNotifications();
+      await MindLoadNotificationService.cancelAll();
 
       // Delete from storage
       await EnhancedStorageService.instance.deleteStudySet(_currentStudySet.id);
@@ -820,7 +832,7 @@ class _StudyScreenState extends State<StudyScreen>
         id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
         title: '${_currentStudySet.title} Quiz',
         questions: newQuizQuestions,
-        type: QuizType.multipleChoice,
+        type: QuestionType.multipleChoice,
         results: [],
         createdDate: DateTime.now(),
       );
@@ -1164,7 +1176,7 @@ class _StudyScreenState extends State<StudyScreen>
             id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
             title: '${_currentStudySet.title} Quiz',
             questions: newQuizQuestions,
-            type: QuizType.multipleChoice,
+            type: QuestionType.multipleChoice,
             results: [],
             createdDate: DateTime.now(),
           );
@@ -2942,14 +2954,16 @@ class _StudyScreenState extends State<StudyScreen>
     );
   }
 
-  String _getQuizTypeLabel(QuizType type) {
+  String _getQuizTypeLabel(QuestionType type) {
     switch (type) {
-      case QuizType.multipleChoice:
+      case QuestionType.multipleChoice:
         return 'Multiple Choice';
-      case QuizType.trueFalse:
+      case QuestionType.trueFalse:
         return 'True/False';
-      case QuizType.shortAnswer:
+      case QuestionType.shortAnswer:
         return 'Short Answer';
+      case QuestionType.conceptualChallenge:
+        return 'Conceptual Challenge';
     }
   }
 
@@ -2961,7 +2975,7 @@ class _StudyScreenState extends State<StudyScreen>
         scorePercent,
         totalQuestions: _currentQuiz?.questions.length ?? 0,
         quizType:
-            _getQuizTypeLabel(_currentQuiz?.type ?? QuizType.multipleChoice)
+            _getQuizTypeLabel(_currentQuiz?.type ?? QuestionType.multipleChoice)
                 .toLowerCase(),
         timeTaken: _quizStartTime != null
             ? DateTime.now().difference(_quizStartTime)
@@ -3092,5 +3106,169 @@ class _StudyScreenState extends State<StudyScreen>
     dynamicHeight = dynamicHeight.clamp(minHeight, maxHeight);
 
     return dynamicHeight;
+  }
+
+  // Track performance for adaptive difficulty
+  void _trackFlashcardPerformance(Flashcard card, bool wasCorrect) {
+    // Update card's difficulty based on performance
+    card.updateDifficulty(wasCorrect);
+
+    // Update difficulty scores
+    switch (card.difficulty) {
+      case DifficultyLevel.beginner:
+        _difficultyScores['beginner'] =
+            (_difficultyScores['beginner']! + 1).clamp(0, 10);
+        break;
+      case DifficultyLevel.intermediate:
+        _difficultyScores['intermediate'] =
+            (_difficultyScores['intermediate']! + 1).clamp(0, 10);
+        break;
+      case DifficultyLevel.advanced:
+        _difficultyScores['advanced'] =
+            (_difficultyScores['advanced']! + 1).clamp(0, 10);
+        break;
+      case DifficultyLevel.expert:
+        _difficultyScores['expert'] =
+            (_difficultyScores['expert']! + 1).clamp(0, 10);
+        break;
+    }
+
+    // Optionally, save updated study set
+    _updateStudySetWithAdaptiveDifficulty();
+  }
+
+  void _updateStudySetWithAdaptiveDifficulty() {
+    // Determine overall study set difficulty
+    final updatedStudySet = _currentStudySet.copyWith(
+      flashcards: _currentStudySet.flashcards.map((card) {
+        // Potentially adjust card difficulty based on overall performance
+        return card;
+      }).toList(),
+    );
+
+    // Save updated study set
+    EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+  }
+
+  // Enhanced answer submission with adaptive tracking
+  void _submitQuizAnswer(String selectedAnswer) {
+    HapticFeedbackService().selectionClick();
+
+    if (_currentQuiz == null ||
+        _currentQuestionIndex >= _currentQuiz!.questions.length) {
+      _showErrorSnackBar('Invalid quiz state');
+      return;
+    }
+
+    final currentQuestion = _currentQuiz!.questions[_currentQuestionIndex];
+    final isCorrect = selectedAnswer == currentQuestion.correctAnswer;
+
+    // Track question performance
+    currentQuestion.adjustDifficulty(isCorrect);
+
+    setState(() {
+      _userAnswers.add(selectedAnswer);
+
+      // Animate and progress
+      if (_currentQuestionIndex < _currentQuiz!.questions.length - 1) {
+        _currentQuestionIndex++;
+        _quizSlideController.reset();
+        _quizSlideController.forward();
+        _scaleController.forward();
+        _bounceController.forward().then((_) => _bounceController.reverse());
+      } else {
+        _finishQuiz();
+      }
+    });
+  }
+
+  // Adaptive flashcard review method
+  void _reviewFlashcard(bool knewAnswer) {
+    final currentCard = _currentStudySet.flashcards[_currentCardIndex];
+
+    // Track performance
+    _trackFlashcardPerformance(currentCard, knewAnswer);
+
+    // Move to next card
+    _nextCard();
+  }
+
+  // Modify existing methods to use adaptive review
+  Widget _buildFlashcardControls() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton(
+          onPressed: () => _reviewFlashcard(false),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: Text('Didn\'t Know'),
+        ),
+        ElevatedButton(
+          onPressed: () => _reviewFlashcard(true),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          child: Text('Knew It'),
+        ),
+      ],
+    );
+  }
+
+  // Add missing difficulty calculation method
+  DifficultyLevel _calculateQuizDifficulty(
+      int correctAnswers, int totalQuestions) {
+    final percentageCorrect = (correctAnswers / totalQuestions) * 100;
+
+    if (percentageCorrect < 25) return DifficultyLevel.beginner;
+    if (percentageCorrect < 50) return DifficultyLevel.intermediate;
+    if (percentageCorrect < 75) return DifficultyLevel.advanced;
+    return DifficultyLevel.expert;
+  }
+
+  // Add missing adaptive feedback method
+  void _provideAdaptiveFeedback(
+      int correctAnswers, int totalQuestions, DifficultyLevel difficulty) {
+    String feedbackMessage;
+    Color feedbackColor;
+
+    switch (difficulty) {
+      case DifficultyLevel.beginner:
+        feedbackMessage = 'Keep practicing! You\'re building your foundation.';
+        feedbackColor = Colors.blue;
+        break;
+      case DifficultyLevel.intermediate:
+        feedbackMessage = 'Good progress! You\'re getting more confident.';
+        feedbackColor = Colors.green;
+        break;
+      case DifficultyLevel.advanced:
+        feedbackMessage =
+            'Impressive performance! You\'re mastering the material.';
+        feedbackColor = Colors.purple;
+        break;
+      case DifficultyLevel.expert:
+        feedbackMessage = 'Outstanding! You\'re a true expert.';
+        feedbackColor = Colors.deepPurple;
+        break;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$feedbackMessage ($correctAnswers/$totalQuestions correct)',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: feedbackColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Add percentage getter to QuizResult
+  double get percentage {
+    if (_currentQuiz == null) return 0.0;
+    final totalQuestions = _currentQuiz!.questions.length;
+    final correctAnswers = _userAnswers.where((answer) {
+      final questionIndex = _userAnswers.indexOf(answer);
+      return answer == _currentQuiz!.questions[questionIndex].correctAnswer;
+    }).length;
+    return (correctAnswers / totalQuestions) * 100;
   }
 }

@@ -45,23 +45,24 @@ class RemoteConfigService extends ChangeNotifier {
     'tokens_pro_monthly': 0,
     'tokens_intro_month': 0,
     'tokens_logic_pack_bonus': 0,
-    
+
     // New MindLoad Logic Pack pricing (optional; 0 means use defaults)
     'pricing_spark_pack_usd': 0.0,
     'pricing_neuro_burst_usd': 0.0,
     'pricing_exam_surge_usd': 0.0,
     'pricing_cognitive_boost_usd': 0.0,
     'pricing_synaptic_storm_usd': 0.0,
-    
+
     // MindLoad Logic Pack feature flags
     'spark_pack_enabled': true,
     'neuro_burst_enabled': true,
     'exam_surge_enabled': true,
     'cognitive_boost_enabled': true,
     'synaptic_storm_enabled': true,
-    
+
     // MindLoad Logic Pack descriptions
-    'logic_packs_description': 'One-time purchases to boost your learning with immediate ML Tokens',
+    'logic_packs_description':
+        'One-time purchases to boost your learning with immediate ML Tokens',
   };
 
   bool _isInitialized = false;
@@ -83,17 +84,17 @@ class RemoteConfigService extends ChangeNotifier {
   bool get logicPackEnabled => _getRegionalFlag('logic_pack_enabled');
   bool get efficientModeEnabled => getBool('efficient_mode_enabled');
   String get paywallCopyVariant => getString('paywall_copy_variant');
-  
+
   // MindLoad Logic Pack feature flags
   bool get sparkPackEnabled => getBool('spark_pack_enabled');
   bool get neuroBurstEnabled => getBool('neuro_burst_enabled');
   bool get cortexPackEnabled => getBool('cortex_pack_enabled');
-  bool get synapsePackEnabled => getBool('synapse_pack_enabled');
+
   bool get quantumPackEnabled => getBool('quantum_pack_enabled');
-  
+
   // MindLoad Logic Pack descriptions
   String get logicPacksDescription => getString('logic_packs_description');
-  
+
   // Get free quota with country override
   int get freeQuotaForUser {
     final countryCode = _getCountryCode();
@@ -178,7 +179,7 @@ class RemoteConfigService extends ChangeNotifier {
   Map<String, String> getExitIntentCopy() {
     return {
       'title': 'Not ready to subscribe?',
-              'body': 'Logic Pack \$2.99 → +50 tokens',
+      'body': 'Logic Pack \$2.99 → +50 tokens',
       'primary_button': 'Buy Logic Pack',
       'secondary_button': 'Maybe Later',
     };
@@ -219,34 +220,95 @@ class RemoteConfigService extends ChangeNotifier {
   bool _getRegionalFlag(String baseFlag) {
     final region = _getUserRegion();
     final regionalFlag = '${baseFlag}_${region.toLowerCase()}';
-    
+
     // Try regional override first, fallback to global
     if (_config.containsKey(regionalFlag)) {
       return getBool(regionalFlag);
     }
     return getBool(baseFlag);
   }
-  
+
   // Determine user region based on country
   String _getUserRegion() {
     final country = _getCountryCode();
-    
+
     // EU countries
-    const euCountries = ['DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH', 'DK', 'SE', 'NO', 'FI', 'PL', 'CZ', 'HU', 'PT', 'IE', 'GR', 'RO', 'BG', 'HR', 'LT', 'LV', 'EE', 'SI', 'SK', 'CY', 'MT', 'LU', 'UK'];
+    const euCountries = [
+      'DE',
+      'FR',
+      'IT',
+      'ES',
+      'NL',
+      'BE',
+      'AT',
+      'CH',
+      'DK',
+      'SE',
+      'NO',
+      'FI',
+      'PL',
+      'CZ',
+      'HU',
+      'PT',
+      'IE',
+      'GR',
+      'RO',
+      'BG',
+      'HR',
+      'LT',
+      'LV',
+      'EE',
+      'SI',
+      'SK',
+      'CY',
+      'MT',
+      'LU',
+      'UK'
+    ];
     if (euCountries.contains(country)) return 'EU';
-    
+
     // APAC countries
-    const apacCountries = ['JP', 'KR', 'CN', 'IN', 'SG', 'MY', 'TH', 'PH', 'VN', 'ID', 'AU', 'NZ', 'TW', 'HK'];
+    const apacCountries = [
+      'JP',
+      'KR',
+      'CN',
+      'IN',
+      'SG',
+      'MY',
+      'TH',
+      'PH',
+      'VN',
+      'ID',
+      'AU',
+      'NZ',
+      'TW',
+      'HK'
+    ];
     if (apacCountries.contains(country)) return 'APAC';
-    
+
     // LATAM countries
-    const latamCountries = ['BR', 'MX', 'AR', 'CL', 'CO', 'PE', 'VE', 'EC', 'BO', 'PY', 'UY', 'GY', 'SR', 'FK'];
+    const latamCountries = [
+      'BR',
+      'MX',
+      'AR',
+      'CL',
+      'CO',
+      'PE',
+      'VE',
+      'EC',
+      'BO',
+      'PY',
+      'UY',
+      'GY',
+      'SR',
+      'FK'
+    ];
     if (latamCountries.contains(country)) return 'LATAM';
-    
+
     // Default to global settings
     return 'GLOBAL';
   }
-  
+
   // Get country code from system locale
   String _getCountryCode() {
     try {
@@ -255,28 +317,40 @@ class RemoteConfigService extends ChangeNotifier {
       if (parts.length >= 2) {
         return parts[1].toUpperCase();
       }
-      
+
       // Fallback mapping based on language
       final lang = parts[0];
       switch (lang) {
-        case 'en': return 'US';
-        case 'es': return 'ES';
-        case 'pt': return 'BR';
-        case 'fr': return 'FR';
-        case 'de': return 'DE';
-        case 'it': return 'IT';
-        case 'ja': return 'JP';
-        case 'ko': return 'KR';
-        case 'zh': return 'CN';
-        case 'ar': return 'SA';
-        case 'hi': return 'IN';
-        default: return 'US';
+        case 'en':
+          return 'US';
+        case 'es':
+          return 'ES';
+        case 'pt':
+          return 'BR';
+        case 'fr':
+          return 'FR';
+        case 'de':
+          return 'DE';
+        case 'it':
+          return 'IT';
+        case 'ja':
+          return 'JP';
+        case 'ko':
+          return 'KR';
+        case 'zh':
+          return 'CN';
+        case 'ar':
+          return 'SA';
+        case 'hi':
+          return 'IN';
+        default:
+          return 'US';
       }
     } catch (e) {
       return 'US';
     }
   }
-  
+
   // Get localized paywall copy
   Map<String, dynamic> getLocalizedPaywallCopy(AppLocalizations l10n) {
     return {
@@ -294,7 +368,7 @@ class RemoteConfigService extends ChangeNotifier {
       'secondary_button': l10n.secondaryButton,
     };
   }
-  
+
   // Get localized exit intent copy
   Map<String, String> getLocalizedExitIntentCopy(AppLocalizations l10n) {
     return {
@@ -304,5 +378,4 @@ class RemoteConfigService extends ChangeNotifier {
       'secondary_button': l10n.exitIntentMaybe,
     };
   }
-
 }

@@ -293,15 +293,48 @@ async function generateQuizQuestionsDirectly(content, count) {
                 messages: [
                     {
                         role: 'system',
-                        content: `You are an expert at creating educational quiz questions. Create ${count} multiple choice questions from the provided content. Each question should have 4 options (A, B, C, D) with one correct answer. Return the response as a JSON array with objects containing 'question', 'options' (array of 4 strings), and 'correctAnswer' (index 0-3) fields.`
+                        content: `You are an expert educational assessment designer specializing in creating challenging, thought-provoking quiz questions. Create ${count} sophisticated multiple choice questions that go beyond simple recall and test deep understanding.
+
+QUESTION DESIGN PRINCIPLES:
+- Focus on higher-order thinking: analysis, synthesis, evaluation, application
+- Create questions that require critical thinking and reasoning
+- Test conceptual understanding, not just memorization
+- Include scenario-based questions that apply knowledge to new situations
+- Design questions that connect ideas and require inference
+- Use "Why" and "How" reasoning rather than just "What" facts
+
+QUESTION TYPES TO INCLUDE:
+- Analytical: "What would happen if..." "Why does this occur..." "What causes..."
+- Application: "In this scenario, which approach..." "How would you apply..." "Given these conditions..."
+- Synthesis: "What is the relationship between..." "How do these concepts connect..." "What patterns emerge..."
+- Evaluation: "Which is the most effective..." "What are the implications of..." "How would you judge..."
+- Inference: "Based on this information, what can you conclude..." "What does this suggest about..."
+
+DIFFICULTY PROGRESSION:
+- 30% Intermediate: Require connecting 2-3 concepts
+- 50% Advanced: Require analysis and application to new contexts  
+- 20% Expert: Require synthesis of multiple complex ideas
+
+ANSWER OPTIONS DESIGN:
+- Create 4 plausible options with sophisticated distractors
+- Include common misconceptions as wrong answers
+- Make distractors that require careful analysis to eliminate
+- Ensure only one clearly correct answer after thorough reasoning
+
+Return JSON object with 'questions' array containing objects with:
+- 'question': The challenging question text
+- 'options': Array of 4 plausible answer choices
+- 'correctAnswer': Index (0-3) of the correct answer
+- 'difficulty': 'intermediate', 'advanced', or 'expert'
+- 'explanation': Detailed explanation of why the answer is correct and why others are wrong`
                     },
                     {
                         role: 'user',
-                        content: `Create ${count} quiz questions from this content:\n\n${content}`
+                        content: `Create ${count} challenging and inquisitive quiz questions from this content. Focus on deep understanding, critical thinking, and application rather than simple recall. Make questions that would challenge even knowledgeable students and require careful analysis to answer correctly. Extract the most important concepts and create questions that test understanding of relationships, implications, and applications:\n\n${content}`
                     }
                 ],
-                max_tokens: 2000,
-                temperature: 0.7,
+                max_tokens: 3000,
+                temperature: 0.8,
                 response_format: { type: "json_object" }
             }),
         });

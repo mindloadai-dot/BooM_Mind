@@ -41,12 +41,7 @@ class ProductConstants {
   static const String cortexPackDescription =
       'Extra bonus kicks in here (125% vs Neuro). Feels like a bargain';
 
-  // Synapse Pack
-  static const String synapsePackName = 'Synapse Pack';
-  static const double synapsePackPriceUsd = 19.99;
-  static const int synapsePackTokens = 500;
-  static const String synapsePackDescription =
-      'Power-user pack. Clear 2x value over Cortex';
+
 
   // Quantum Pack
   static const String quantumPackName = 'Quantum Pack';

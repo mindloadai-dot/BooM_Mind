@@ -238,7 +238,6 @@ class _PaywallScreenState extends State<PaywallScreen>
                 if (_remoteConfig.sparkPackEnabled ||
                     _remoteConfig.neuroBurstEnabled ||
                     _remoteConfig.cortexPackEnabled ||
-                    _remoteConfig.synapsePackEnabled ||
                     _remoteConfig.quantumPackEnabled)
                   _buildLogicPacksSection(),
 
@@ -479,12 +478,12 @@ class _PaywallScreenState extends State<PaywallScreen>
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? plan.accentColor.withValues(alpha: 0.1)
+              ? plan.color.withValues(alpha: 0.1)
               : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? plan.accentColor
+                ? plan.color
                 : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
@@ -501,7 +500,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: plan.accentColor,
+                    color: plan.color,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -542,12 +541,10 @@ class _PaywallScreenState extends State<PaywallScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected
-                          ? plan.accentColor
-                          : context.tokens.outline,
+                      color: isSelected ? plan.color : context.tokens.outline,
                       width: 2,
                     ),
-                    color: isSelected ? plan.accentColor : Colors.transparent,
+                    color: isSelected ? plan.color : Colors.transparent,
                   ),
                   child: isSelected
                       ? Icon(Icons.check,
@@ -577,7 +574,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                       text: _getIntroPrice(),
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: plan.accentColor,
+                                color: plan.color,
                                 fontWeight: FontWeight.bold,
                               ),
                     ),
@@ -808,7 +805,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       // Track purchase start with telemetry
       await _telemetry.trackPurchaseStart(
         productId: selectedPlan.productId,
-        subscriptionType: selectedPlan.type,
+        subscriptionType: selectedPlan.subscriptionType,
       );
 
       final success = await _purchaseService.purchaseSubscription(selectedPlan);
@@ -1059,11 +1056,6 @@ class _PaywallScreenState extends State<PaywallScreen>
                 Icons.science,
                 ProductConstants.cortexPackName,
                 _remoteConfig.cortexPackEnabled,
-              ),
-              _LogicPackChip(
-                Icons.electric_bolt,
-                ProductConstants.synapsePackName,
-                _remoteConfig.synapsePackEnabled,
               ),
               _LogicPackChip(
                 Icons.auto_awesome,

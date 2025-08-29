@@ -550,13 +550,13 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen> {
                 'Avoiding the topic entirely',
               ],
               correctAnswer: 'Understanding key principles',
-              type: QuizType.multipleChoice,
+              type: QuestionType.multipleChoice,
             ));
 
     return Quiz(
       id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
       title: 'Custom Quiz',
-      type: QuizType.multipleChoice,
+      type: QuestionType.multipleChoice,
       questions: questions,
       results: [],
       createdDate: DateTime.now(),

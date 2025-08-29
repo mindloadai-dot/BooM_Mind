@@ -257,23 +257,23 @@ class CreditService extends ChangeNotifier {
   }
 
   /// Calculate AI optimal counts based on user data
-  Map<String, int> calculateOptimalCounts(String topicDifficulty) {
+  Map<String, int> calculateOptimalCounts(DifficultyLevel topicDifficulty) {
     // Base optimal counts
     int optimalQuiz = 15;
     int optimalFlashcards = 25;
 
     // Adjust based on topic difficulty
-    switch (topicDifficulty.toLowerCase()) {
-      case 'easy':
+    switch (topicDifficulty) {
+      case DifficultyLevel.beginner:
         optimalQuiz = 10;
         optimalFlashcards = 20;
         break;
-      case 'hard':
+      case DifficultyLevel.advanced:
         optimalQuiz = 20;
         optimalFlashcards = 30;
         break;
-      case 'medium':
-      default:
+      case DifficultyLevel.intermediate:
+      case DifficultyLevel.expert:
         optimalQuiz = 15;
         optimalFlashcards = 25;
         break;

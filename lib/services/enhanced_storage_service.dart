@@ -7,6 +7,7 @@ import 'package:mindload/models/storage_models.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:mindload/services/mindload_notification_service.dart';
 
 class EnhancedStorageService extends ChangeNotifier {
   static final EnhancedStorageService _instance =
@@ -125,16 +126,19 @@ class EnhancedStorageService extends ChangeNotifier {
     try {
       // Check for ID collision and generate unique ID if needed
       String uniqueId = studySet.id;
-      if (_metadata.containsKey(uniqueId) || _fullStudySets.containsKey(uniqueId)) {
+      if (_metadata.containsKey(uniqueId) ||
+          _fullStudySets.containsKey(uniqueId)) {
         // Generate a unique ID by appending a counter
         int counter = 1;
         do {
           uniqueId = '${studySet.id}_$counter';
           counter++;
-        } while (_metadata.containsKey(uniqueId) || _fullStudySets.containsKey(uniqueId));
-        
-        debugPrint('⚠️ ID collision detected for ${studySet.id}, using unique ID: $uniqueId');
-        
+        } while (_metadata.containsKey(uniqueId) ||
+            _fullStudySets.containsKey(uniqueId));
+
+        debugPrint(
+            '⚠️ ID collision detected for ${studySet.id}, using unique ID: $uniqueId');
+
         // Create a new study set with the unique ID
         studySet = studySet.copyWith(id: uniqueId);
       }
@@ -159,6 +163,19 @@ class EnhancedStorageService extends ChangeNotifier {
 
       notifyListeners();
       debugPrint('✅ Study set added with ID: ${studySet.id}');
+
+      // Fire first-run notification if this is the first study set
+      // Check if it contains flashcards or quiz questions
+      if (studySet.flashcards.isNotEmpty || studySet.quizQuestions.isNotEmpty) {
+        try {
+          // Import the notification service and fire the first-run notification
+          await MindLoadNotificationService
+              .fireFirstStudySetNotificationIfNeeded();
+        } catch (e) {
+          debugPrint('Failed to fire first study set notification: $e');
+        }
+      }
+
       return true;
     } catch (e) {
       debugPrint('❌ Failed to add study set: $e');
@@ -279,12 +296,14 @@ class EnhancedStorageService extends ChangeNotifier {
       // Find duplicates based on title and creation time (within 1 second)
       for (final entry in _metadata.entries) {
         final metadata = entry.value;
-        final key = '${metadata.title}_${metadata.createdAt.millisecondsSinceEpoch ~/ 1000}';
-        
+        final key =
+            '${metadata.title}_${metadata.createdAt.millisecondsSinceEpoch ~/ 1000}';
+
         if (seenTitles.containsKey(key)) {
           // This is a duplicate, mark for removal
           duplicatesToRemove.add(entry.key);
-          debugPrint('🗑️ Found duplicate study set: ${metadata.title} (ID: ${entry.key})');
+          debugPrint(
+              '🗑️ Found duplicate study set: ${metadata.title} (ID: ${entry.key})');
         } else {
           seenTitles[key] = entry.key;
         }
@@ -297,7 +316,8 @@ class EnhancedStorageService extends ChangeNotifier {
       }
 
       if (duplicatesToRemove.isNotEmpty) {
-        debugPrint('🧹 Cleaned up ${duplicatesToRemove.length} duplicate study sets');
+        debugPrint(
+            '🧹 Cleaned up ${duplicatesToRemove.length} duplicate study sets');
       }
     } catch (e) {
       debugPrint('❌ Failed to cleanup duplicates: $e');
@@ -378,19 +398,19 @@ class EnhancedStorageService extends ChangeNotifier {
       // Update metadata
       final metadata = StudySetMetadata.fromStudySet(studySet);
       _metadata[studySet.id] = metadata;
-      
+
       // Store full study set in memory
       _fullStudySets[studySet.id] = studySet;
-      
+
       // Save to storage
       await _saveStudySetToStorage(studySet);
-      
+
       // Update totals
       _updateTotals();
-      
+
       // Notify listeners
       notifyListeners();
-      
+
       debugPrint('✅ Study set saved: ${studySet.id}');
     } catch (e) {
       debugPrint('❌ Failed to save study set: $e');

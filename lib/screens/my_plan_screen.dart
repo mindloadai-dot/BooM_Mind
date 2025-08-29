@@ -6,6 +6,7 @@ import 'package:mindload/services/in_app_purchase_service.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 
 import 'package:mindload/theme.dart';
+import 'package:mindload/services/haptic_feedback_service.dart';
 
 class MyPlanScreen extends StatefulWidget {
   const MyPlanScreen({super.key});
@@ -610,19 +611,23 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
   }
 
   Future<void> _refreshData(MindloadEconomyService economyService) async {
+    HapticFeedbackService().lightImpact();
     try {
       await economyService.initialize();
+      HapticFeedbackService().success();
     } catch (e) {
       // Handle error silently for pull-to-refresh
     }
   }
 
   Future<void> _handleUpgrade(MindloadTier tier) async {
+    HapticFeedbackService().mediumImpact();
     // Navigate to MyPlanScreen for upgrade options
     Navigator.pushNamed(context, '/my-plan');
   }
 
   Future<void> _handleLogicPackPurchase(String packName, double price) async {
+    HapticFeedbackService().mediumImpact();
     // Navigate to logic pack purchase screen
     Navigator.pushNamed(context, '/logic-packs');
   }

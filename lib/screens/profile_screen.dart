@@ -651,6 +651,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             _buildQuickActions(),
             const SizedBox(height: 24),
             _buildSettingsSection(),
+            const SizedBox(height: 24),
+            // _buildProfileActions(context), // TODO: Implement this method
           ],
         ),
       ),
@@ -1052,7 +1054,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedbackService().lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -1327,7 +1332,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedbackService().lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -1397,6 +1405,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showEditProfileDialog() async {
+    HapticFeedbackService().lightImpact();
     await showDialog(
       context: context,
       barrierDismissible: false,

@@ -102,14 +102,26 @@
 	<!-- URL Schemes for Authentication -->
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- Google Sign In URL Scheme -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google-signin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.884947669542-qp3ijvvdd9vacvpjp6ldp5r9pf8okejk</string>
+			</array>
+		</dict>
+		<!-- Custom App URL Scheme -->
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>mindload-auth</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>mindload</string>
+				<string>com.cogniflow.mindload</string>
 			</array>
 		</dict>
+		<!-- YouTube Links Handler -->
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>youtube-links</string>

@@ -26,7 +26,7 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   bool _isLoading = false;
   String? _errorMessage;
   final bool _showRestoreButton = true;
@@ -107,9 +107,9 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
         title: Text(
           'Upgrade to Pro',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: tokens.textPrimary,
-            fontSize: textScaler.scale(20),
-          ),
+                color: tokens.textPrimary,
+                fontSize: textScaler.scale(20),
+              ),
         ),
         actions: [
           if (_showRestoreButton)
@@ -163,17 +163,17 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
             Text(
               'Store Unavailable',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: tokens.textPrimary,
-                fontSize: textScaler.scale(24),
-              ),
+                    color: tokens.textPrimary,
+                    fontSize: textScaler.scale(24),
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               'In-app purchases are not available on this device.',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: tokens.textSecondary,
-                fontSize: textScaler.scale(16),
-              ),
+                    color: tokens.textSecondary,
+                    fontSize: textScaler.scale(16),
+                  ),
             ),
           ],
         ),
@@ -193,16 +193,17 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
           Text(
             'Loading Products...',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: tokens.textSecondary,
-              fontSize: textScaler.scale(16),
-            ),
+                  color: tokens.textSecondary,
+                  fontSize: textScaler.scale(16),
+                ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPaywallContent(StoreKit2Service storeKit, SemanticTokens tokens, TextScaler textScaler) {
+  Widget _buildPaywallContent(
+      StoreKit2Service storeKit, SemanticTokens tokens, TextScaler textScaler) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -244,18 +245,18 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
         Text(
           'Unlock Your Learning Potential',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: tokens.textPrimary,
-            fontSize: textScaler.scale(28),
-            fontWeight: FontWeight.bold,
-          ),
+                color: tokens.textPrimary,
+                fontSize: textScaler.scale(28),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: 8),
         Text(
           'Get unlimited AI-powered study materials and advanced features',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: tokens.textSecondary,
-            fontSize: textScaler.scale(18),
-          ),
+                color: tokens.textSecondary,
+                fontSize: textScaler.scale(18),
+              ),
         ),
       ],
     );
@@ -286,10 +287,10 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
               Text(
                 'What are MindLoad Tokens?',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: tokens.primary,
-                  fontSize: textScaler.scale(18),
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: tokens.primary,
+                      fontSize: textScaler.scale(18),
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -297,10 +298,10 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
           Text(
             'MindLoad Tokens (ML Tokens) are the currency that powers AI-powered learning features. Each token lets you generate study materials like flashcards, quizzes, and study tips.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: tokens.textSecondary,
-              fontSize: textScaler.scale(16),
-              height: 1.4,
-            ),
+                  color: tokens.textSecondary,
+                  fontSize: textScaler.scale(16),
+                  height: 1.4,
+                ),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -332,7 +333,8 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
     );
   }
 
-  Widget _buildFeatureChip(IconData icon, String label, SemanticTokens tokens, TextScaler textScaler) {
+  Widget _buildFeatureChip(IconData icon, String label, SemanticTokens tokens,
+      TextScaler textScaler) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -355,17 +357,18 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: tokens.textPrimary,
-              fontSize: textScaler.scale(12),
-              fontWeight: FontWeight.w500,
-            ),
+                  color: tokens.textPrimary,
+                  fontSize: textScaler.scale(12),
+                  fontWeight: FontWeight.w500,
+                ),
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _buildProductCards(StoreKit2Service storeKit, SemanticTokens tokens, TextScaler textScaler) {
+  List<Widget> _buildProductCards(
+      StoreKit2Service storeKit, SemanticTokens tokens, TextScaler textScaler) {
     final products = storeKit.products;
     final List<Widget> cards = [];
 
@@ -377,7 +380,7 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
       } catch (e) {
         product = null;
       }
-      
+
       if (product != null) {
         cards.add(
           _buildSubscriptionCard(plan, product, storeKit, tokens, textScaler),
@@ -393,7 +396,7 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
     } catch (e) {
       starterPack = null;
     }
-    
+
     if (starterPack != null) {
       cards.add(
         _buildStarterPackCard(starterPack, storeKit, tokens, textScaler),
@@ -411,13 +414,13 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
     TextScaler textScaler,
   ) {
     final isIntroEligible = plan.hasIntroOffer;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: tokens.elevatedSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: plan.accentColor.withValues(alpha: 0.3),
+          color: plan.color.withValues(alpha: 0.3),
           width: 2,
         ),
         boxShadow: [
@@ -435,7 +438,7 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: plan.accentColor.withValues(alpha: 0.1),
+              color: plan.color.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
               ),
@@ -444,36 +447,37 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
               children: [
                 if (plan.badge != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: plan.accentColor,
+                      color: plan.color,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       plan.badge!,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.white,
-                        fontSize: textScaler.scale(10),
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: Colors.white,
+                            fontSize: textScaler.scale(10),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ),
                 if (plan.badge != null) const SizedBox(height: 8),
                 Text(
                   plan.title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: tokens.textPrimary,
-                    fontSize: textScaler.scale(24),
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: tokens.textPrimary,
+                        fontSize: textScaler.scale(24),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   plan.subtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: tokens.textSecondary,
-                    fontSize: textScaler.scale(16),
-                  ),
+                        color: tokens.textSecondary,
+                        fontSize: textScaler.scale(16),
+                      ),
                 ),
               ],
             ),
@@ -486,27 +490,30 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...plan.features.map((feature) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: tokens.success,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          feature,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: tokens.textPrimary,
-                            fontSize: textScaler.scale(16),
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: tokens.success,
+                            size: 20,
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: tokens.textPrimary,
+                                    fontSize: textScaler.scale(16),
+                                  ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )),
+                    )),
               ],
             ),
           ),
@@ -518,7 +525,8 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
               children: [
                 if (isIntroEligible && plan.introPrice != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: tokens.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -527,15 +535,16 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
                       ),
                     ),
                     child: Text(
-                      '${plan.introDescription}',
+                      plan.introDescription,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: tokens.warning,
-                        fontSize: textScaler.scale(14),
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: tokens.warning,
+                            fontSize: textScaler.scale(14),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
-                if (isIntroEligible && plan.introPrice != null) const SizedBox(height: 12),
+                if (isIntroEligible && plan.introPrice != null)
+                  const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -544,21 +553,27 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
                         children: [
                           Text(
                             plan.displayPrice,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: tokens.textPrimary,
-                              fontSize: textScaler.scale(28),
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  color: tokens.textPrimary,
+                                  fontSize: textScaler.scale(28),
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
                           ),
                           if (isIntroEligible && plan.introPrice != null)
                             Text(
                               'then ${plan.displayPrice}',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: tokens.textSecondary,
-                                fontSize: textScaler.scale(14),
-                                decoration: TextDecoration.lineThrough,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: tokens.textSecondary,
+                                    fontSize: textScaler.scale(14),
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
                             ),
                         ],
                       ),
@@ -566,7 +581,9 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : () => _purchaseProduct(plan.productId),
+                        onPressed: _isLoading
+                            ? null
+                            : () => _purchaseProduct(plan.productId),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: plan.accentColor,
                           foregroundColor: Colors.white,
@@ -581,11 +598,14 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : Text(
-                                isIntroEligible ? 'Start Free Trial' : 'Subscribe',
+                                isIntroEligible
+                                    ? 'Start Free Trial'
+                                    : 'Subscribe',
                                 style: TextStyle(
                                   fontSize: textScaler.scale(16),
                                   fontWeight: FontWeight.w600,
@@ -635,12 +655,13 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: CreditPack.logicPack.accentColor.withValues(alpha: 0.1),
+                    color: LogicPackProducts.allProducts[0].accentColor
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.add_circle,
-                    color: CreditPack.logicPack.accentColor,
+                    color: LogicPackProducts.allProducts[0].accentColor,
                     size: 24,
                   ),
                 ),
@@ -650,19 +671,19 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        CreditPack.logicPack.title,
+                        LogicPackProducts.allProducts[0].title,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: tokens.textPrimary,
-                          fontSize: textScaler.scale(20),
-                          fontWeight: FontWeight.w600,
-                        ),
+                              color: tokens.textPrimary,
+                              fontSize: textScaler.scale(20),
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       Text(
-                        CreditPack.logicPack.description,
+                        LogicPackProducts.allProducts[0].description,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: tokens.textSecondary,
-                          fontSize: textScaler.scale(16),
-                        ),
+                              color: tokens.textSecondary,
+                              fontSize: textScaler.scale(16),
+                            ),
                       ),
                     ],
                   ),
@@ -674,20 +695,23 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
               children: [
                 Expanded(
                   child: Text(
-                    CreditPack.logicPack.displayPrice,
+                    LogicPackProducts.allProducts[0].displayPrice,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: tokens.textPrimary,
-                      fontSize: textScaler.scale(24),
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: tokens.textPrimary,
+                          fontSize: textScaler.scale(24),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : () => _purchaseProduct(ProductIds.logicPack),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _purchaseProduct(ProductIds.logicPack),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: CreditPack.logicPack.accentColor,
+                      backgroundColor:
+                          LogicPackProducts.allProducts[0].accentColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -700,7 +724,8 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
@@ -720,7 +745,8 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
     );
   }
 
-  Widget _buildErrorMessage(String message, SemanticTokens tokens, TextScaler textScaler) {
+  Widget _buildErrorMessage(
+      String message, SemanticTokens tokens, TextScaler textScaler) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -742,9 +768,9 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: tokens.error,
-                fontSize: textScaler.scale(16),
-              ),
+                    color: tokens.error,
+                    fontSize: textScaler.scale(16),
+                  ),
             ),
           ),
         ],
@@ -758,10 +784,10 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
         Text(
           'By subscribing, you agree to our Terms of Service and Privacy Policy. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: tokens.textTertiary,
-            fontSize: textScaler.scale(12),
-            height: 1.4,
-          ),
+                color: tokens.textTertiary,
+                fontSize: textScaler.scale(12),
+                height: 1.4,
+              ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -813,7 +839,7 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
     try {
       final storeKit = StoreKit2Service.instance;
       final success = await storeKit.purchaseProduct(productId);
-      
+
       if (success) {
         // Purchase initiated successfully
         // The result will be handled by the purchase stream
@@ -848,7 +874,7 @@ class _StoreKit2PaywallScreenState extends State<StoreKit2PaywallScreen>
     try {
       final storeKit = StoreKit2Service.instance;
       final success = await storeKit.restorePurchases();
-      
+
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
@@ -12,6 +11,7 @@ import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
 import 'package:mindload/screens/subscription_settings_screen.dart';
 import 'package:mindload/screens/tiers_benefits_screen.dart';
+import 'package:mindload/services/auth_service.dart';
 
 /// Export Screen - Demonstrates credits integration for exports
 ///
@@ -578,128 +578,75 @@ class _ExportScreenState extends State<ExportScreen> {
     });
 
     try {
-      // Use the new PDF export system with MindLoad branding
-      final pdfService = PdfExportService();
+      // Use the new PDF export and share system
+      final pdfService = PdfExportService.instance;
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final uid = authService.currentUserId ?? 'anonymous';
+      final appVersion = await _getAppVersion();
 
-      // Determine export options based on selection
-      final options = PdfExportOptions(
+      final studySet =
+          await EnhancedStorageService.instance.getStudySet(widget.studySetId);
+
+      await pdfService.exportAndShareStudySet(
+        uid: uid,
         setId: widget.studySetId,
-        includeFlashcards: _selectedExportType.contains('flashcards'),
-        includeQuiz: _selectedExportType.contains('quizzes'),
-        style: 'standard',
-        pageSize: 'Letter',
-        includeMindloadBranding:
-            _includeMindloadHeader, // Use the existing header option
+        setTitle: widget.studySetTitle,
+        flashcardCount: _selectedExportType.contains('flashcards')
+            ? studySet?.flashcards.length ?? 0
+            : 0,
+        quizCount: _selectedExportType.contains('quiz')
+            ? studySet?.quizzes.length ?? 0
+            : 0,
+        appVersion: appVersion,
+        customOptions: PdfExportOptions(
+          setId: widget.studySetId,
+          includeFlashcards: _selectedExportType.contains('flashcards'),
+          includeQuiz: _selectedExportType.contains('quiz'),
+          style: 'standard',
+          pageSize: 'Letter',
+          includeMindloadBranding: _includeMindloadHeader,
+        ),
       );
 
-      // Calculate actual item counts from study set
-      final itemCounts = <String, int>{};
-      try {
-        // Get study set data from storage
-        final studySet = await EnhancedStorageService.instance
-            .getStudySet(widget.studySetId);
-        if (studySet != null) {
-          if (options.includeFlashcards) {
-            itemCounts['flashcards'] = studySet.flashcards.length;
-          }
-          if (options.includeQuiz) {
-            itemCounts['quizzes'] = studySet.quizzes.length;
-          }
-        } else {
-          // Fallback to estimated counts if study set not found
-          if (options.includeFlashcards) itemCounts['flashcards'] = 10;
-          if (options.includeQuiz) itemCounts['quizzes'] = 5;
-        }
-      } catch (e) {
-        // Fallback to estimated counts on error
-        if (options.includeFlashcards) itemCounts['flashcards'] = 10;
-        if (options.includeQuiz) itemCounts['quizzes'] = 5;
-      }
+      // If successful, use the export quota
+      economy.useExport(request);
 
-      final result = await pdfService.exportToPdf(
-        uid: pdfService.getCurrentUserId(),
-        setId: widget.studySetId,
-        appVersion: pdfService.getAppVersion(),
-        itemCounts: itemCounts,
-        options: options,
-        onProgress: (progress) {
-          // Update progress in UI
-          if (kDebugMode) {
-            debugPrint('Export progress: ${progress.percentage}%');
-          }
-        },
-        onCancelled: () {
-          if (kDebugMode) {
-            debugPrint('Export cancelled');
-          }
-        },
-      );
-
-      if (mounted) {
-        setState(() {
-          _isExporting = false;
-        });
-
-        if (result.success) {
-          // Use export quota
-          economy.useExport(request);
-
-          // Show success feedback
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: context.tokens.success,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'PDF exported successfully! ${economy.exportsRemaining} exports remaining.',
-                    ),
-                  ),
-                ],
-              ),
-              duration: const Duration(seconds: 4),
-              action: SnackBarAction(
-                label: 'View',
-                onPressed: () {
-                  // TODO: Open PDF viewer
-                  if (kDebugMode) {
-                    debugPrint('Open PDF: ${result.filePath}');
-                  }
-                },
-              ),
-            ),
-          );
-        } else {
-          // Show error
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Export failed: ${result.errorMessage ?? 'Unknown error'}'),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
+      _showSuccessSnackBar(
+          'Export process initiated. ${economy.exportsRemaining} exports remaining.');
     } catch (e) {
+      _showErrorSnackBar('Export failed: ${e.toString()}');
+    } finally {
       if (mounted) {
         setState(() {
           _isExporting = false;
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Export failed: ${e.toString()}'),
-            backgroundColor: Colors.red[600],
-            duration: const Duration(seconds: 3),
-          ),
-        );
       }
     }
+  }
+
+  Future<String> _getAppVersion() async {
+    // In a real app, you'd use the package_info_plus plugin
+    return '1.0.0';
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green[600],
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[600],
+      ),
+    );
   }
 }
 

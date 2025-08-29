@@ -10,7 +10,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Enhanced IAP-only payment service with Firebase backend verification
 class InAppPurchaseService extends ChangeNotifier {
-  static final InAppPurchaseService _instance = InAppPurchaseService._internal();
+  static final InAppPurchaseService _instance =
+      InAppPurchaseService._internal();
   factory InAppPurchaseService() => _instance;
   static InAppPurchaseService get instance => _instance;
   InAppPurchaseService._internal();
@@ -19,7 +20,8 @@ class InAppPurchaseService extends ChangeNotifier {
   final TelemetryService _telemetry = TelemetryService.instance;
   final AuthService _authService = AuthService.instance;
   final FirebaseIapService _firebaseIap = FirebaseIapService.instance;
-  final FirebaseRemoteConfigService _remoteConfig = FirebaseRemoteConfigService.instance;
+  final FirebaseRemoteConfigService _remoteConfig =
+      FirebaseRemoteConfigService.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isAvailable = false;
@@ -34,7 +36,7 @@ class InAppPurchaseService extends ChangeNotifier {
   bool get purchasePending => _purchasePending;
   FirebaseUser? get currentUser => _currentUser;
   UserEntitlement? get currentEntitlement => _currentEntitlement;
-  
+
   // Get product details for localized pricing display
   ProductDetails? getProductDetails(String productId) {
     try {
@@ -44,7 +46,7 @@ class InAppPurchaseService extends ChangeNotifier {
       return null;
     }
   }
-  
+
   // Get all products mapped by ID for easy access
   Map<String, ProductDetails> get productDetailsMap {
     final map = <String, ProductDetails>{};
@@ -60,12 +62,12 @@ class InAppPurchaseService extends ChangeNotifier {
     ProductIds.logicPack,
     ProductIds.tokens250,
     ProductIds.tokens600,
-    
+
     // New MindLoad Logic Pack product IDs
     ProductIds.sparkPack,
     ProductIds.neuroBurst,
     ProductIds.cortexLogic,
-    ProductIds.synapseLogic,
+
     ProductIds.quantumLogic,
   };
 
@@ -82,13 +84,13 @@ class InAppPurchaseService extends ChangeNotifier {
       // Initialize Firebase services first
       await _firebaseIap.initialize();
       await _remoteConfig.initialize();
-      
+
       _isAvailable = await _inAppPurchase.isAvailable();
       if (_isAvailable) {
         await _loadProducts();
         _listenToPurchaseUpdates();
         await _loadUserData();
-        // Auto-restore on initialize 
+        // Auto-restore on initialize
         await restoreEntitlements();
       }
       debugPrint('IAP-only payment service initialized: $_isAvailable');
@@ -100,12 +102,13 @@ class InAppPurchaseService extends ChangeNotifier {
 
   Future<void> _loadProducts() async {
     try {
-      final ProductDetailsResponse response = await _inAppPurchase.queryProductDetails(_productIds);
-      
+      final ProductDetailsResponse response =
+          await _inAppPurchase.queryProductDetails(_productIds);
+
       if (response.notFoundIDs.isNotEmpty) {
         debugPrint('Products not found: ${response.notFoundIDs}');
       }
-      
+
       // Filter products based on Remote Config
       _products = response.productDetails.where((product) {
         if (product.id == ProductIds.logicPack) {
@@ -113,7 +116,7 @@ class InAppPurchaseService extends ChangeNotifier {
         }
         return true;
       }).toList();
-      
+
       debugPrint('Loaded ${_products.length} products');
       notifyListeners();
     } catch (e) {
@@ -133,7 +136,8 @@ class InAppPurchaseService extends ChangeNotifier {
     );
   }
 
-  Future<void> _handlePurchaseUpdates(List<PurchaseDetails> purchaseDetailsList) async {
+  Future<void> _handlePurchaseUpdates(
+      List<PurchaseDetails> purchaseDetailsList) async {
     for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
       if (purchaseDetails.status == PurchaseStatus.pending) {
         _purchasePending = true;
@@ -143,7 +147,7 @@ class InAppPurchaseService extends ChangeNotifier {
         notifyListeners();
       } else {
         _purchasePending = false;
-        
+
         if (purchaseDetails.status == PurchaseStatus.error) {
           debugPrint('Purchase error: ${purchaseDetails.error}');
           await _recordTelemetry(IapTelemetryEvent.purchaseFail, {
@@ -151,23 +155,23 @@ class InAppPurchaseService extends ChangeNotifier {
             'error': purchaseDetails.error?.message ?? 'unknown',
           });
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
-                   purchaseDetails.status == PurchaseStatus.restored) {
-          
+            purchaseDetails.status == PurchaseStatus.restored) {
           // Verify purchase with Firebase backend
           await _verifyPurchaseWithFirebase(purchaseDetails);
         }
-        
+
         // Complete the purchase
         if (purchaseDetails.pendingCompletePurchase) {
           await _inAppPurchase.completePurchase(purchaseDetails);
         }
-        
+
         notifyListeners();
       }
     }
   }
 
-  Future<void> _verifyPurchaseWithFirebase(PurchaseDetails purchaseDetails) async {
+  Future<void> _verifyPurchaseWithFirebase(
+      PurchaseDetails purchaseDetails) async {
     try {
       final userId = _authService.currentUser?.uid;
       if (userId == null) {
@@ -175,20 +179,23 @@ class InAppPurchaseService extends ChangeNotifier {
         return;
       }
 
-      debugPrint('Verifying purchase with Firebase: ${purchaseDetails.productID}');
-      
+      debugPrint(
+          'Verifying purchase with Firebase: ${purchaseDetails.productID}');
+
       // Determine platform
-      final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
-      
+      final platform =
+          defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+
       // Get transaction details
       String transactionId;
       String? purchaseToken;
-      
+
       if (platform == 'ios') {
         transactionId = purchaseDetails.purchaseID ?? '';
       } else {
         transactionId = purchaseDetails.purchaseID ?? '';
-        purchaseToken = purchaseDetails.purchaseID; // Android uses purchase token
+        purchaseToken =
+            purchaseDetails.purchaseID; // Android uses purchase token
       }
 
       // Verify with Firebase Cloud Functions
@@ -204,11 +211,12 @@ class InAppPurchaseService extends ChangeNotifier {
           'productId': purchaseDetails.productID,
           'platform': platform,
         });
-        
+
         // Refresh user data
         await _loadUserData();
-        
-        debugPrint('Purchase verified successfully: ${purchaseDetails.productID}');
+
+        debugPrint(
+            'Purchase verified successfully: ${purchaseDetails.productID}');
       } else {
         debugPrint('Purchase verification failed: $result');
         await _recordTelemetry(IapTelemetryEvent.purchaseFail, {
@@ -230,13 +238,13 @@ class InAppPurchaseService extends ChangeNotifier {
     try {
       _currentUser = await _firebaseIap.getCurrentUserData();
       _currentEntitlement = await _firebaseIap.getCurrentEntitlement();
-      
+
       // Create user document if needed
       if (_currentUser == null) {
         await _firebaseIap.createUserIfNeeded();
         _currentUser = await _firebaseIap.getCurrentUserData();
       }
-      
+
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading user data: $e');
@@ -250,10 +258,11 @@ class InAppPurchaseService extends ChangeNotifier {
     }).toList();
   }
 
-  // Purchase subscription with intro offer handling  
+  // Purchase subscription with intro offer handling
   Future<bool> purchaseSubscription(SubscriptionPlan plan) async {
     if (!_isAvailable) {
-      throw PurchaseException('In-app purchases are not available', code: 'unavailable');
+      throw PurchaseException('In-app purchases are not available',
+          code: 'unavailable');
     }
 
     // Check if IAP-only mode is enabled
@@ -264,19 +273,21 @@ class InAppPurchaseService extends ChangeNotifier {
     try {
       final product = _products.firstWhere(
         (p) => p.id == plan.productId,
-        orElse: () => throw PurchaseException('Product not found: ${plan.productId}'),
+        orElse: () =>
+            throw PurchaseException('Product not found: ${plan.productId}'),
       );
 
       // Record paywall telemetry
       await _recordTelemetry(IapTelemetryEvent.paywallView, {
         'productId': plan.productId,
-        'planType': plan.type.name,
+        'planType': plan.type,
         'hasIntro': plan.hasIntroOffer,
       });
 
       final purchaseParam = PurchaseParam(productDetails: product);
-      
-      final purchaseResult = await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
+
+      final purchaseResult =
+          await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
 
       return purchaseResult;
     } catch (e) {
@@ -292,7 +303,8 @@ class InAppPurchaseService extends ChangeNotifier {
   // Purchase credit pack (consumable)
   Future<bool> purchaseLogicPack() async {
     if (!_isAvailable) {
-      throw PurchaseException('In-app purchases are not available', code: 'unavailable');
+      throw PurchaseException('In-app purchases are not available',
+          code: 'unavailable');
     }
 
     // Check if logic pack is enabled
@@ -312,7 +324,8 @@ class InAppPurchaseService extends ChangeNotifier {
       });
 
       final purchaseParam = PurchaseParam(productDetails: product);
-      final result = await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
+      final result =
+          await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
       return result;
     } catch (e) {
       debugPrint('Logic pack purchase failed: $e');
@@ -337,10 +350,6 @@ class InAppPurchaseService extends ChangeNotifier {
     return _purchaseLogicPack(ProductIds.cortexLogic, 'Cortex Pack');
   }
 
-  Future<bool> purchaseSynapseLogic() async {
-    return _purchaseLogicPack(ProductIds.synapseLogic, 'Synapse Pack');
-  }
-
   Future<bool> purchaseQuantumLogic() async {
     return _purchaseLogicPack(ProductIds.quantumLogic, 'Quantum Pack');
   }
@@ -348,7 +357,8 @@ class InAppPurchaseService extends ChangeNotifier {
   // Generic logic pack purchase method
   Future<bool> _purchaseLogicPack(String productId, String productName) async {
     if (!_isAvailable) {
-      throw PurchaseException('In-app purchases are not available', code: 'unavailable');
+      throw PurchaseException('In-app purchases are not available',
+          code: 'unavailable');
     }
 
     try {
@@ -363,7 +373,8 @@ class InAppPurchaseService extends ChangeNotifier {
       });
 
       final purchaseParam = PurchaseParam(productDetails: product);
-      final result = await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
+      final result =
+          await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
       return result;
     } catch (e) {
       debugPrint('$productName purchase failed: $e');
@@ -379,7 +390,8 @@ class InAppPurchaseService extends ChangeNotifier {
   // Purchase 250 tokens pack
   Future<bool> purchaseTokens250() async {
     if (!_isAvailable) {
-      throw PurchaseException('In-app purchases are not available', code: 'unavailable');
+      throw PurchaseException('In-app purchases are not available',
+          code: 'unavailable');
     }
 
     try {
@@ -394,7 +406,8 @@ class InAppPurchaseService extends ChangeNotifier {
       });
 
       final purchaseParam = PurchaseParam(productDetails: product);
-      final result = await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
+      final result =
+          await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
       return result;
     } catch (e) {
       debugPrint('250 tokens purchase failed: $e');
@@ -409,7 +422,8 @@ class InAppPurchaseService extends ChangeNotifier {
   // Purchase 600 tokens pack
   Future<bool> purchaseTokens600() async {
     if (!_isAvailable) {
-      throw PurchaseException('In-app purchases are not available', code: 'unavailable');
+      throw PurchaseException('In-app purchases are not available',
+          code: 'unavailable');
     }
 
     try {
@@ -424,7 +438,8 @@ class InAppPurchaseService extends ChangeNotifier {
       });
 
       final purchaseParam = PurchaseParam(productDetails: product);
-      final result = await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
+      final result =
+          await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
       return result;
     } catch (e) {
       debugPrint('600 tokens purchase failed: $e');
@@ -443,17 +458,17 @@ class InAppPurchaseService extends ChangeNotifier {
     try {
       // Use Firebase IAP service for server-side restore
       final result = await _firebaseIap.restoreEntitlements();
-      
+
       if (result != null) {
         await _recordTelemetry(IapTelemetryEvent.restoreSuccess, {
           'restoredCount': result['restoredCount'] ?? 0,
         });
-        
+
         // Refresh user data after restore
         await _loadUserData();
         return true;
       }
-      
+
       return false;
     } catch (e) {
       debugPrint('Restore entitlements failed: $e');
@@ -477,7 +492,7 @@ class InAppPurchaseService extends ChangeNotifier {
   // Platform-specific subscription management URLs (only if enabled)
   String getSubscriptionManagementUrl() {
     if (!_remoteConfig.manageLinksEnabled) return '';
-    
+
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return 'itms-apps://apps.apple.com/account/subscriptions';
     } else if (defaultTargetPlatform == TargetPlatform.android) {
@@ -488,7 +503,7 @@ class InAppPurchaseService extends ChangeNotifier {
 
   String getSubscriptionManagementLabel() {
     if (!_remoteConfig.manageLinksEnabled) return '';
-    
+
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return 'Manage in App Store';
     } else if (defaultTargetPlatform == TargetPlatform.android) {
@@ -496,7 +511,7 @@ class InAppPurchaseService extends ChangeNotifier {
     }
     return 'Manage Subscription';
   }
-  
+
   // Check if manage links are enabled
   bool get canManageSubscriptions => _remoteConfig.manageLinksEnabled;
 
@@ -510,7 +525,8 @@ class InAppPurchaseService extends ChangeNotifier {
   }
 
   // Helper: Record telemetry event
-  Future<void> _recordTelemetry(IapTelemetryEvent event, Map<String, dynamic> parameters) async {
+  Future<void> _recordTelemetry(
+      IapTelemetryEvent event, Map<String, dynamic> parameters) async {
     try {
       await _firebaseIap.recordTelemetryEvent(event, parameters);
     } catch (e) {
@@ -520,24 +536,25 @@ class InAppPurchaseService extends ChangeNotifier {
 
   // Get user's remaining credits
   int get remainingCredits => _currentUser?.credits ?? 0;
-  
+
   // Check if user has Pro subscription
   bool get isProUser {
     return false; // Pro Monthly removed
   }
-  
+
   // Get subscription renewal date
   DateTime? get renewalDate => _currentUser?.renewalDate;
-  
+
   // Stream user data changes
   Stream<FirebaseUser?> get userDataStream => _firebaseIap.streamUserData();
-  
+
   // Stream entitlement changes
-  Stream<UserEntitlement?> get entitlementStream => _firebaseIap.streamEntitlement();
+  Stream<UserEntitlement?> get entitlementStream =>
+      _firebaseIap.streamEntitlement();
 
   bool _hasIntroOffer(SubscriptionPlan plan) {
     if (!plan.hasIntroOffer) return false;
-    
+
     // Pro Monthly intro removed
     return false;
   }

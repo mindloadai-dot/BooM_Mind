@@ -203,22 +203,103 @@ class StudySet {
   }
 }
 
+enum DifficultyLevel { beginner, intermediate, advanced, expert }
+
+enum QuestionType {
+  multipleChoice,
+  trueFalse,
+  shortAnswer,
+  conceptualChallenge
+}
+
 class Flashcard {
   final String id;
   final String question;
   final String answer;
-  final DifficultyLevel difficulty;
-  final DateTime? lastReviewed;
-  final int reviewCount;
+  DifficultyLevel difficulty;
+  DateTime? lastReviewed;
+  int reviewCount;
+  int consecutiveCorrectAnswers;
+  QuestionType questionType;
 
   Flashcard({
     required this.id,
     required this.question,
     required this.answer,
-    required this.difficulty,
+    this.difficulty = DifficultyLevel.beginner,
     this.lastReviewed,
     this.reviewCount = 0,
+    this.consecutiveCorrectAnswers = 0,
+    this.questionType = QuestionType.shortAnswer,
   });
+
+  void updateDifficulty(bool wasCorrect) {
+    lastReviewed = DateTime.now();
+    reviewCount++;
+
+    if (wasCorrect) {
+      consecutiveCorrectAnswers++;
+
+      // Adaptive difficulty progression
+      if (consecutiveCorrectAnswers >= 3) {
+        switch (difficulty) {
+          case DifficultyLevel.beginner:
+            difficulty = DifficultyLevel.intermediate;
+            break;
+          case DifficultyLevel.intermediate:
+            difficulty = DifficultyLevel.advanced;
+            break;
+          case DifficultyLevel.advanced:
+            difficulty = DifficultyLevel.expert;
+            break;
+          case DifficultyLevel.expert:
+            // Maintain expert level
+            break;
+        }
+        consecutiveCorrectAnswers = 0;
+      }
+    } else {
+      consecutiveCorrectAnswers = 0;
+
+      // Difficulty regression
+      switch (difficulty) {
+        case DifficultyLevel.expert:
+          difficulty = DifficultyLevel.advanced;
+          break;
+        case DifficultyLevel.advanced:
+          difficulty = DifficultyLevel.intermediate;
+          break;
+        case DifficultyLevel.intermediate:
+          difficulty = DifficultyLevel.beginner;
+          break;
+        case DifficultyLevel.beginner:
+          // Maintain beginner level
+          break;
+      }
+    }
+  }
+
+  Flashcard copyWith({
+    String? id,
+    String? question,
+    String? answer,
+    DifficultyLevel? difficulty,
+    DateTime? lastReviewed,
+    int? reviewCount,
+    int? consecutiveCorrectAnswers,
+    QuestionType? questionType,
+  }) =>
+      Flashcard(
+        id: id ?? this.id,
+        question: question ?? this.question,
+        answer: answer ?? this.answer,
+        difficulty: difficulty ?? this.difficulty,
+        lastReviewed: lastReviewed ?? this.lastReviewed,
+        reviewCount: reviewCount ?? this.reviewCount,
+        consecutiveCorrectAnswers:
+            consecutiveCorrectAnswers ?? this.consecutiveCorrectAnswers,
+        questionType: questionType ?? this.questionType,
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -227,6 +308,8 @@ class Flashcard {
         'difficulty': difficulty.name,
         'lastReviewed': lastReviewed?.toIso8601String(),
         'reviewCount': reviewCount,
+        'consecutiveCorrectAnswers': consecutiveCorrectAnswers,
+        'questionType': questionType.name,
       };
 
   factory Flashcard.fromJson(Map<String, dynamic> json) => Flashcard(
@@ -239,23 +322,9 @@ class Flashcard {
             ? DateTime.parse(json['lastReviewed'])
             : null,
         reviewCount: json['reviewCount'] ?? 0,
-      );
-
-  Flashcard copyWith({
-    String? id,
-    String? question,
-    String? answer,
-    DifficultyLevel? difficulty,
-    DateTime? lastReviewed,
-    int? reviewCount,
-  }) =>
-      Flashcard(
-        id: id ?? this.id,
-        question: question ?? this.question,
-        answer: answer ?? this.answer,
-        difficulty: difficulty ?? this.difficulty,
-        lastReviewed: lastReviewed ?? this.lastReviewed,
-        reviewCount: reviewCount ?? this.reviewCount,
+        consecutiveCorrectAnswers: json['consecutiveCorrectAnswers'] ?? 0,
+        questionType: QuestionType.values
+            .firstWhere((e) => e.name == json['questionType']),
       );
 }
 
@@ -263,18 +332,33 @@ class Quiz {
   final String id;
   final String title;
   final List<QuizQuestion> questions;
-  final QuizType type;
+  final QuestionType type;
   final List<QuizResult> results;
   final DateTime createdDate;
+  final DifficultyLevel overallDifficulty;
 
   Quiz({
     required this.id,
     required this.title,
     required this.questions,
-    required this.type,
-    required this.results,
+    this.type = QuestionType.multipleChoice,
+    this.results = const [],
     required this.createdDate,
+    this.overallDifficulty = DifficultyLevel.intermediate,
   });
+
+  DifficultyLevel calculateOverallDifficulty() {
+    if (questions.isEmpty) return DifficultyLevel.beginner;
+
+    final avgDifficulty =
+        questions.map((q) => q.difficulty.index).reduce((a, b) => a + b) /
+            questions.length;
+
+    if (avgDifficulty < 1) return DifficultyLevel.beginner;
+    if (avgDifficulty < 2) return DifficultyLevel.intermediate;
+    if (avgDifficulty < 3) return DifficultyLevel.advanced;
+    return DifficultyLevel.expert;
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -283,6 +367,7 @@ class Quiz {
         'type': type.name,
         'results': results.map((r) => r.toJson()).toList(),
         'createdDate': createdDate.toIso8601String(),
+        'overallDifficulty': overallDifficulty.name,
       };
 
   factory Quiz.fromJson(Map<String, dynamic> json) => Quiz(
@@ -291,11 +376,13 @@ class Quiz {
         questions: (json['questions'] as List)
             .map((q) => QuizQuestion.fromJson(q))
             .toList(),
-        type: QuizType.values.firstWhere((e) => e.name == json['type']),
+        type: QuestionType.values.firstWhere((e) => e.name == json['type']),
         results: (json['results'] as List)
             .map((r) => QuizResult.fromJson(r))
             .toList(),
         createdDate: DateTime.parse(json['createdDate']),
+        overallDifficulty: DifficultyLevel.values
+            .firstWhere((e) => e.name == json['overallDifficulty']),
       );
 }
 
@@ -304,32 +391,59 @@ class QuizQuestion {
   final String question;
   final List<String> options;
   final String correctAnswer;
-  final int?
-      correctAnswerIndex; // Added for more precise correct answer tracking
-  final String? explanation; // Added for detailed explanations
-  final QuizType type;
-  final DifficultyLevel? difficulty; // Added difficulty level
+  final QuestionType type;
+  DifficultyLevel difficulty;
 
   QuizQuestion({
     required this.id,
     required this.question,
     required this.options,
     required this.correctAnswer,
-    this.correctAnswerIndex,
-    this.explanation,
-    required this.type,
-    this.difficulty,
+    this.type = QuestionType.multipleChoice,
+    this.difficulty = DifficultyLevel.intermediate,
   });
+
+  void adjustDifficulty(bool wasCorrect) {
+    if (wasCorrect) {
+      switch (difficulty) {
+        case DifficultyLevel.beginner:
+          difficulty = DifficultyLevel.intermediate;
+          break;
+        case DifficultyLevel.intermediate:
+          difficulty = DifficultyLevel.advanced;
+          break;
+        case DifficultyLevel.advanced:
+          difficulty = DifficultyLevel.expert;
+          break;
+        case DifficultyLevel.expert:
+          // Maintain expert level
+          break;
+      }
+    } else {
+      switch (difficulty) {
+        case DifficultyLevel.expert:
+          difficulty = DifficultyLevel.advanced;
+          break;
+        case DifficultyLevel.advanced:
+          difficulty = DifficultyLevel.intermediate;
+          break;
+        case DifficultyLevel.intermediate:
+          difficulty = DifficultyLevel.beginner;
+          break;
+        case DifficultyLevel.beginner:
+          // Maintain beginner level
+          break;
+      }
+    }
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'question': question,
         'options': options,
         'correctAnswer': correctAnswer,
-        'correctAnswerIndex': correctAnswerIndex,
-        'explanation': explanation,
         'type': type.name,
-        'difficulty': difficulty?.name,
+        'difficulty': difficulty.name,
       };
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) => QuizQuestion(
@@ -337,51 +451,42 @@ class QuizQuestion {
         question: json['question'],
         options: List<String>.from(json['options']),
         correctAnswer: json['correctAnswer'],
-        correctAnswerIndex: json['correctAnswerIndex'] as int?,
-        explanation: json['explanation']?.toString(),
-        type: QuizType.values.firstWhere((e) => e.name == json['type']),
-        difficulty: json['difficulty'] != null
-            ? DifficultyLevel.values
-                .firstWhere((e) => e.name == json['difficulty'])
-            : null,
+        type: QuestionType.values.firstWhere((e) => e.name == json['type']),
+        difficulty: DifficultyLevel.values
+            .firstWhere((e) => e.name == json['difficulty']),
       );
 }
 
 class QuizResult {
-  final String id;
-  final int score;
-  final int totalQuestions;
-  final Duration timeTaken;
-  final DateTime completedDate;
-  final List<String> incorrectAnswers;
+  final String questionId;
+  final bool wasCorrect;
+  final DateTime answeredAt;
+  final Duration? responseTime;
 
   QuizResult({
-    required this.id,
-    required this.score,
-    required this.totalQuestions,
-    required this.timeTaken,
-    required this.completedDate,
-    required this.incorrectAnswers,
+    required this.questionId,
+    required this.wasCorrect,
+    required this.answeredAt,
+    this.responseTime,
   });
 
-  double get percentage => (score / totalQuestions) * 100;
+  // Add percentage getter
+  double get percentage => wasCorrect ? 100.0 : 0.0;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'score': score,
-        'totalQuestions': totalQuestions,
-        'timeTaken': timeTaken.inMilliseconds,
-        'completedDate': completedDate.toIso8601String(),
-        'incorrectAnswers': incorrectAnswers,
+        'questionId': questionId,
+        'wasCorrect': wasCorrect,
+        'answeredAt': answeredAt.toIso8601String(),
+        'responseTime': responseTime?.inMilliseconds,
       };
 
   factory QuizResult.fromJson(Map<String, dynamic> json) => QuizResult(
-        id: json['id'],
-        score: json['score'],
-        totalQuestions: json['totalQuestions'],
-        timeTaken: Duration(milliseconds: json['timeTaken']),
-        completedDate: DateTime.parse(json['completedDate']),
-        incorrectAnswers: List<String>.from(json['incorrectAnswers']),
+        questionId: json['questionId'],
+        wasCorrect: json['wasCorrect'],
+        answeredAt: DateTime.parse(json['answeredAt']),
+        responseTime: json['responseTime'] != null
+            ? Duration(milliseconds: json['responseTime'])
+            : null,
       );
 }
 
@@ -448,10 +553,6 @@ class UserProgress {
   int get level => (totalXP / 1000).floor() + 1;
   int get xpToNextLevel => 1000 - (totalXP % 1000);
 }
-
-enum DifficultyLevel { easy, medium, hard }
-
-enum QuizType { multipleChoice, trueFalse, shortAnswer }
 
 enum StudySetType {
   quiz,

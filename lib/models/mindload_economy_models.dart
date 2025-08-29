@@ -8,9 +8,6 @@ enum MindloadTier {
   neuron,
   cortex,
   singularity,
-
-  // Legacy tiers (for backward compatibility during transition)
-  synapse, // Old tier name
 }
 
 // Extension methods for MindloadTier
@@ -27,8 +24,6 @@ extension MindloadTierExtension on MindloadTier {
         return 'Cortex';
       case MindloadTier.singularity:
         return 'Singularity';
-      case MindloadTier.synapse:
-        return 'Synapse';
     }
   }
 
@@ -44,8 +39,6 @@ extension MindloadTierExtension on MindloadTier {
         return 'Advanced AI-powered features';
       case MindloadTier.singularity:
         return 'Ultimate learning experience';
-      case MindloadTier.synapse:
-        return 'Legacy tier - upgrade recommended';
     }
   }
 
@@ -61,8 +54,6 @@ extension MindloadTierExtension on MindloadTier {
         return const Color(0xFF9C27B0);
       case MindloadTier.singularity:
         return const Color(0xFFFF9800);
-      case MindloadTier.synapse:
-        return const Color(0xFF4CAF50);
     }
   }
 }
@@ -169,22 +160,6 @@ class MindloadEconomyConfig {
       monthlyYoutubeIngests: 10,
       hasUltraAccess: true,
     ),
-
-    // Legacy tier configurations (for backward compatibility during transition)
-    MindloadTier.synapse: MindloadEconomyConfig(
-      tier: MindloadTier.synapse,
-      monthlyTokens: 500, // Convert old credits to tokens
-      monthlyExports: 10,
-      flashcardsPerToken: 50,
-      quizPerToken: 30,
-      pasteCharCaps: 500000,
-      pdfPageCaps: 15,
-      activeSetLimits: 15,
-      rolloverLimits: 100,
-      tierPrice: 6.99,
-      monthlyYoutubeIngests: 2,
-      hasUltraAccess: true,
-    ),
   };
 
   static MindloadEconomyConfig getConfig(MindloadTier tier) {
@@ -199,13 +174,6 @@ class MindloadEconomyConfig {
       tierConfigs[MindloadTier.neuron]!,
       tierConfigs[MindloadTier.cortex]!,
       tierConfigs[MindloadTier.singularity]!,
-    ];
-  }
-
-  // Get legacy tier configs
-  static List<MindloadEconomyConfig> getLegacyTiers() {
-    return [
-      tierConfigs[MindloadTier.synapse]!,
     ];
   }
 
@@ -298,8 +266,6 @@ class MindloadUserEconomy {
       case MindloadTier.cortex:
         return QueuePriority.priorityPlus;
       case MindloadTier.singularity:
-        return QueuePriority.priorityPlus;
-      case MindloadTier.synapse:
         return QueuePriority.priorityPlus;
     }
   }
@@ -533,7 +499,8 @@ class MindloadBudgetController {
     return MindloadBudgetController(
       monthlySpent: json['monthlySpent'] as double? ?? 0.0,
       monthlyLimit: json['monthlyLimit'] as double? ??
-          MindloadEconomyConfig.tierConfigs[MindloadTier.free]!.tokens * 10,
+          MindloadEconomyConfig.tierConfigs[MindloadTier.free]!.monthlyTokens *
+              10,
       state: BudgetState.values.firstWhere(
         (s) => s.name == json['state'],
         orElse: () => BudgetState.normal,
@@ -769,25 +736,6 @@ class TierUpgradeInfo {
         ];
       case MindloadTier.singularity:
         return []; // No upgrades from singularity
-      case MindloadTier.synapse:
-        return [
-          TierUpgradeInfo(
-            fromTier: MindloadTier.synapse,
-            toTier: MindloadTier.axon,
-            price: 4.99,
-            displayPrice: '\$4.99/month',
-            benefits: [
-              '120 tokens/month (vs 200)',
-              'Priority queue',
-              'Auto-retry',
-              '5 exports/month (vs 10)',
-              'Up to 10 PDF pages (vs 15)',
-              '10 active sets (vs 15)'
-            ],
-            cta: 'Upgrade to Axon',
-            accentColor: MindloadTier.axon.color,
-          ),
-        ];
     }
   }
 }

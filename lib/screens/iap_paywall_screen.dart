@@ -21,10 +21,13 @@ class IapPaywallScreen extends StatefulWidget {
   State<IapPaywallScreen> createState() => _IapPaywallScreenState();
 }
 
-class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProviderStateMixin {
+class _IapPaywallScreenState extends State<IapPaywallScreen>
+    with TickerProviderStateMixin {
   final InAppPurchaseService _purchaseService = InAppPurchaseService.instance;
-  final FirebaseRemoteConfigService _remoteConfig = FirebaseRemoteConfigService.instance;
-  final InternationalIapService _internationalIap = InternationalIapService.instance;
+  final FirebaseRemoteConfigService _remoteConfig =
+      FirebaseRemoteConfigService.instance;
+  final InternationalIapService _internationalIap =
+      InternationalIapService.instance;
 
   int _selectedPlanIndex = 0; // Default to Pro Monthly
   bool _isLoading = false;
@@ -74,7 +77,8 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
   void _recordPaywallView() async {
     try {
       // Record telemetry via Firebase IAP service directly
-      await FirebaseIapService.instance.recordTelemetryEvent(IapTelemetryEvent.paywallView, {
+      await FirebaseIapService.instance
+          .recordTelemetryEvent(IapTelemetryEvent.paywallView, {
         'trigger': widget.trigger,
         'timestamp': DateTime.now().toIso8601String(),
       });
@@ -85,9 +89,11 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
 
   void _recordPaywallExit(String action) async {
     if (_paywallStartTime != null) {
-      final timeSpent = DateTime.now().difference(_paywallStartTime!).inMilliseconds;
+      final timeSpent =
+          DateTime.now().difference(_paywallStartTime!).inMilliseconds;
       try {
-        await FirebaseIapService.instance.recordTelemetryEvent(IapTelemetryEvent.paywallView, {
+        await FirebaseIapService.instance
+            .recordTelemetryEvent(IapTelemetryEvent.paywallView, {
           'action': action,
           'timeSpentMs': timeSpent,
           'selectedPlan': _selectedPlanIndex,
@@ -100,7 +106,7 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
 
   void _onPopInvokedWithResult(bool didPop, Object? result) {
     if (didPop) return;
-    
+
     if (_showExitIntent) {
       Navigator.pop(context);
       return;
@@ -115,7 +121,7 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
   @override
   Widget build(BuildContext context) {
     final plans = _purchaseService.getAvailablePlans();
-    
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: _onPopInvokedWithResult,
@@ -123,7 +129,9 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
         body: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: _showExitIntent ? _buildExitIntentContent() : _buildMainContent(plans),
+            child: _showExitIntent
+                ? _buildExitIntentContent()
+                : _buildMainContent(plans),
           ),
         ),
       ),
@@ -138,7 +146,7 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
           end: Alignment.bottomCenter,
           colors: [
             Theme.of(context).colorScheme.surface,
-            Theme.of(context).colorScheme.surface.withValues(alpha:  0.8),
+            Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
           ],
         ),
       ),
@@ -150,11 +158,13 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
               alignment: Alignment.centerLeft,
               constraints: const BoxConstraints(maxWidth: 56, maxHeight: 56),
               child: IconButton(
-                icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
+                icon: Icon(Icons.close,
+                    color: Theme.of(context).colorScheme.onSurface),
                 onPressed: () {
                   _onPopInvokedWithResult(false, null);
                 },
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44, maxWidth: 48, maxHeight: 48),
+                constraints: const BoxConstraints(
+                    minWidth: 44, minHeight: 44, maxWidth: 48, maxHeight: 48),
                 padding: const EdgeInsets.all(8),
               ),
             ),
@@ -206,7 +216,10 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha:  0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3),
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -222,17 +235,20 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
         Text(
           'Unlock MindLoad Pro',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
         Text(
           'Supercharge your learning with unlimited AI-powered study tools',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.8),
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.8),
+              ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -250,10 +266,12 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
     ];
 
     return Column(
-      children: features.map((feature) => _buildFeatureItem(
-        feature['icon'] as IconData,
-        feature['text'] as String,
-      )).toList(),
+      children: features
+          .map((feature) => _buildFeatureItem(
+                feature['icon'] as IconData,
+                feature['text'] as String,
+              ))
+          .toList(),
     );
   }
 
@@ -267,7 +285,8 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Theme.of(context).colorScheme.primary.withValues(alpha:  0.2),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
             ),
             child: Icon(
               icon,
@@ -280,8 +299,8 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
             child: Text(
               text,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
             ),
           ),
         ],
@@ -296,9 +315,9 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
         Text(
           'Choose Your Plan',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -314,9 +333,9 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
   }
 
   Widget _buildPlanCard(SubscriptionPlan plan, int index, bool isSelected) {
-    final bool showIntro = plan.hasIntroOffer && 
-                          true; // No annual plans available
-    
+    final bool showIntro =
+        plan.hasIntroOffer && true; // No annual plans available
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -330,18 +349,21 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected 
+            color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline.withValues(alpha:  0.3),
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
-          color: isSelected 
-              ? Theme.of(context).colorScheme.primary.withValues(alpha:  0.1)
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
               : Theme.of(context).colorScheme.surfaceContainerHighest,
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha:  0.2),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.2),
                     blurRadius: 8,
                     spreadRadius: 1,
                   )
@@ -356,13 +378,16 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected 
+                color: isSelected
                     ? Theme.of(context).colorScheme.primary
                     : Colors.transparent,
                 border: Border.all(
-                  color: isSelected 
+                  color: isSelected
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outline.withValues(alpha:  0.5),
+                      : Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.5),
                   width: 2,
                 ),
               ),
@@ -383,25 +408,32 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
                     children: [
                       Text(
                         plan.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                       if (plan.badge != null) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: plan.accentColor,
+                            color: plan.color,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             plan.badge!,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ),
                       ],
@@ -409,21 +441,24 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    showIntro 
-                        ? plan.introDescription ?? plan.displayPrice
-                        : plan.displayPrice,
+                    showIntro
+                        ? plan.introDescription ?? plan.formattedMonthlyPrice
+                        : plan.formattedMonthlyPrice,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   if (showIntro) ...[
                     const SizedBox(height: 2),
                     Text(
-                      plan.subtitle,
+                      plan.description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.7),
-                      ),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
+                          ),
                     ),
                   ],
                 ],
@@ -444,7 +479,7 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
         borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha:  0.3),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -461,15 +496,18 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
                 Text(
                   'Need credits now?',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                 ),
                 Text(
                   'Get ${CreditQuotas.rolloverCap} credits instantly',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.8),
-                  ),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.8),
+                      ),
                 ),
               ],
             ),
@@ -491,7 +529,7 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
 
   Widget _buildActionButtons(List<SubscriptionPlan> plans) {
     final selectedPlan = plans[_selectedPlanIndex];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -500,12 +538,16 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
           child: SizedBox(
             height: 54,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () => _purchaseSubscription(selectedPlan),
+              onPressed:
+                  _isLoading ? null : () => _purchaseSubscription(selectedPlan),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 elevation: 8,
-                shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha:  0.3),
+                shadowColor: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -524,9 +566,9 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
                   : Text(
                       'Start Pro',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
             ),
           ),
@@ -537,9 +579,12 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
           child: Text(
             'Restore Purchases',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.8),
-              decoration: TextDecoration.underline,
-            ),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.8),
+                  decoration: TextDecoration.underline,
+                ),
           ),
         ),
         if (_purchaseService.canManageSubscriptions) ...[
@@ -549,9 +594,12 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
             child: Text(
               _purchaseService.getSubscriptionManagementLabel(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.6),
-                decoration: TextDecoration.underline,
-              ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
+                    decoration: TextDecoration.underline,
+                  ),
             ),
           ),
         ],
@@ -565,8 +613,11 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
         Text(
           'Auto-renew, cancel anytime in App Store/Google Play',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.6),
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
+              ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -578,9 +629,9 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
               child: Text(
                 'Privacy Policy',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  decoration: TextDecoration.underline,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
               ),
             ),
             Text(' | ', style: Theme.of(context).textTheme.bodySmall),
@@ -589,9 +640,9 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
               child: Text(
                 'Terms of Use',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  decoration: TextDecoration.underline,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
               ),
             ),
           ],
@@ -615,17 +666,20 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
           Text(
             'Wait! Don\'t miss out',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
             'Start with our intro offer for your first month of Pro features!',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.8),
-            ),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.8),
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -646,9 +700,9 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
               child: Text(
                 'Try Intro Offer',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ),
           ),
@@ -661,8 +715,11 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
             child: Text(
               'No thanks, maybe later',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.7),
-              ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.7),
+                  ),
             ),
           ),
         ],
@@ -680,7 +737,7 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
       if (success && mounted) {
         _recordPaywallExit('purchase_success');
         Navigator.pop(context, true);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Successfully subscribed to ${plan.title}!'),
@@ -692,7 +749,8 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Purchase failed. Please try again or contact support if the issue persists.'),
+            content: const Text(
+                'Purchase failed. Please try again or contact support if the issue persists.'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -716,7 +774,8 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully purchased ${CreditQuotas.rolloverCap} credits!'),
+            content: Text(
+                'Successfully purchased ${CreditQuotas.rolloverCap} credits!'),
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
@@ -725,7 +784,8 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Purchase failed. Please try again or contact support if the issue persists.'),
+            content: const Text(
+                'Purchase failed. Please try again or contact support if the issue persists.'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -749,10 +809,10 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success 
+            content: Text(success
                 ? 'Purchases restored successfully!'
                 : 'No purchases found to restore'),
-            backgroundColor: success 
+            backgroundColor: success
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
@@ -762,7 +822,8 @@ class _IapPaywallScreenState extends State<IapPaywallScreen> with TickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Restore failed. Please check your internet connection and try again.'),
+            content: const Text(
+                'Restore failed. Please check your internet connection and try again.'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

@@ -555,9 +555,26 @@ class StorageService extends ChangeNotifier {
 
   // Get storage stats (alias for compatibility)
   Map<String, dynamic> getStorageStats() {
-    final freeSpaceGB = _getFreeSpaceGB();
-    final currentBudgetMB =
-        StorageConfig.getCurrentBudgetMB(freeSpaceGB as int);
+    // Use default values for free space to avoid async issues
+    final freeSpaceGB = 10; // Default fallback
+    final currentBudgetMB = StorageConfig.getCurrentBudgetMB(freeSpaceGB);
+    final usagePercentage = _totals.getUsagePercentage(currentBudgetMB);
+
+    return {
+      'totalBytes': _totals.totalBytes,
+      'totalSets': _totals.totalSets,
+      'totalItems': _totals.totalItems,
+      'budgetMB': currentBudgetMB,
+      'usagePercentage': usagePercentage,
+      'isWarning': isStorageWarning,
+      'freeSpaceGB': freeSpaceGB,
+    };
+  }
+
+  // Get storage stats with async free space (for when async is needed)
+  Future<Map<String, dynamic>> getStorageStatsAsync() async {
+    final freeSpaceGB = await _getFreeSpaceGB();
+    final currentBudgetMB = StorageConfig.getCurrentBudgetMB(freeSpaceGB);
     final usagePercentage = _totals.getUsagePercentage(currentBudgetMB);
 
     return {

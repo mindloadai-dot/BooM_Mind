@@ -29,7 +29,8 @@ class AppCheckConfig {
         print('Production mode: Using production App Check providers');
         try {
           await FirebaseAppCheck.instance.activate(
-            webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+            webProvider:
+                ReCaptchaV3Provider('6LfGQoIqAAAAABfRlSGNXKGvlYl0_ZW5Hd6Ys5Bq'),
             androidProvider: AndroidProvider.playIntegrity,
             appleProvider: AppleProvider.deviceCheck,
           );

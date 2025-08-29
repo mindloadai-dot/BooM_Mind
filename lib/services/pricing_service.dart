@@ -16,12 +16,12 @@ class PricingService extends ChangeNotifier {
   static const String _kStarterPackPrice = 'pricing_starter_pack_usd';
   static const String _kTokens250Price = 'pricing_tokens_250_usd';
   static const String _kTokens600Price = 'pricing_tokens_600_usd';
-  
+
   // New MindLoad Starter Pack Remote Config Keys
   static const String _kSparkLogicPrice = 'pricing_spark_logic_usd';
   static const String _kNeuroLogicPrice = 'pricing_neuro_logic_usd';
   static const String _kCortexLogicPrice = 'pricing_cortex_logic_usd';
-  static const String _kSynapseLogicPrice = 'pricing_synapse_logic_usd';
+
   static const String _kQuantumLogicPrice = 'pricing_quantum_logic_usd';
 
   // Default prices (fallback when remote config is not available)
@@ -29,12 +29,12 @@ class PricingService extends ChangeNotifier {
   double _starterPackPrice = PricingConfig.logicPackPrice;
   double _tokens250Price = PricingConfig.tokens250Price;
   double _tokens600Price = PricingConfig.tokens600Price;
-  
+
   // New MindLoad Logic Pack prices
   double _sparkLogicPrice = PricingConfig.sparkLogicPrice;
   double _neuroLogicPrice = PricingConfig.neuroLogicPrice;
   double _cortexLogicPrice = PricingConfig.cortexLogicPrice;
-  double _synapseLogicPrice = PricingConfig.synapseLogicPrice;
+
   double _quantumLogicPrice = PricingConfig.quantumLogicPrice;
 
   // Public getters
@@ -42,18 +42,19 @@ class PricingService extends ChangeNotifier {
   double get starterPackPrice => _starterPackPrice;
   double get tokens250Price => _tokens250Price;
   double get tokens600Price => _tokens600Price;
-  
+
   // New MindLoad Logic Pack getters
   double get sparkLogicPrice => _sparkLogicPrice;
   double get neuroLogicPrice => _neuroLogicPrice;
   double get cortexLogicPrice => _cortexLogicPrice;
-  double get synapseLogicPrice => _synapseLogicPrice;
+
   double get quantumLogicPrice => _quantumLogicPrice;
 
   Future<void> initialize() async {
     try {
       // Load persisted overrides first (if any)
-      final saved = await StorageService.instance.getJsonData('pricing_overrides');
+      final saved =
+          await StorageService.instance.getJsonData('pricing_overrides');
       if (saved != null) {
         applyOverrides(saved, persist: false);
       }
@@ -62,31 +63,30 @@ class PricingService extends ChangeNotifier {
       try {
         final remoteConfig = FirebaseRemoteConfig.instance;
         await remoteConfig.fetchAndActivate();
-        
-            // Pro Monthly removed
-        
+
+        // Pro Monthly removed
+
         final starterPackRemote = remoteConfig.getDouble(_kStarterPackPrice);
         if (starterPackRemote > 0) _starterPackPrice = starterPackRemote;
-        
+
         final tokens250Remote = remoteConfig.getDouble(_kTokens250Price);
         if (tokens250Remote > 0) _tokens250Price = tokens250Remote;
-        
+
         final tokens600Remote = remoteConfig.getDouble(_kTokens600Price);
         if (tokens600Remote > 0) _tokens600Price = tokens600Remote;
-        
+
         // Fetch new MindLoad Logic Pack prices from Remote Config
         final sparkLogicRemote = remoteConfig.getDouble(_kSparkLogicPrice);
         if (sparkLogicRemote > 0) _sparkLogicPrice = sparkLogicRemote;
-        
+
         final neuroLogicRemote = remoteConfig.getDouble(_kNeuroLogicPrice);
         if (neuroLogicRemote > 0) _neuroLogicPrice = neuroLogicRemote;
-        
+
         final cortexLogicRemote = remoteConfig.getDouble(_kCortexLogicPrice);
         if (cortexLogicRemote > 0) _cortexLogicPrice = cortexLogicRemote;
-        
-        final synapseLogicRemote = remoteConfig.getDouble(_kSynapseLogicPrice);
-        if (synapseLogicRemote > 0) _synapseLogicPrice = synapseLogicRemote;
-        
+
+
+
         final quantumLogicRemote = remoteConfig.getDouble(_kQuantumLogicPrice);
         if (quantumLogicRemote > 0) _quantumLogicPrice = quantumLogicRemote;
       } catch (e) {
@@ -100,7 +100,8 @@ class PricingService extends ChangeNotifier {
   }
 
   /// Apply overrides programmatically (e.g., admin/dev panel) and optionally persist.
-  Future<void> applyOverrides(Map<String, dynamic> overrides, {bool persist = true}) async {
+  Future<void> applyOverrides(Map<String, dynamic> overrides,
+      {bool persist = true}) async {
     // Pro Monthly removed
     if (overrides.containsKey(_kStarterPackPrice)) {
       _starterPackPrice = (overrides[_kStarterPackPrice] as num).toDouble();
@@ -111,7 +112,7 @@ class PricingService extends ChangeNotifier {
     if (overrides.containsKey(_kTokens600Price)) {
       _tokens600Price = (overrides[_kTokens600Price] as num).toDouble();
     }
-    
+
     // Apply new MindLoad Logic Pack price overrides
     if (overrides.containsKey(_kSparkLogicPrice)) {
       _sparkLogicPrice = (overrides[_kSparkLogicPrice] as num).toDouble();
@@ -122,18 +123,15 @@ class PricingService extends ChangeNotifier {
     if (overrides.containsKey(_kCortexLogicPrice)) {
       _cortexLogicPrice = (overrides[_kCortexLogicPrice] as num).toDouble();
     }
-    if (overrides.containsKey(_kSynapseLogicPrice)) {
-      _synapseLogicPrice = (overrides[_kSynapseLogicPrice] as num).toDouble();
-    }
+    
     if (overrides.containsKey(_kQuantumLogicPrice)) {
       _quantumLogicPrice = (overrides[_kQuantumLogicPrice] as num).toDouble();
     }
 
     if (persist) {
-      await StorageService.instance.saveJsonData('pricing_overrides', overrides);
+      await StorageService.instance
+          .saveJsonData('pricing_overrides', overrides);
     }
     notifyListeners();
   }
 }
-
-

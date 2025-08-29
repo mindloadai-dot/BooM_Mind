@@ -20,7 +20,8 @@ class YouTubeTranscriptProcessor {
   final OpenAIService _openAIService = OpenAIService.instance;
   final LocalAIFallbackService _fallbackService =
       LocalAIFallbackService.instance;
-  final EnhancedStorageService _storageService = EnhancedStorageService.instance;
+  final EnhancedStorageService _storageService =
+      EnhancedStorageService.instance;
 
   /// Process YouTube video and create study materials with subtitle-based questions
   Future<StudySet?> processYouTubeVideo({
@@ -111,7 +112,7 @@ class YouTubeTranscriptProcessor {
             id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
             title: 'Quiz: ${preview.title}',
             questions: quizQuestions,
-            type: QuizType.multipleChoice,
+            type: QuestionType.multipleChoice,
             results: [],
             createdDate: DateTime.now(),
           ),
@@ -149,7 +150,7 @@ class YouTubeTranscriptProcessor {
     }
   }
 
-    /// Save transcript locally and retrieve content
+  /// Save transcript locally and retrieve content
   Future<String> _saveAndGetTranscriptLocally(
     String materialId,
     String videoId,
@@ -159,25 +160,27 @@ class YouTubeTranscriptProcessor {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final transcriptsDir = Directory('${directory.path}/youtube_transcripts');
-      
+
       // Ensure directory exists
       if (!await transcriptsDir.exists()) {
         await transcriptsDir.create(recursive: true);
-        debugPrint('📁 Created YouTube transcripts directory: ${transcriptsDir.path}');
+        debugPrint(
+            '📁 Created YouTube transcripts directory: ${transcriptsDir.path}');
       }
-      
+
       // Get transcript from YouTube service (this would be the actual transcript text)
       // For now, we'll create a placeholder - in real implementation, this would come from the ingest response
-      final transcriptText = 'Transcript for video: $title\nChannel: $channel\nVideo ID: $videoId\n\nThis is where the actual transcript content would be stored locally.';
-      
+      final transcriptText =
+          'Transcript for video: $title\nChannel: $channel\nVideo ID: $videoId\n\nThis is where the actual transcript content would be stored locally.';
+
       // Save transcript to local file
       final transcriptFile = File('${transcriptsDir.path}/$materialId.txt');
       await transcriptFile.writeAsString(transcriptText);
-      
+
       if (kDebugMode) {
         debugPrint('💾 Transcript saved locally: ${transcriptFile.path}');
       }
-      
+
       return transcriptText;
     } catch (e) {
       if (kDebugMode) {
@@ -191,8 +194,9 @@ class YouTubeTranscriptProcessor {
   Future<String> _getTranscriptContent(String materialId) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final transcriptFile = File('${directory.path}/youtube_transcripts/$materialId.txt');
-      
+      final transcriptFile =
+          File('${directory.path}/youtube_transcripts/$materialId.txt');
+
       if (!await transcriptFile.exists()) {
         throw Exception('Transcript file not found locally');
       }
@@ -275,8 +279,8 @@ Generate flashcards that test understanding of the video content, focusing on:
         // Use fallback service
         return _fallbackService.generateFlashcards(
           context,
-          count,
-          'mixed',
+          count: count,
+          targetDifficulty: DifficultyLevel.intermediate,
         );
       }
     } catch (e) {
@@ -368,7 +372,7 @@ Make questions directly reference the video content, such as:
           id: 'basic_${DateTime.now().millisecondsSinceEpoch}_$i',
           question: 'Complete this statement from the video: "$keyPhrase..."',
           answer: answer,
-          difficulty: DifficultyLevel.medium,
+          difficulty: DifficultyLevel.intermediate,
         ));
       }
     }
@@ -397,7 +401,7 @@ Make questions directly reference the video content, such as:
           'None of the above',
         ],
         correctAnswer: nextSegment.text.split('.').first,
-        type: QuizType.multipleChoice,
+        type: QuestionType.multipleChoice,
       ));
     }
 
@@ -408,7 +412,7 @@ Make questions directly reference the video content, such as:
   Future<void> _saveStudySetLocally(StudySet studySet, String userId) async {
     try {
       await _storageService.saveStudySet(studySet);
-      
+
       if (kDebugMode) {
         debugPrint('✅ Study set saved locally: ${studySet.id}');
       }
@@ -425,14 +429,14 @@ Make questions directly reference the video content, such as:
     try {
       // Check local storage for existing study sets with this video ID
       final allStudySets = _storageService.fullStudySets.values;
-      
+
       for (final studySet in allStudySets) {
-        if (studySet.metadata != null && 
+        if (studySet.metadata != null &&
             studySet.metadata!['videoId'] == videoId) {
           return true;
         }
       }
-      
+
       return false;
     } catch (e) {
       if (kDebugMode) {
@@ -447,20 +451,36 @@ Make questions directly reference the video content, such as:
     try {
       // Check local storage for existing study sets with this video ID
       final allStudySets = _storageService.fullStudySets.values;
-      
+
       for (final studySet in allStudySets) {
-        if (studySet.metadata != null && 
+        if (studySet.metadata != null &&
             studySet.metadata!['videoId'] == videoId) {
           return studySet;
         }
       }
-      
+
       return null;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Error getting existing study set: $e');
       }
       return null;
+    }
+  }
+
+  /// Parse difficulty string to enum
+  DifficultyLevel _parseDifficulty(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'beginner':
+        return DifficultyLevel.beginner;
+      case 'intermediate':
+        return DifficultyLevel.intermediate;
+      case 'advanced':
+        return DifficultyLevel.advanced;
+      case 'expert':
+        return DifficultyLevel.expert;
+      default:
+        return DifficultyLevel.intermediate;
     }
   }
 }

@@ -16,7 +16,7 @@
     "test-build": "node test-deploy.js"
   },
   "engines": {
-    "node": "20"
+    "node": ">=20"
   },
   "main": "lib/index.js",
   "dependencies": {
