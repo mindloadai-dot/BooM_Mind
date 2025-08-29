@@ -27,6 +27,8 @@ import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
+import 'package:mindload/services/advanced_flashcard_generator.dart';
+import 'package:mindload/models/advanced_study_models.dart';
 
 /// Create Screen - Demonstrates the complete credits economy integration
 ///
@@ -2207,30 +2209,42 @@ class _CreateScreenState extends State<CreateScreen> {
         print('❓ Generate quizzes: $_generateQuizzes ($_quizCount)');
       }
 
-      // Generate content using AI
-      List<Flashcard> flashcards = <Flashcard>[];
-      List<QuizQuestion> quizQuestions = <QuizQuestion>[];
+      // Generate content using Advanced AI system
+      final totalCardCount = (_generateFlashcards ? _flashcardCount : 0) +
+          (_generateQuizzes ? _quizCount : 0);
 
-      if (_generateFlashcards) {
-        if (kDebugMode) {
-          print('🃏 Starting flashcard generation...');
-        }
-        flashcards = await _generateAIFlashcards(
-            _contentController.text, _flashcardCount);
-        if (kDebugMode) {
-          print('🃏 Generated ${flashcards.length} flashcards');
-        }
+      if (kDebugMode) {
+        print('🧠 Starting advanced AI generation...');
+        print('📊 Total cards requested: $totalCardCount');
+        print('📝 Custom instructions: ${_instructionController.text}');
       }
 
-      if (_generateQuizzes) {
-        if (kDebugMode) {
-          print('❓ Starting quiz generation...');
-        }
-        quizQuestions =
-            await _generateAIQuizQuestions(_contentController.text, _quizCount);
-        if (kDebugMode) {
-          print('❓ Generated ${quizQuestions.length} quiz questions');
-        }
+      // Generate advanced flashcard set
+      final advancedSet = await _generateAdvancedStudySet(
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
+        cardCount: totalCardCount,
+        customInstructions: _instructionController.text.trim(),
+      );
+
+      // Convert to legacy format for compatibility
+      final flashcards = advancedSet.cards
+          .where((card) => _generateFlashcards)
+          .map((card) => card.toLegacyFlashcard())
+          .toList();
+
+      final quizQuestions = advancedSet.quiz?.questions
+              .where((q) => _generateQuizzes)
+              .map((q) => _convertAdvancedToQuizQuestion(q))
+              .toList() ??
+          <QuizQuestion>[];
+
+      if (kDebugMode) {
+        print('✅ Advanced generation complete');
+        print('🃏 Generated ${flashcards.length} flashcards');
+        print('❓ Generated ${quizQuestions.length} quiz questions');
+        print('📊 Bloom\'s mix: ${advancedSet.bloomMix}');
+        print('🎯 Difficulty: ${advancedSet.difficulty}');
       }
 
       // Create the study set with AI-generated content
@@ -2458,61 +2472,278 @@ class _CreateScreenState extends State<CreateScreen> {
     }
   }
 
-  /// Generate flashcards using AI
-  Future<List<Flashcard>> _generateAIFlashcards(
-      String content, int count) async {
+  /// Generate advanced study set using new Bloom's taxonomy system
+  Future<AdvancedStudySet> _generateAdvancedStudySet({
+    required String title,
+    required String content,
+    required int cardCount,
+    String? customInstructions,
+  }) async {
     try {
       if (kDebugMode) {
-        print('🤖 Generating $count AI flashcards...');
+        print('🧠 Generating advanced study set...');
+        print('📊 Card count: $cardCount');
+        print('📝 Custom instructions: ${customInstructions ?? 'None'}');
       }
 
-      final flashcards =
-          await OpenAIService.instance.generateFlashcardsFromContent(
+      // Determine difficulty based on content complexity and user preference
+      final difficulty = _calculateContentDifficulty(content);
+
+      // Determine audience based on content analysis
+      final audience = _determineAudience(content);
+
+      // Extract focus anchors from custom instructions
+      final focusAnchors = _extractFocusAnchors(customInstructions ?? '');
+
+      // Generate advanced flashcard set
+      final generationSchema = await AdvancedFlashcardGenerator.instance
+          .generateAdvancedFlashcardSet(
+        content: content,
+        setTitle: title,
+        cardCount: cardCount,
+        audience: audience,
+        priorKnowledge: 'medium', // Default to medium
+        difficulty: difficulty,
+        focusAnchors: focusAnchors,
+        scenarioPercentage: 0.4, // 40% scenario-based questions
+        maxRecallPercentage: 0.1, // Only 10% pure recall
+      );
+
+      // Convert to AdvancedStudySet
+      final advancedSet = AdvancedStudySet.fromGenerationSchema(
+        'study_${DateTime.now().millisecondsSinceEpoch}',
+        title,
         content,
-        count,
-        'medium', // Default difficulty
+        generationSchema,
       );
 
       if (kDebugMode) {
-        print('✅ Generated ${flashcards.length} AI flashcards');
+        print('✅ Advanced study set generated successfully');
+        print('📊 Cards: ${advancedSet.cards.length}');
+        print('🎯 Difficulty: ${advancedSet.difficulty}');
+        print('📈 Bloom distribution: ${advancedSet.bloomMix}');
+        print('🏷️ Tags: ${advancedSet.tags}');
       }
 
-      return flashcards;
+      return advancedSet;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ AI flashcard generation failed: $e');
+        print('❌ Advanced generation failed: $e');
+        print('📋 Falling back to legacy generation...');
       }
-      // Return empty list on failure
-      return <Flashcard>[];
+
+      // Fallback to legacy generation
+      return await _fallbackToLegacyGeneration(title, content, cardCount);
     }
   }
 
-  /// Generate quiz questions using AI
-  Future<List<QuizQuestion>> _generateAIQuizQuestions(
-      String content, int count) async {
-    try {
-      if (kDebugMode) {
-        print('🤖 Generating $count AI quiz questions...');
-      }
+  /// Calculate content difficulty based on complexity indicators
+  int _calculateContentDifficulty(String content) {
+    int difficulty = 3; // Start with intermediate
 
-      final quizQuestions =
-          await OpenAIService.instance.generateQuizQuestionsFromContent(
+    // Increase difficulty based on content indicators
+    if (content.contains(RegExp(r'\b(analyze|evaluate|synthesize|critique)\b',
+        caseSensitive: false))) {
+      difficulty += 2;
+    }
+    if (content.contains(RegExp(
+        r'\b(however|nevertheless|furthermore|consequently)\b',
+        caseSensitive: false))) {
+      difficulty += 1;
+    }
+    if (content.length > 5000) {
+      difficulty += 1;
+    }
+    if (content.split(RegExp(r'[.!?]')).length > 50) {
+      difficulty += 1;
+    }
+
+    // Decrease difficulty for simpler content
+    if (content.contains(RegExp(r'\b(simple|basic|introduction|beginner)\b',
+        caseSensitive: false))) {
+      difficulty -= 1;
+    }
+
+    return difficulty.clamp(1, 7);
+  }
+
+  /// Determine audience based on content analysis
+  String _determineAudience(String content) {
+    final contentLower = content.toLowerCase();
+
+    if (contentLower
+        .contains(RegExp(r'\b(phd|doctoral|research|dissertation)\b'))) {
+      return 'PhD';
+    }
+    if (contentLower
+        .contains(RegExp(r'\b(advanced|graduate|master|complex)\b'))) {
+      return 'advanced';
+    }
+    if (contentLower
+        .contains(RegExp(r'\b(intermediate|college|university)\b'))) {
+      return 'intermediate';
+    }
+    if (contentLower
+        .contains(RegExp(r'\b(basic|introduction|beginner|elementary)\b'))) {
+      return 'beginner';
+    }
+
+    // Default based on content length and complexity
+    if (content.length > 10000) return 'advanced';
+    if (content.length > 3000) return 'intermediate';
+    return 'beginner';
+  }
+
+  /// Extract focus anchors from custom instructions
+  List<String> _extractFocusAnchors(String instructions) {
+    if (instructions.isEmpty) return [];
+
+    final anchors = <String>[];
+    final words = instructions.split(RegExp(r'\W+'));
+
+    for (final word in words) {
+      if (word.length > 3 && !_isStopWord(word.toLowerCase())) {
+        anchors.add(word);
+        if (anchors.length >= 5) break; // Limit to 5 anchors
+      }
+    }
+
+    return anchors;
+  }
+
+  /// Check if word is a stop word
+  bool _isStopWord(String word) {
+    const stopWords = {
+      'the',
+      'a',
+      'an',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'of',
+      'with',
+      'by',
+      'is',
+      'are',
+      'was',
+      'were',
+      'about',
+      'focus',
+      'make',
+      'questions',
+      'quiz',
+      'study',
+      'from',
+      'this',
+      'that'
+    };
+    return stopWords.contains(word.toLowerCase());
+  }
+
+  /// Fallback to legacy generation if advanced generation fails
+  Future<AdvancedStudySet> _fallbackToLegacyGeneration(
+      String title, String content, int cardCount) async {
+    try {
+      // Use existing OpenAI service as fallback
+      final flashcards =
+          await OpenAIService.instance.generateFlashcardsFromContent(
         content,
-        count,
-        'medium', // Default difficulty
+        cardCount,
+        'medium',
       );
 
-      if (kDebugMode) {
-        print('✅ Generated ${quizQuestions.length} AI quiz questions');
-      }
+      // Convert legacy flashcards to advanced format
+      final advancedCards = flashcards
+          .map((f) => AdvancedFlashcard.fromLegacyFlashcard(f))
+          .toList();
 
-      return quizQuestions;
+      // Create basic advanced study set
+      return AdvancedStudySet(
+        id: 'study_${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        content: content,
+        sourceSummary: 'Generated using legacy fallback system',
+        tags: ['legacy_generation', 'fallback'],
+        difficulty: 3,
+        bloomMix: {'Apply': 0.6, 'Understand': 0.4},
+        cards: advancedCards,
+        createdDate: DateTime.now(),
+        lastStudied: DateTime.now(),
+      );
     } catch (e) {
       if (kDebugMode) {
-        print('❌ AI quiz generation failed: $e');
+        print('❌ Legacy fallback also failed: $e');
       }
-      // Return empty list on failure
-      return <QuizQuestion>[];
+
+      // Return empty study set as last resort
+      return AdvancedStudySet(
+        id: 'study_${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        content: content,
+        sourceSummary: 'Generation failed - empty set created',
+        tags: ['generation_failed'],
+        difficulty: 3,
+        bloomMix: {},
+        cards: [],
+        createdDate: DateTime.now(),
+        lastStudied: DateTime.now(),
+      );
+    }
+  }
+
+  /// Convert AdvancedFlashcard to QuizQuestion for compatibility
+  QuizQuestion _convertAdvancedToQuizQuestion(AdvancedFlashcard card) {
+    if (card.type == 'mcq' && card.choices.isNotEmpty) {
+      return QuizQuestion(
+        id: card.id,
+        question: card.question,
+        options: card.choices,
+        correctAnswer: card.choices[card.correctIndex],
+        type: QuestionType.multipleChoice,
+        difficulty: card.cardDifficulty == CardDifficulty.easy
+            ? DifficultyLevel.beginner
+            : card.cardDifficulty == CardDifficulty.hard
+                ? DifficultyLevel.advanced
+                : DifficultyLevel.intermediate,
+      );
+    } else if (card.type == 'truefalse') {
+      return QuizQuestion(
+        id: card.id,
+        question: card.question,
+        options: ['True', 'False'],
+        correctAnswer:
+            card.choices.isNotEmpty ? card.choices[card.correctIndex] : 'True',
+        type: QuestionType.trueFalse,
+        difficulty: card.cardDifficulty == CardDifficulty.easy
+            ? DifficultyLevel.beginner
+            : card.cardDifficulty == CardDifficulty.hard
+                ? DifficultyLevel.advanced
+                : DifficultyLevel.intermediate,
+      );
+    } else {
+      // Convert QA type to multiple choice
+      return QuizQuestion(
+        id: card.id,
+        question: card.question,
+        options: [
+          card.answerExplanation,
+          'Incorrect option 1',
+          'Incorrect option 2',
+          'Incorrect option 3'
+        ],
+        correctAnswer: card.answerExplanation,
+        type: QuestionType.multipleChoice,
+        difficulty: card.cardDifficulty == CardDifficulty.easy
+            ? DifficultyLevel.beginner
+            : card.cardDifficulty == CardDifficulty.hard
+                ? DifficultyLevel.advanced
+                : DifficultyLevel.intermediate,
+      );
     }
   }
 

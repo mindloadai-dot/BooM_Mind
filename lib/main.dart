@@ -271,6 +271,9 @@ class AppInitializerState extends State<AppInitializer> {
 
   Future<void> _initializeApp() async {
     try {
+      // Ensure video plays for exactly 4 seconds
+      final startTime = DateTime.now();
+
       // Initialize App Check if not in debug mode
       if (!kDebugMode || !AppCheckConfig.shouldSkipAppCheck) {
         setState(() => _statusMessage = 'Verifying app security...');
@@ -287,15 +290,29 @@ class AppInitializerState extends State<AppInitializer> {
             _statusMessage = 'Debug mode: Skipping security verification');
       }
 
-      // Wait a moment for user to see status
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Calculate remaining time to ensure total 4-second display
+      final elapsed = DateTime.now().difference(startTime);
+      final remainingTime = const Duration(seconds: 4) - elapsed;
+
+      if (remainingTime.inMilliseconds > 0) {
+        setState(() => _statusMessage = 'Loading MindLoad...');
+        await Future.delayed(remainingTime);
+      }
 
       setState(() => _isInitialized = true);
     } catch (e) {
+      // Even on error, ensure minimum 4-second display
+      final startTime = DateTime.now();
       setState(() {
         _hasError = true;
         _statusMessage = 'Initialization error: $e';
       });
+
+      final elapsed = DateTime.now().difference(startTime);
+      final remainingTime = const Duration(seconds: 4) - elapsed;
+      if (remainingTime.inMilliseconds > 0) {
+        await Future.delayed(remainingTime);
+      }
     }
   }
 

@@ -184,10 +184,22 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       end: 1,
     ).animate(_backgroundController);
 
-    // Start initial animations
-    _fadeController.forward();
-    _scaleController.forward();
-    _slideController.forward();
+    // Start initial animations with proper sequencing
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _fadeController.forward();
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _scaleController.forward();
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                _slideController.forward();
+              }
+            });
+          }
+        });
+      }
+    });
   }
 
   Future<void> _initializeVideo() async {
@@ -210,6 +222,15 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
 
   @override
   void dispose() {
+    // Stop all animations before disposing
+    _fadeController.stop();
+    _scaleController.stop();
+    _slideController.stop();
+    _rotateController.stop();
+    _pulseController.stop();
+    _backgroundController.stop();
+
+    // Dispose controllers
     _pageController.dispose();
     _videoController.dispose();
     _fadeController.dispose();
@@ -258,15 +279,29 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   }
 
   void _animatePageTransition(VoidCallback transition) {
+    if (_isTransitioning) return;
+
     setState(() => _isTransitioning = true);
     HapticFeedbackService().lightImpact();
 
+    // Reset animations to prevent conflicts
+    _fadeController.reset();
+    _scaleController.reset();
+    _slideController.reset();
+
     _fadeController.reverse().then((_) {
-      transition();
-      _fadeController.forward();
-      _scaleController.forward(from: 0.8);
-      _slideController.forward(from: 0);
-      setState(() => _isTransitioning = false);
+      if (mounted) {
+        transition();
+        // Ensure smooth forward animation
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (mounted) {
+            _fadeController.forward();
+            _scaleController.forward();
+            _slideController.forward();
+            setState(() => _isTransitioning = false);
+          }
+        });
+      }
     });
   }
 
@@ -280,15 +315,27 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   }
 
   Future<void> _completeOnboarding() async {
+    if (_isTransitioning) return;
+
+    setState(() => _isTransitioning = true);
     HapticFeedbackService().success();
 
-    final onboardingService =
-        Provider.of<UnifiedOnboardingService>(context, listen: false);
-    await onboardingService.markFeaturesExplained();
-    await onboardingService.completeOnboarding();
+    try {
+      final onboardingService =
+          Provider.of<UnifiedOnboardingService>(context, listen: false);
+      await onboardingService.markFeaturesExplained();
+      await onboardingService.completeOnboarding();
 
-    if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (mounted) {
+        // Add a small delay to ensure smooth transition
+        await Future.delayed(const Duration(milliseconds: 300));
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } catch (e) {
+      debugPrint('Error completing onboarding: $e');
+      if (mounted) {
+        setState(() => _isTransitioning = false);
+      }
     }
   }
 
@@ -370,10 +417,17 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                   child: PageView.builder(
                     controller: _pageController,
                     onPageChanged: (index) {
-                      setState(() => _currentPage = index);
-                      _fadeController.forward(from: 0);
-                      _scaleController.forward(from: 0.8);
-                      _slideController.forward(from: 0);
+                      if (mounted && !_isTransitioning) {
+                        setState(() => _currentPage = index);
+                        // Only trigger animations if not already transitioning
+                        if (!_fadeController.isAnimating &&
+                            !_scaleController.isAnimating &&
+                            !_slideController.isAnimating) {
+                          _fadeController.forward(from: 0);
+                          _scaleController.forward(from: 0.8);
+                          _slideController.forward(from: 0);
+                        }
+                      }
                     },
                     itemCount: _pages.length,
                     itemBuilder: (context, index) {

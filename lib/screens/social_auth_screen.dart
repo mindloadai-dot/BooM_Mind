@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/services/auth_service.dart';
@@ -90,52 +91,80 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
   }
 
   Future<void> _signInWithProvider(AuthProvider provider) async {
+    if (!mounted) return;
+    
     setState(() {
       _isSigningIn = true;
       _currentProvider = provider.name;
     });
 
     try {
+      print('🔐 Starting sign-in with ${provider.name}...');
+      
       final authService = Provider.of<AuthService>(context, listen: false);
       final firebaseClient = FirebaseClientService.instance;
       AuthUser? user;
 
       switch (provider) {
         case AuthProvider.google:
+          print('🔍 Attempting Google Sign-In...');
           // Try Firebase client first, fallback to existing auth service
           if (firebaseClient.isInitialized) {
-            final result = await firebaseClient.signInWithGoogle();
-            if (result.success) {
-              _navigateToHome();
-              return;
+            try {
+              final result = await firebaseClient.signInWithGoogle();
+              if (result.success) {
+                print('✅ Google Sign-In successful via Firebase client');
+                _navigateToHome();
+                return;
+              }
+            } catch (e) {
+              print('⚠️ Firebase client Google Sign-In failed, trying auth service: $e');
             }
           }
           user = await authService.signInWithGoogle();
           break;
         case AuthProvider.apple:
+          print('🍎 Attempting Apple Sign-In...');
+          // Check if Apple Sign-In is available on this platform
+          if (!Platform.isIOS && !Platform.isMacOS) {
+            throw Exception('Apple Sign-In is only available on iOS and macOS');
+          }
+          
           // Try Firebase client first, fallback to existing auth service
           if (firebaseClient.isInitialized) {
-            final result = await firebaseClient.signInWithApple();
-            if (result.success) {
-              _navigateToHome();
-              return;
+            try {
+              final result = await firebaseClient.signInWithApple();
+              if (result.success) {
+                print('✅ Apple Sign-In successful via Firebase client');
+                _navigateToHome();
+                return;
+              }
+            } catch (e) {
+              print('⚠️ Firebase client Apple Sign-In failed, trying auth service: $e');
             }
           }
           user = await authService.signInWithApple();
           break;
         case AuthProvider.microsoft:
+          print('🔷 Attempting Microsoft Sign-In...');
           user = await authService.signInWithMicrosoft();
           break;
         case AuthProvider.email:
           // This is handled by the email form
           break;
         case AuthProvider.local:
+          print('🔧 Attempting local admin sign-in...');
           // Try biometric authentication with Firebase client
           if (firebaseClient.isInitialized) {
-            final result = await firebaseClient.signInWithBiometrics();
-            if (result.success) {
-              _navigateToHome();
-              return;
+            try {
+              final result = await firebaseClient.signInWithBiometrics();
+              if (result.success) {
+                print('✅ Biometric Sign-In successful via Firebase client');
+                _navigateToHome();
+                return;
+              }
+            } catch (e) {
+              print('⚠️ Firebase client biometric Sign-In failed, trying auth service: $e');
             }
           }
           user = await authService.signInAsAdminTest();
@@ -143,11 +172,28 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
       }
 
       if (user != null && mounted) {
+        print('✅ Sign-in successful for user: ${user.email}');
         _navigateToHome();
+      } else {
+        print('❌ Sign-in failed: No user returned');
+        if (mounted) {
+          _showErrorDialog('Sign-in failed. Please try again.');
+        }
+      }
+    } on UnsupportedError catch (e) {
+      print('❌ Unsupported operation: $e');
+      if (mounted) {
+        _showErrorDialog(e.message ?? 'Unsupported operation');
       }
     } catch (e) {
+      print('❌ Sign-in error with ${provider.name}: $e');
       if (mounted) {
-        _showErrorDialog(e.toString());
+        // Clean up the error message for user display
+        String errorMessage = e.toString();
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring(11);
+        }
+        _showErrorDialog(errorMessage);
       }
     } finally {
       if (mounted) {

@@ -81,7 +81,11 @@ class MindLoadNotificationService {
         requestBadgePermission: true,
         requestSoundPermission: true,
         requestCriticalPermission: false, // Don't request critical by default
-        requestProvisionalPermission: true, // Allow provisional notifications
+        requestProvisionalPermission:
+            false, // Set to false initially, request manually
+        defaultPresentAlert: true,
+        defaultPresentSound: true,
+        defaultPresentBadge: true,
         notificationCategories: [
           // Study Reminders Category
           DarwinNotificationCategory(
@@ -111,7 +115,8 @@ class MindLoadNotificationService {
           DarwinNotificationCategory(
             'mindload_achievements',
             actions: <DarwinNotificationAction>[
-              DarwinNotificationAction.plain('view_achievement', 'View Achievement'),
+              DarwinNotificationAction.plain(
+                  'view_achievement', 'View Achievement'),
               DarwinNotificationAction.plain('share', 'Share'),
             ],
           ),
@@ -367,17 +372,35 @@ class MindLoadNotificationService {
       if (Platform.isIOS) {
         debugPrint('🍎 Requesting iOS notification permissions...');
 
-        // iOS permissions through plugin
+        // iOS permissions through plugin - use the correct method
         final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
 
         if (iosPlugin != null) {
+          // Check if permissions are already granted using checkPermissions
+          try {
+            final settings = await iosPlugin.checkPermissions();
+            debugPrint(
+                '🍎 Current iOS settings: Alert=${settings?.isAlertEnabled}, Badge=${settings?.isBadgeEnabled}, Sound=${settings?.isSoundEnabled}');
+
+            if ((settings?.isAlertEnabled ?? false) ||
+                (settings?.isBadgeEnabled ?? false) ||
+                (settings?.isSoundEnabled ?? false)) {
+              debugPrint('🍎 iOS permissions already granted');
+              return true;
+            }
+          } catch (e) {
+            debugPrint(
+                '🍎 checkPermissions not available, proceeding with request: $e');
+          }
+
+          // Request permissions if not already granted
           final result = await iosPlugin.requestPermissions(
             alert: true,
             badge: true,
             sound: true,
             critical: false, // Don't request critical by default
-            provisional: true, // Allow provisional notifications
+            provisional: false, // Request explicit permission, not provisional
           );
 
           debugPrint('🍎 iOS permissions result: $result');
@@ -424,24 +447,43 @@ class MindLoadNotificationService {
   static Future<bool> _hasPermissions() async {
     try {
       if (Platform.isIOS) {
-        // Check iOS permissions - use checkPermissions instead of requestPermissions
+        // For iOS, we need a different approach since checkPermissions might not be available
+        // in older versions of the plugin
         final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
 
         if (iosPlugin != null) {
           try {
-            // For iOS, we'll use a simple approach - just try to request permissions
-            // with all false to check current status
-            final result = await iosPlugin.requestPermissions(
-              alert: false,
-              badge: false,
-              sound: false,
-            );
-            debugPrint('🍎 iOS permission check result: $result');
-            return result ?? true; // Default to true if null
+            // Use checkPermissions which is the available method
+            final settings = await iosPlugin.checkPermissions();
+            debugPrint(
+                '🍎 iOS notification settings: Alert=${settings?.isAlertEnabled}, Badge=${settings?.isBadgeEnabled}, Sound=${settings?.isSoundEnabled}');
+
+            // Check if any notifications are enabled
+            final isAuthorized = (settings?.isAlertEnabled ?? false) ||
+                (settings?.isBadgeEnabled ?? false) ||
+                (settings?.isSoundEnabled ?? false);
+
+            debugPrint('🍎 iOS notifications authorized: $isAuthorized');
+            return isAuthorized;
           } catch (e) {
-            debugPrint('🍎 iOS permission check failed, assuming granted: $e');
-            return true; // Assume granted if check fails
+            // If getNotificationSettings is not available, fall back to permission_handler
+            debugPrint(
+                '🍎 getNotificationSettings not available, using permission_handler: $e');
+          }
+
+          // Fallback: Use permission_handler for iOS as well
+          try {
+            final status = await Permission.notification.status;
+            debugPrint('🍎 iOS notification permission via handler: $status');
+            return status == PermissionStatus.granted ||
+                status ==
+                    PermissionStatus
+                        .provisional; // iOS can have provisional permission
+          } catch (e) {
+            debugPrint('🍎 Permission handler check failed: $e');
+            // If all else fails, assume we need to request permissions
+            return false;
           }
         }
       } else if (Platform.isAndroid) {
@@ -475,7 +517,8 @@ class MindLoadNotificationService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        categoryIdentifier: 'mindload_notifications', // Use general category by default
+        categoryIdentifier:
+            'mindload_notifications', // Use general category by default
       ),
     );
   }
@@ -619,7 +662,8 @@ class MindLoadNotificationService {
       );
 
       _scheduledHashes.add(hash);
-      debugPrint('✅ $categoryId notification scheduled for: ${when.toString()}');
+      debugPrint(
+          '✅ $categoryId notification scheduled for: ${when.toString()}');
     } catch (e) {
       debugPrint('❌ Failed to schedule $categoryId notification: $e');
     }
@@ -673,6 +717,53 @@ class MindLoadNotificationService {
     } catch (e, stackTrace) {
       debugPrint('❌ Failed to send $categoryId notification: $e');
       debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  /// Test iOS notification permissions and functionality
+  static Future<void> testIOSPermissions() async {
+    if (!Platform.isIOS) {
+      debugPrint('⚠️ This test is for iOS only');
+      return;
+    }
+
+    debugPrint('🍎 Starting iOS notification test...');
+
+    try {
+      // Check current permission status using permission_handler
+      final status = await Permission.notification.status;
+      debugPrint('🍎 Current permission status: $status');
+
+      if (status == PermissionStatus.denied ||
+          status == PermissionStatus.restricted) {
+        debugPrint('❌ Notifications are denied or restricted');
+        debugPrint(
+            '📱 Please go to Settings > Notifications > Mindload and enable notifications');
+        return;
+      }
+
+      if (status == PermissionStatus.permanentlyDenied) {
+        debugPrint('❌ Notifications are permanently denied');
+        debugPrint('📱 Opening app settings...');
+        await openAppSettings();
+        return;
+      }
+
+      if (status != PermissionStatus.granted &&
+          status != PermissionStatus.provisional) {
+        debugPrint('🔔 Requesting notification permissions...');
+        final result = await Permission.notification.request();
+        debugPrint('🍎 Permission request result: $result');
+      }
+
+      // Now try to send a test notification
+      debugPrint('📤 Sending test notification...');
+      await MindLoadNotificationService.scheduleInstant(
+          '🍎 iOS Test', 'Notifications are working on iOS!');
+
+      debugPrint('✅ iOS notification test complete');
+    } catch (e) {
+      debugPrint('❌ iOS test failed: $e');
     }
   }
 }

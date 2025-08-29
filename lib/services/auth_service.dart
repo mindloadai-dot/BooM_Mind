@@ -151,34 +151,100 @@ class AuthService extends ChangeNotifier {
 
   /// Google Sign-In
   /// - Web: uses Firebase popup
-  /// - Mobile/Desktop: uses google_sign_in to obtain tokens, then Firebase credential
+  /// - Mobile/Desktop: uses Firebase OAuth provider with better error handling
   Future<AuthUser?> signInWithGoogle() async {
     try {
+      if (kDebugMode) {
+        debugPrint('🔍 Starting Google Sign-In...');
+      }
+
       if (kIsWeb) {
+        if (kDebugMode) {
+          debugPrint('🌐 Web Google Sign-In via popup...');
+        }
         final provider = GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        
         final cred = await _firebaseAuth.signInWithPopup(provider);
         final user = cred.user;
-        if (user == null) return null;
+        
+        if (user == null) {
+          throw Exception('Failed to get user from Google Sign-In');
+        }
+        
         _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
         await _saveUserData();
         notifyListeners();
+
+        if (kDebugMode) {
+          debugPrint('✅ Web Google Sign-In successful for user: ${user.email}');
+        }
+        
         return _currentUser;
       }
 
       // Mobile/Desktop via Firebase OAuth provider
+      if (kDebugMode) {
+        debugPrint('📱 Mobile Google Sign-In via Firebase OAuth...');
+      }
+      
       final provider = GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // Add iOS-specific parameters to prevent crashes
+      if (Platform.isIOS) {
+        provider.setCustomParameters({
+          'prompt': 'select_account',
+        });
+      }
+
       final cred = await _firebaseAuth.signInWithProvider(provider);
       final user = cred.user;
-      if (user == null) return null;
+      
+      if (user == null) {
+        throw Exception('Failed to get user from Google Sign-In');
+      }
+      
       _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
       await _saveUserData();
       notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('✅ Mobile Google Sign-In successful for user: ${user.email}');
+      }
+      
       return _currentUser;
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('Google sign-in failed: ${e.code}');
+        debugPrint('❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
       }
-      throw Exception(e.message ?? 'Google sign-in failed');
+      
+      // Handle specific error codes
+      switch (e.code) {
+        case 'account-exists-with-different-credential':
+          throw Exception('An account already exists with a different sign-in method');
+        case 'invalid-credential':
+          throw Exception('Invalid Google credentials');
+        case 'operation-not-allowed':
+          throw Exception('Google Sign-In is not enabled');
+        case 'user-disabled':
+          throw Exception('This account has been disabled');
+        case 'user-not-found':
+          throw Exception('No account found with this email');
+        case 'wrong-password':
+          throw Exception('Invalid password');
+        case 'network-request-failed':
+          throw Exception('Network error. Please check your connection');
+        default:
+          throw Exception(e.message ?? 'Google sign-in failed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Unexpected Google Sign-In error: $e');
+      }
+      throw Exception('Google Sign-In failed: ${e.toString()}');
     }
   }
 
@@ -188,32 +254,88 @@ class AuthService extends ChangeNotifier {
       throw UnsupportedError('Apple Sign-In is only available on iOS/macOS');
     }
     try {
+      if (kDebugMode) {
+        debugPrint('🍎 Starting Apple Sign-In...');
+      }
+
+      // Check if Apple Sign-In is available
+      final isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        throw Exception('Apple Sign-In is not available on this device');
+      }
+
       final rawNonce = _generateNonce();
       final nonce = _sha256ofString(rawNonce);
+      
+      if (kDebugMode) {
+        debugPrint('🍎 Requesting Apple ID credential...');
+      }
+
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
         nonce: nonce,
+        webAuthenticationOptions: WebAuthenticationOptions(
+          clientId: 'com.cogniflow.mindload', // Use your actual bundle ID
+          redirectUri: Uri.parse('https://mindload.app/auth/apple'), // Use your actual redirect URI
+        ),
       );
+
+      if (kDebugMode) {
+        debugPrint('🍎 Apple credential received, creating Firebase credential...');
+      }
+
+      // Validate that we received the required tokens
+      if (appleCredential.identityToken == null) {
+        throw Exception('Failed to get Apple ID token');
+      }
+
       final oAuth = OAuthProvider('apple.com');
       final credential = oAuth.credential(
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
       );
+
+      if (kDebugMode) {
+        debugPrint('🍎 Signing in with Firebase...');
+      }
+
       final cred = await _firebaseAuth.signInWithCredential(credential);
       final user = cred.user;
-      if (user == null) return null;
+      
+      if (user == null) {
+        throw Exception('Failed to create Firebase user from Apple credential');
+      }
+
       _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.apple);
       await _saveUserData();
       notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('✅ Apple Sign-In successful for user: ${user.email}');
+      }
+
       return _currentUser;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Apple Sign-In authorization error: ${e.code} - ${e.message}');
+      }
+      if (e.code == AuthorizationErrorCode.canceled) {
+        throw Exception('Apple Sign-In was canceled by user');
+      }
+      throw Exception('Apple Sign-In authorization failed: ${e.message}');
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('Apple sign-in failed: ${e.code}');
+        debugPrint('❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
       }
       throw Exception(e.message ?? 'Apple sign-in failed');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Unexpected Apple Sign-In error: $e');
+      }
+      throw Exception('Apple Sign-In failed: ${e.toString()}');
     }
   }
 
