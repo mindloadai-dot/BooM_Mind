@@ -1680,6 +1680,11 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: tokens.primary, width: 2),
             ),
+            suffixIcon: IconButton(
+              icon: Icon(Icons.save, color: tokens.primary),
+              onPressed: () => _saveNickname(),
+              tooltip: 'Save nickname',
+            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -1694,6 +1699,25 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             }
             return null;
           },
+          onFieldSubmitted: (_) => _saveNickname(),
+          textInputAction: TextInputAction.done,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _saveNickname,
+            icon: Icon(Icons.save, size: 18),
+            label: Text('Save Nickname'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: tokens.primary,
+              foregroundColor: tokens.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -2893,6 +2917,63 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Save nickname from profile dialog
+  Future<void> _saveNickname() async {
+    try {
+      final nickname = _nicknameController.text.trim();
+      if (nickname.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Please enter a nickname'),
+              backgroundColor: context.tokens.error,
+            ),
+          );
+        }
+        return;
+      }
+      
+      if (nickname.length < 2 || nickname.length > 24) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Nickname must be 2-24 characters'),
+              backgroundColor: context.tokens.error,
+            ),
+          );
+        }
+        return;
+      }
+
+      final userProfile = UserProfileService.instance;
+      await userProfile.updateNickname(nickname);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Nickname saved successfully! 👤'),
+            backgroundColor: context.tokens.success,
+          ),
+        );
+      }
+      
+      // Add haptic feedback
+      HapticFeedbackService().success();
+      
+      debugPrint('✅ Nickname saved from profile dialog: $nickname');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save nickname: $e'),
+            backgroundColor: context.tokens.error,
+          ),
+        );
+      }
+      debugPrint('❌ Failed to save nickname: $e');
     }
   }
 

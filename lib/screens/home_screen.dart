@@ -31,6 +31,7 @@ import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
 import 'package:mindload/services/notification_test_service.dart';
+import 'package:mindload/services/user_profile_service.dart';
 
 import 'package:mindload/screens/create_screen.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
@@ -2400,6 +2401,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     debugPrint(
                         '💰 Current tier: ${economyService.currentTier.displayName}');
                     break;
+                  case 'nickname_test':
+                    // Test nickname system
+                    final userProfile = UserProfileService.instance;
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Nickname: ${userProfile.displayName} | Greeting: ${userProfile.personalizedGreeting}'),
+                          backgroundColor: tokens.success,
+                        ),
+                      );
+                    }
+                    debugPrint('👤 Nickname System Status:');
+                    debugPrint('👤 Has nickname: ${userProfile.hasNickname}');
+                    debugPrint('👤 Current nickname: ${userProfile.nickname}');
+                    debugPrint('👤 Display name: ${userProfile.displayName}');
+                    debugPrint('👤 Personalized greeting: ${userProfile.personalizedGreeting}');
+                    break;
                   case 'settings':
                     Navigator.push(
                       context,
@@ -2451,6 +2469,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 12),
                       Text(
                         'Test Token System',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'nickname_test',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_pin, color: tokens.accent, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Test Nickname System',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
                     ],
@@ -2681,37 +2712,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(height: 16),
                     ],
 
-                    // Modern header with title and stats
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'My Study Sets',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(
-                                      color: tokens.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 24,
-                                    ),
+                    // Modern header with personalized greeting and stats
+                    Consumer<UserProfileService>(
+                      builder: (context, userProfile, child) {
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userProfile.personalizedGreeting,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                          color: tokens.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 24,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${_filteredStudySets.length} study sets',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: tokens.textSecondary,
+                                        ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_filteredStudySets.length} sets',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: tokens.textSecondary,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
+                            ),
                         const SizedBox(width: 16),
                         _buildUsageIndicator(
                           economyService,
@@ -2720,7 +2753,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           economyService.userEconomy?.monthlyQuota ?? 0,
                           tokens.primary,
                         ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 16),
