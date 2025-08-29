@@ -81,13 +81,53 @@ class MindLoadNotificationService {
         requestBadgePermission: true,
         requestSoundPermission: true,
         requestCriticalPermission: false, // Don't request critical by default
-        requestProvisionalPermission: true, // Allow provisional as fallback
+        requestProvisionalPermission: true, // Allow provisional notifications
         notificationCategories: [
+          // Study Reminders Category
           DarwinNotificationCategory(
-            'mindload_local',
+            'mindload_study_reminders',
             actions: <DarwinNotificationAction>[
-              DarwinNotificationAction.plain('open', 'Open App'),
+              DarwinNotificationAction.plain('start_study', 'Start Studying'),
+              DarwinNotificationAction.plain('postpone', 'Postpone 30 min'),
+            ],
+          ),
+          // Pop Quiz Category
+          DarwinNotificationCategory(
+            'mindload_pop_quiz',
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain('take_quiz', 'Take Quiz'),
+              DarwinNotificationAction.plain('skip', 'Skip'),
+            ],
+          ),
+          // Deadlines Category
+          DarwinNotificationCategory(
+            'mindload_deadlines',
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain('view_deadline', 'View Details'),
+              DarwinNotificationAction.plain('set_reminder', 'Set Reminder'),
+            ],
+          ),
+          // Achievements Category
+          DarwinNotificationCategory(
+            'mindload_achievements',
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain('view_achievement', 'View Achievement'),
+              DarwinNotificationAction.plain('share', 'Share'),
+            ],
+          ),
+          // Promotions Category
+          DarwinNotificationCategory(
+            'mindload_promotions',
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain('view_offer', 'View Offer'),
               DarwinNotificationAction.plain('dismiss', 'Dismiss'),
+            ],
+          ),
+          // General Category
+          DarwinNotificationCategory(
+            'mindload_notifications',
+            actions: <DarwinNotificationAction>[
+              DarwinNotificationAction.plain('open_app', 'Open App'),
             ],
           ),
         ],
@@ -435,7 +475,7 @@ class MindLoadNotificationService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        categoryIdentifier: 'mindload_local',
+        categoryIdentifier: 'mindload_notifications', // Use general category by default
       ),
     );
   }
@@ -468,5 +508,171 @@ class MindLoadNotificationService {
   static String _generateHash(String title, String body, String date) {
     final bytes = utf8.encode('$title|$body|$date');
     return sha256.convert(bytes).toString();
+  }
+
+  /// Schedule a study reminder notification with iOS-specific category
+  static Future<void> scheduleStudyReminder(
+    DateTime when,
+    String title,
+    String body, {
+    String? payload,
+  }) async {
+    await _scheduleWithCategory(
+      when,
+      title,
+      body,
+      'mindload_study_reminders',
+      payload: payload,
+    );
+  }
+
+  /// Schedule a quiz notification with iOS-specific category
+  static Future<void> scheduleQuizNotification(
+    DateTime when,
+    String title,
+    String body, {
+    String? payload,
+  }) async {
+    await _scheduleWithCategory(
+      when,
+      title,
+      body,
+      'mindload_pop_quiz',
+      payload: payload,
+    );
+  }
+
+  /// Schedule an achievement notification with iOS-specific category
+  static Future<void> scheduleAchievementNotification(
+    String title,
+    String body, {
+    String? payload,
+  }) async {
+    await _scheduleInstantWithCategory(
+      title,
+      body,
+      'mindload_achievements',
+      payload: payload,
+    );
+  }
+
+  /// Schedule with specific category for iOS
+  static Future<void> _scheduleWithCategory(
+    DateTime when,
+    String title,
+    String body,
+    String categoryId, {
+    String? payload,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+
+    if (when.isBefore(DateTime.now())) {
+      debugPrint('⚠️ Cannot schedule notification in the past');
+      return;
+    }
+
+    try {
+      final hasPermission = await _hasPermissions();
+      if (!hasPermission) {
+        debugPrint('⚠️ No notification permissions');
+        return;
+      }
+
+      final hash = _generateHash(title, body, when.toIso8601String());
+      if (_scheduledHashes.contains(hash)) {
+        debugPrint('⚠️ Duplicate notification prevented');
+        return;
+      }
+
+      final scheduledDate = tz.TZDateTime.from(when, tz.local);
+      final id = hash.hashCode.abs() % 2147483647;
+
+      final details = NotificationDetails(
+        android: const AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDesc,
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          categoryIdentifier: categoryId, // Use specific category
+        ),
+      );
+
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        details,
+        payload: payload,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+
+      _scheduledHashes.add(hash);
+      debugPrint('✅ $categoryId notification scheduled for: ${when.toString()}');
+    } catch (e) {
+      debugPrint('❌ Failed to schedule $categoryId notification: $e');
+    }
+  }
+
+  /// Schedule instant notification with specific category for iOS
+  static Future<void> _scheduleInstantWithCategory(
+    String title,
+    String body,
+    String categoryId, {
+    String? payload,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+
+    try {
+      final hasPermission = await _hasPermissions();
+      if (!hasPermission) {
+        final granted = await _requestPermissions();
+        if (!granted) {
+          debugPrint('❌ Notification permissions denied');
+          return;
+        }
+      }
+
+      final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      final details = NotificationDetails(
+        android: const AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDesc,
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          categoryIdentifier: categoryId, // Use specific category
+        ),
+      );
+
+      await _plugin.show(id, title, body, details, payload: payload);
+
+      debugPrint('✅ $categoryId instant notification sent: "$title"');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Failed to send $categoryId notification: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
   }
 }
