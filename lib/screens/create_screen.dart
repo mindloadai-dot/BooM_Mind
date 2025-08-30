@@ -23,7 +23,7 @@ import 'package:mindload/widgets/youtube_preview_card.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:mindload/services/enhanced_storage_service.dart';
-import 'package:mindload/services/openai_service.dart';
+import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
@@ -2649,13 +2649,19 @@ class _CreateScreenState extends State<CreateScreen> {
   Future<AdvancedStudySet> _fallbackToLegacyGeneration(
       String title, String content, int cardCount) async {
     try {
-      // Use existing OpenAI service as fallback
-      final flashcards =
-          await OpenAIService.instance.generateFlashcardsFromContent(
-        content,
-        cardCount,
-        'medium',
+      // Use EnhancedAIService for robust generation
+      final enhancedResult = await EnhancedAIService.instance.generateStudyMaterials(
+        content: content,
+        flashcardCount: cardCount,
+        quizCount: 0,
+        difficulty: 'medium',
       );
+      
+      if (!enhancedResult.isSuccess) {
+        throw Exception('Failed to generate content: ${enhancedResult.errorMessage}');
+      }
+      
+      final flashcards = enhancedResult.flashcards;
 
       // Convert legacy flashcards to advanced format
       final advancedCards = flashcards

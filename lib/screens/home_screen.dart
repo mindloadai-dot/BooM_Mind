@@ -7,7 +7,6 @@ import 'package:mindload/models/study_data.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 
-import 'package:mindload/services/openai_service.dart';
 import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/document_processor.dart';
 
@@ -679,8 +678,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   children: [
                     Icon(Icons.check_circle, color: tokens.onPrimary),
                     const SizedBox(width: Spacing.sm),
-                    Text(
-                        'Document extracted successfully! Generating study materials...'),
+                    Expanded(
+                      child: Text(
+                        'Document extracted successfully! Generating study materials...',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 backgroundColor: tokens.success,
@@ -1194,69 +1197,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           } else {
             debugPrint(
                 '❌ Enhanced AI generation failed: ${enhancedResult.errorMessage}');
-            // Fallback to original service
-            if (flashcardCount > 0) {
-              debugPrint('Adding flashcard generation to futures');
-              futures.add(OpenAIService.instance.generateFlashcardsFromContent(
-                  content, flashcardCount, 'standard'));
-            }
-
-            if (quizCount > 0) {
-              debugPrint('Adding quiz generation to futures');
-              futures.add(OpenAIService.instance
-                  .generateQuizQuestionsFromContent(
-                      content, quizCount, 'standard'));
-            }
+            // AI generation failed - we'll create an empty study set
+            aiGenerationSucceeded = false;
           }
         } catch (e) {
           debugPrint('❌ Enhanced AI service failed: $e');
-          // Fallback to original service
-          if (flashcardCount > 0) {
-            debugPrint('Adding flashcard generation to futures');
-            futures.add(OpenAIService.instance.generateFlashcardsFromContent(
-                content, flashcardCount, 'standard'));
-          }
-
-          if (quizCount > 0) {
-            debugPrint('Adding quiz generation to futures');
-            futures.add(OpenAIService.instance.generateQuizQuestionsFromContent(
-                content, quizCount, 'standard'));
-          }
-        }
-
-        // Only process futures if enhanced AI failed and we're using fallback
-        if (futures.isNotEmpty) {
-          debugPrint(
-              'Waiting for ${futures.length} AI generation futures to complete');
-          final results = await Future.wait(futures);
-          debugPrint('AI generation completed with ${results.length} results');
-
-          int resultIndex = 0;
-          if (flashcardCount > 0) {
-            debugPrint('Processing flashcard results at index $resultIndex');
-            flashcards = results[resultIndex] as List<Flashcard>;
-            debugPrint('Generated ${flashcards.length} flashcards');
-            // Trim to requested count
-            if (flashcards.length > flashcardCount) {
-              flashcards = flashcards.take(flashcardCount).toList();
-            }
-            resultIndex++;
-          }
-
-          if (quizCount > 0) {
-            debugPrint('Processing quiz results at index $resultIndex');
-            final quizQuestions = results[resultIndex] as List<QuizQuestion>;
-            debugPrint('Generated ${quizQuestions.length} quiz questions');
-            // Create a quiz from the questions
-            quiz = Quiz(
-              id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
-              title: 'Quiz for $title',
-              type: QuestionType.multipleChoice,
-              questions: quizQuestions,
-              results: [],
-              createdDate: DateTime.now(),
-            );
-          }
+          // AI generation failed - we'll create an empty study set
+          aiGenerationSucceeded = false;
         }
 
         // Check if we actually got content
@@ -1787,7 +1734,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               Icon(Icons.check_circle, color: tokens.onPrimary),
               const SizedBox(width: Spacing.sm),
-              Text('Notification settings updated'),
+              Expanded(
+                child: Text(
+                  'Notification settings updated',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           backgroundColor: tokens.primary,
@@ -1855,7 +1807,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Icon(Icons.check_circle, color: tokens.onPrimary),
                 const SizedBox(width: Spacing.sm),
-                Text('Flashcards PDF exported successfully!'),
+                Expanded(
+                  child: Text(
+                    'Flashcards PDF exported successfully!',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             backgroundColor: tokens.success,
@@ -1933,7 +1890,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Icon(Icons.check_circle, color: tokens.onPrimary),
                 const SizedBox(width: Spacing.sm),
-                Text('Quiz PDF exported successfully!'),
+                Expanded(
+                  child: Text(
+                    'Quiz PDF exported successfully!',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             backgroundColor: tokens.success,
@@ -2081,7 +2043,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               Icon(Icons.check_circle, color: tokens.onPrimary),
               const SizedBox(width: Spacing.sm),
-              Text('Study set deleted successfully'),
+              Expanded(
+                child: Text(
+                  'Study set deleted successfully',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           backgroundColor: tokens.primary,
@@ -2201,7 +2168,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               Icon(Icons.check_circle, color: tokens.onPrimary),
               const SizedBox(width: Spacing.sm),
-              Text('Study set renamed successfully'),
+              Expanded(
+                child: Text(
+                  'Study set renamed successfully',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           backgroundColor: tokens.primary,
@@ -2251,7 +2223,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(width: Spacing.md),
-              Text('Refreshing study set with AI...'),
+              Expanded(
+                child: Text(
+                  'Refreshing study set with AI...',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           backgroundColor: tokens.primary,
@@ -2270,12 +2247,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Strong haptic feedback to indicate AI processing start
       HapticFeedbackService().heavyImpact();
 
-      // Generate new flashcards and quizzes using the original content
-      final newFlashcards = await OpenAIService.instance
-          .generateFlashcardsFromContent(
-              studySet.content, flashcardCount, 'intermediate');
-      final newQuizQuestions = await OpenAIService.instance
-          .generateQuizQuestions(studySet.content, quizCount, 'intermediate');
+      // Generate new flashcards and quizzes using the original content (different from existing)
+      final enhancedResult =
+          await EnhancedAIService.instance.generateAdditionalStudyMaterials(
+        content: studySet.content,
+        flashcardCount: flashcardCount,
+        quizCount: quizCount,
+        difficulty: 'intermediate',
+        existingFlashcards: studySet.flashcards,
+        existingQuizQuestions:
+            studySet.quizzes.expand((q) => q.questions).toList(),
+      );
+
+      if (!enhancedResult.isSuccess) {
+        throw Exception(
+            'Failed to generate new content: ${enhancedResult.errorMessage}');
+      }
+
+      final newFlashcards = enhancedResult.flashcards;
+      final newQuizQuestions = enhancedResult.quizQuestions;
 
       // Credits are already managed by MindloadEconomyService
 

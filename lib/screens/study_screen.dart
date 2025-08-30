@@ -8,7 +8,7 @@ import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/pdf_export_models.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
 // Removed import: study_set_notification_service - service removed
-import 'package:mindload/services/openai_service.dart';
+import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/accessible_components.dart';
 import 'package:mindload/services/telemetry_service.dart';
@@ -786,7 +786,9 @@ class _StudyScreenState extends State<StudyScreen>
   }
 
   Future<void> _refreshStudySet() async {
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
 
     try {
       // Show loading indicator
@@ -815,17 +817,22 @@ class _StudyScreenState extends State<StudyScreen>
         ),
       );
 
-      // Import OpenAI service and subscription service
-      final openAIService = OpenAIService.instance;
+      // Use EnhancedAIService for robust generation
+      final enhancedResult =
+          await EnhancedAIService.instance.generateStudyMaterials(
+        content: _currentStudySet.content,
+        flashcardCount: 10,
+        quizCount: 10,
+        difficulty: 'intermediate',
+      );
 
-      // Strong haptic feedback to indicate AI processing start
-      HapticFeedbackService().heavyImpact();
+      if (!enhancedResult.isSuccess) {
+        throw Exception(
+            'Failed to generate new content: ${enhancedResult.errorMessage}');
+      }
 
-      // Generate new flashcards and quizzes using the original content
-      final newFlashcards = await openAIService
-          .generateFlashcardsFromContent(_currentStudySet.content, 10, 'intermediate');
-              final newQuizQuestions =
-            await openAIService.generateQuizQuestions(_currentStudySet.content, 10, 'intermediate');
+      final newFlashcards = enhancedResult.flashcards;
+      final newQuizQuestions = enhancedResult.quizQuestions;
 
       // Create a Quiz from the quiz questions
       final newQuiz = Quiz(
@@ -846,15 +853,17 @@ class _StudyScreenState extends State<StudyScreen>
 
       await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
 
-      setState(() {
-        _currentStudySet = updatedStudySet;
-        // Reset current positions
-        _currentCardIndex = 0;
-        _showAnswer = false;
-        _currentQuiz = null;
-        _showResults = false;
-        _isAnswerRevealed = false;
-      });
+      if (mounted) {
+        setState(() {
+          _currentStudySet = updatedStudySet;
+          // Reset current positions
+          _currentCardIndex = 0;
+          _showAnswer = false;
+          _currentQuiz = null;
+          _showResults = false;
+          _isAnswerRevealed = false;
+        });
+      }
 
       // Hide loading and show success
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -881,7 +890,9 @@ class _StudyScreenState extends State<StudyScreen>
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       _showErrorSnackBar('Failed to refresh study set: ${e.toString()}');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -1116,7 +1127,9 @@ class _StudyScreenState extends State<StudyScreen>
       return;
     }
 
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
 
     try {
       // Show loading indicator
@@ -1151,39 +1164,37 @@ class _StudyScreenState extends State<StudyScreen>
         throw Exception('Failed to consume credits for generation');
       }
 
-      final openAIService = OpenAIService.instance;
-      List<Flashcard> newFlashcards = <Flashcard>[];
-      List<Quiz> newQuizzes = <Quiz>[];
+      // Use EnhancedAIService for generating additional content that's different from existing
+      final enhancedResult =
+          await EnhancedAIService.instance.generateAdditionalStudyMaterials(
+        content: _currentStudySet.content,
+        flashcardCount: type == StudySetType.quiz ? 0 : flashcardCount,
+        quizCount: type == StudySetType.flashcards ? 0 : quizCount,
+        difficulty: 'intermediate',
+        existingFlashcards: _currentStudySet.flashcards,
+        existingQuizQuestions:
+            _currentStudySet.quizzes.expand((q) => q.questions).toList(),
+      );
 
-      // Strong haptic feedback to indicate AI processing start
-      HapticFeedbackService().heavyImpact();
-
-      // Generate new content based on type
-      if (type == StudySetType.flashcards || type == StudySetType.both) {
-        newFlashcards = await openAIService.generateFlashcardsFromContent(
-          _currentStudySet.content,
-          flashcardCount,
-          'intermediate',
-        );
+      if (!enhancedResult.isSuccess) {
+        throw Exception(
+            'Failed to generate additional content: ${enhancedResult.errorMessage}');
       }
 
-      if (type == StudySetType.quiz || type == StudySetType.both) {
-        final newQuizQuestions = await openAIService.generateQuizQuestions(
-          _currentStudySet.content,
-          quizCount,
-          'intermediate',
+      List<Flashcard> newFlashcards = enhancedResult.flashcards;
+      List<Quiz> newQuizzes = <Quiz>[];
+
+      // Create quiz from quiz questions if any were generated
+      if (enhancedResult.quizQuestions.isNotEmpty) {
+        final newQuiz = Quiz(
+          id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
+          title: '${_currentStudySet.title} Quiz',
+          questions: enhancedResult.quizQuestions,
+          type: QuestionType.multipleChoice,
+          results: [],
+          createdDate: DateTime.now(),
         );
-        if (newQuizQuestions.isNotEmpty) {
-          final newQuiz = Quiz(
-            id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
-            title: '${_currentStudySet.title} Quiz',
-            questions: newQuizQuestions,
-            type: QuestionType.multipleChoice,
-            results: [],
-            createdDate: DateTime.now(),
-          );
-          newQuizzes.add(newQuiz);
-        }
+        newQuizzes.add(newQuiz);
       }
 
       // Add new content to existing study set
@@ -1201,13 +1212,15 @@ class _StudyScreenState extends State<StudyScreen>
 
       await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
 
-      setState(() {
-        _currentStudySet = updatedStudySet;
-        // Reset states if needed
-        if (_currentCardIndex >= updatedFlashcards.length) {
-          _currentCardIndex = 0;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _currentStudySet = updatedStudySet;
+          // Reset states if needed
+          if (_currentCardIndex >= updatedFlashcards.length) {
+            _currentCardIndex = 0;
+          }
+        });
+      }
 
       // Haptic feedback for successful AI generation completion
       HapticFeedbackService().success();
@@ -1242,7 +1255,9 @@ class _StudyScreenState extends State<StudyScreen>
       _showErrorSnackBar(
           'Failed to generate additional content: ${e.toString()}');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

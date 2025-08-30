@@ -11,7 +11,7 @@ class YouTubeUtils {
 
     // Primary regex pattern for common YouTube URL formats
     final rx = RegExp(
-      r'(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})',
+      r'(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:\?|&|$)',
       caseSensitive: false,
     );
 
@@ -23,13 +23,17 @@ class YouTubeUtils {
       final uri = Uri.parse(cleanInput);
       if (uri.host.contains('youtube') &&
           uri.queryParameters['v']?.length == 11) {
-        return uri.queryParameters['v'];
+        final videoId = uri.queryParameters['v']!;
+        // Additional validation to ensure it's a proper YouTube video ID
+        if (_looksLikeYouTubeId(videoId)) {
+          return videoId;
+        }
       }
 
       // Handle youtu.be URLs with query parameters
       if (uri.host == 'youtu.be' && uri.pathSegments.isNotEmpty) {
         final pathSegment = uri.pathSegments.first;
-        if (pathSegment.length == 11) {
+        if (pathSegment.length == 11 && _looksLikeYouTubeId(pathSegment)) {
           return pathSegment;
         }
       }
@@ -64,15 +68,18 @@ class YouTubeUtils {
     final shortsMatch = shortsRx.firstMatch(cleanInput);
     if (shortsMatch != null) return shortsMatch.group(1);
 
-    // Final fallback - try to extract any 11-character alphanumeric string
-    // that might be a video ID (less strict but more permissive)
-    final fallbackRx = RegExp(r'[A-Za-z0-9_-]{11}');
-    final fallbackMatch = fallbackRx.firstMatch(cleanInput);
-    if (fallbackMatch != null) {
-      final potentialId = fallbackMatch.group(0)!;
-      // Validate it looks like a YouTube ID
-      if (_looksLikeYouTubeId(potentialId)) {
-        return potentialId;
+    // Final fallback - only try to extract if the input contains YouTube domain
+    // This prevents false positives from random text
+    if (cleanInput.toLowerCase().contains('youtube.com') || 
+        cleanInput.toLowerCase().contains('youtu.be')) {
+      final fallbackRx = RegExp(r'[A-Za-z0-9_-]{11}');
+      final fallbackMatch = fallbackRx.firstMatch(cleanInput);
+      if (fallbackMatch != null) {
+        final potentialId = fallbackMatch.group(0)!;
+        // Validate it looks like a YouTube ID
+        if (_looksLikeYouTubeId(potentialId)) {
+          return potentialId;
+        }
       }
     }
 
@@ -98,10 +105,12 @@ class YouTubeUtils {
 
     // Check if it contains mostly alphanumeric characters
     final alphanumericCount = RegExp(r'[A-Za-z0-9]').allMatches(id).length;
+    final letterCount = RegExp(r'[A-Za-z]').allMatches(id).length;
     final specialCharCount = RegExp(r'[_-]').allMatches(id).length;
 
     // Should be mostly alphanumeric with few special characters
-    return alphanumericCount >= 8 && specialCharCount <= 3;
+    // AND should contain at least some letters (YouTube IDs typically have letters)
+    return alphanumericCount >= 8 && specialCharCount <= 3 && letterCount >= 2;
   }
 
   /// Generate YouTube thumbnail URL with fallback quality options

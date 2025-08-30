@@ -177,16 +177,19 @@ class EnhancedAIService {
     String? promptEnhancement,
   }) async {
     try {
-      debugPrint('🚀 Attempting OpenAI generation...');
+      debugPrint('🚀 Enhanced AI: Attempting OpenAI generation...');
 
       // Ensure authentication
       await _ensureAuthentication();
+      debugPrint('✅ Enhanced AI: Authentication ensured');
 
       // Get tokens
       final appCheckToken = await _getAppCheckToken();
       final idToken = await _getIdToken();
+      debugPrint('✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
 
       // Generate flashcards
+      debugPrint('🔍 Enhanced AI: Calling generateFlashcards Cloud Function...');
       final flashcardCallable = _functions.httpsCallable('generateFlashcards');
       final flashcardResult = await flashcardCallable.call({
         'content': content,
@@ -194,8 +197,13 @@ class EnhancedAIService {
         'difficulty': difficulty,
         'appCheckToken': appCheckToken,
       });
+      debugPrint('✅ Enhanced AI: Flashcard Cloud Function call successful');
+
+      debugPrint('🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
+      debugPrint('🔍 Enhanced AI: Flashcard result data: ${flashcardResult.data}');
 
       // Generate quiz questions
+      debugPrint('🔍 Enhanced AI: Calling generateQuiz Cloud Function...');
       final quizCallable = _functions.httpsCallable('generateQuiz');
       final quizResult = await quizCallable.call({
         'content': content,
@@ -203,12 +211,18 @@ class EnhancedAIService {
         'difficulty': difficulty,
         'appCheckToken': appCheckToken,
       });
+      debugPrint('✅ Enhanced AI: Quiz Cloud Function call successful');
+
+      debugPrint('🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
+      debugPrint('🔍 Enhanced AI: Quiz result data: ${quizResult.data}');
 
       // Parse results
+      debugPrint('🔍 Enhanced AI: Parsing flashcards...');
       final flashcards = _parseFlashcards(flashcardResult.data);
+      debugPrint('🔍 Enhanced AI: Parsing quiz questions...');
       final quizQuestions = _parseQuizQuestions(quizResult.data);
 
-      debugPrint('✅ OpenAI generation successful');
+      debugPrint('✅ Enhanced AI: OpenAI generation successful');
       return GenerationResult(
         flashcards: flashcards,
         quizQuestions: quizQuestions,
@@ -216,7 +230,7 @@ class EnhancedAIService {
         processingTimeMs: 0,
       );
     } catch (e) {
-      debugPrint('❌ OpenAI generation failed: $e');
+      debugPrint('❌ Enhanced AI: OpenAI generation failed: $e');
       return GenerationResult(
         flashcards: [],
         quizQuestions: [],
@@ -426,10 +440,18 @@ class EnhancedAIService {
       debugPrint('🔍 Parsing flashcards data type: ${data.runtimeType}');
       debugPrint('🔍 Parsing flashcards data: $data');
 
-      // Convert Map<Object?, Object?> to Map<String, dynamic> if needed
+      // Handle different data types more robustly
       Map<String, dynamic> parsedData;
       if (data is Map<Object?, Object?>) {
-        parsedData = Map<String, dynamic>.from(data);
+        // Convert Map<Object?, Object?> to Map<String, dynamic> safely
+        parsedData = <String, dynamic>{};
+        data.forEach((key, value) {
+          if (key is String) {
+            parsedData[key] = value;
+          } else {
+            parsedData[key.toString()] = value;
+          }
+        });
         debugPrint('✅ Converted Map<Object?, Object?> to Map<String, dynamic>');
       } else if (data is Map<String, dynamic>) {
         parsedData = data;
@@ -486,10 +508,18 @@ class EnhancedAIService {
       debugPrint('🔍 Parsing quiz questions data type: ${data.runtimeType}');
       debugPrint('🔍 Parsing quiz questions data: $data');
 
-      // Convert Map<Object?, Object?> to Map<String, dynamic> if needed
+      // Handle different data types more robustly
       Map<String, dynamic> parsedData;
       if (data is Map<Object?, Object?>) {
-        parsedData = Map<String, dynamic>.from(data);
+        // Convert Map<Object?, Object?> to Map<String, dynamic> safely
+        parsedData = <String, dynamic>{};
+        data.forEach((key, value) {
+          if (key is String) {
+            parsedData[key] = value;
+          } else {
+            parsedData[key.toString()] = value;
+          }
+        });
         debugPrint('✅ Converted Map<Object?, Object?> to Map<String, dynamic>');
       } else if (data is Map<String, dynamic>) {
         parsedData = data;
@@ -743,6 +773,302 @@ class EnhancedAIService {
           'An example or illustration',
           'A conclusion or summary',
         ];
+    }
+  }
+
+  /// Generate additional study materials that are different from existing ones
+  Future<GenerationResult> generateAdditionalStudyMaterials({
+    required String content,
+    required int flashcardCount,
+    required int quizCount,
+    required String difficulty,
+    required List<Flashcard> existingFlashcards,
+    required List<QuizQuestion> existingQuizQuestions,
+    String? questionTypes,
+    String? cognitiveLevel,
+    String? realWorldContext,
+    String? challengeLevel,
+    String? learningStyle,
+    String? promptEnhancement,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      // Create enhanced prompt that ensures different content
+      final enhancedContent = _createEnhancedPromptForAdditionalContent(
+        content: content,
+        existingFlashcards: existingFlashcards,
+        existingQuizQuestions: existingQuizQuestions,
+        difficulty: difficulty,
+        questionTypes: questionTypes,
+        cognitiveLevel: cognitiveLevel,
+        realWorldContext: realWorldContext,
+        challengeLevel: challengeLevel,
+        learningStyle: learningStyle,
+        promptEnhancement: promptEnhancement,
+      );
+
+      // Try OpenAI with enhanced prompt
+      final openaiResult = await _tryOpenAIGenerationWithEnhancedPrompt(
+        enhancedContent: enhancedContent,
+        flashcardCount: flashcardCount,
+        quizCount: quizCount,
+        difficulty: difficulty,
+      );
+
+      if (openaiResult.isSuccess) {
+        stopwatch.stop();
+        return GenerationResult(
+          flashcards: openaiResult.flashcards,
+          quizQuestions: openaiResult.quizQuestions,
+          method: GenerationMethod.openai,
+          processingTimeMs: stopwatch.elapsedMilliseconds,
+        );
+      }
+
+      // Try Local AI fallback with enhanced prompt
+      final localResult = await _tryLocalAIGenerationWithEnhancedPrompt(
+        enhancedContent: enhancedContent,
+        flashcardCount: flashcardCount,
+        quizCount: quizCount,
+        difficulty: difficulty,
+      );
+
+      if (localResult.isSuccess) {
+        stopwatch.stop();
+        return GenerationResult(
+          flashcards: localResult.flashcards,
+          quizQuestions: localResult.quizQuestions,
+          method: GenerationMethod.localAI,
+          processingTimeMs: stopwatch.elapsedMilliseconds,
+          isFallback: true,
+        );
+      }
+
+      // Try Template-based generation as last resort
+      final templateResult = await _tryTemplateGenerationWithEnhancedPrompt(
+        enhancedContent: enhancedContent,
+        flashcardCount: flashcardCount,
+        quizCount: quizCount,
+        difficulty: difficulty,
+      );
+
+      stopwatch.stop();
+      return GenerationResult(
+        flashcards: templateResult.flashcards,
+        quizQuestions: templateResult.quizQuestions,
+        method: GenerationMethod.template,
+        processingTimeMs: stopwatch.elapsedMilliseconds,
+        isFallback: true,
+      );
+    } catch (e) {
+      stopwatch.stop();
+      debugPrint('❌ Enhanced AI: All generation methods failed: $e');
+      return GenerationResult(
+        flashcards: [],
+        quizQuestions: [],
+        method: GenerationMethod.openai,
+        errorMessage: e.toString(),
+        processingTimeMs: stopwatch.elapsedMilliseconds,
+      );
+    }
+  }
+
+  /// Create enhanced prompt that ensures different content from existing
+  String _createEnhancedPromptForAdditionalContent({
+    required String content,
+    required List<Flashcard> existingFlashcards,
+    required List<QuizQuestion> existingQuizQuestions,
+    required String difficulty,
+    String? questionTypes,
+    String? cognitiveLevel,
+    String? realWorldContext,
+    String? challengeLevel,
+    String? learningStyle,
+    String? promptEnhancement,
+  }) {
+    // Extract existing questions to avoid duplication
+    final existingQuestions = <String>[];
+    existingQuestions.addAll(existingFlashcards.map((f) => f.question.toLowerCase()));
+    existingQuestions.addAll(existingQuizQuestions.map((q) => q.question.toLowerCase()));
+
+    // Create a comprehensive prompt that ensures different content
+    final enhancedPrompt = '''
+IMPORTANT: Generate COMPLETELY DIFFERENT questions and answers from the existing ones.
+
+EXISTING QUESTIONS TO AVOID:
+${existingQuestions.take(10).join('\n')}
+
+CONTENT TO USE:
+$content
+
+REQUIREMENTS:
+1. Generate questions that are COMPLETELY DIFFERENT from the existing ones
+2. Focus on different aspects, details, or perspectives of the content
+3. Use different wording, phrasing, and question structures
+4. Ensure answers cover different parts of the content
+5. Target difficulty: $difficulty
+${questionTypes != null ? '6. Question types: $questionTypes' : ''}
+${cognitiveLevel != null ? '7. Cognitive level: $cognitiveLevel' : ''}
+${realWorldContext != null ? '8. Real-world context: $realWorldContext' : ''}
+${challengeLevel != null ? '9. Challenge level: $challengeLevel' : ''}
+${learningStyle != null ? '10. Learning style: $learningStyle' : ''}
+${promptEnhancement != null ? '11. Additional requirements: $promptEnhancement' : ''}
+
+GENERATION INSTRUCTIONS:
+- Analyze the content from different angles
+- Focus on unexplored aspects, examples, or applications
+- Use different question formats and structures
+- Ensure variety in difficulty and complexity
+- Make questions engaging and thought-provoking
+''';
+
+    return enhancedPrompt;
+  }
+
+  /// Try OpenAI generation with enhanced prompt for additional content
+  Future<GenerationResult> _tryOpenAIGenerationWithEnhancedPrompt({
+    required String enhancedContent,
+    required int flashcardCount,
+    required int quizCount,
+    required String difficulty,
+  }) async {
+    try {
+      debugPrint('🚀 Enhanced AI: Attempting OpenAI generation for additional content...');
+      // Ensure authentication
+      await _ensureAuthentication();
+      debugPrint('✅ Enhanced AI: Authentication ensured');
+      // Get tokens
+      final appCheckToken = await _getAppCheckToken();
+      final idToken = await _getIdToken();
+      debugPrint('✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
+      // Generate flashcards
+      debugPrint('🔍 Enhanced AI: Calling generateFlashcards Cloud Function with enhanced prompt...');
+      final flashcardCallable = _functions.httpsCallable('generateFlashcards');
+      final flashcardResult = await flashcardCallable.call({
+        'content': enhancedContent,
+        'count': flashcardCount,
+        'difficulty': difficulty,
+        'appCheckToken': appCheckToken,
+      });
+      debugPrint('✅ Enhanced AI: Flashcard Cloud Function call successful');
+      debugPrint('🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
+      debugPrint('🔍 Enhanced AI: Flashcard result data: ${flashcardResult.data}');
+      // Generate quiz questions
+      debugPrint('🔍 Enhanced AI: Calling generateQuiz Cloud Function with enhanced prompt...');
+      final quizCallable = _functions.httpsCallable('generateQuiz');
+      final quizResult = await quizCallable.call({
+        'content': enhancedContent,
+        'count': quizCount,
+        'difficulty': difficulty,
+        'appCheckToken': appCheckToken,
+      });
+      debugPrint('✅ Enhanced AI: Quiz Cloud Function call successful');
+      debugPrint('🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
+      debugPrint('🔍 Enhanced AI: Quiz result data: ${quizResult.data}');
+      // Parse results
+      debugPrint('🔍 Enhanced AI: Parsing flashcards...');
+      final flashcards = _parseFlashcards(flashcardResult.data);
+      debugPrint('🔍 Enhanced AI: Parsing quiz questions...');
+      final quizQuestions = _parseQuizQuestions(quizResult.data);
+      debugPrint('✅ Enhanced AI: OpenAI generation for additional content successful');
+      return GenerationResult(
+        flashcards: flashcards,
+        quizQuestions: quizQuestions,
+        method: GenerationMethod.openai,
+        processingTimeMs: 0,
+      );
+    } catch (e) {
+      debugPrint('❌ Enhanced AI: OpenAI generation for additional content failed: $e');
+      return GenerationResult(
+        flashcards: [],
+        quizQuestions: [],
+        method: GenerationMethod.openai,
+        errorMessage: e.toString(),
+        processingTimeMs: 0,
+      );
+    }
+  }
+
+  /// Try Local AI fallback with enhanced prompt for additional content
+  Future<GenerationResult> _tryLocalAIGenerationWithEnhancedPrompt({
+    required String enhancedContent,
+    required int flashcardCount,
+    required int quizCount,
+    required String difficulty,
+  }) async {
+    try {
+      debugPrint('🔄 Attempting Local AI fallback for additional content...');
+
+      final flashcards = await _localFallback.generateFlashcards(
+        enhancedContent,
+        count: flashcardCount,
+        targetDifficulty: _mapStringToDifficultyLevel(difficulty),
+      );
+
+      final quizQuestions = await _localFallback.generateQuizQuestions(
+        enhancedContent,
+        quizCount,
+        difficulty,
+      );
+
+      debugPrint('✅ Local AI fallback for additional content successful');
+      return GenerationResult(
+        flashcards: flashcards,
+        quizQuestions: quizQuestions,
+        method: GenerationMethod.localAI,
+        processingTimeMs: 0,
+      );
+    } catch (e) {
+      debugPrint('❌ Local AI fallback for additional content failed: $e');
+      return GenerationResult(
+        flashcards: [],
+        quizQuestions: [],
+        method: GenerationMethod.localAI,
+        errorMessage: e.toString(),
+        processingTimeMs: 0,
+      );
+    }
+  }
+
+  /// Try Template-based generation with enhanced prompt for additional content
+  Future<GenerationResult> _tryTemplateGenerationWithEnhancedPrompt({
+    required String enhancedContent,
+    required int flashcardCount,
+    required int quizCount,
+    required String difficulty,
+  }) async {
+    try {
+      debugPrint('📋 Attempting Template-based generation for additional content...');
+
+      final flashcards = await _generateTemplateFlashcards(
+        content: enhancedContent,
+        count: flashcardCount,
+        difficulty: difficulty,
+      );
+
+      final quizQuestions = await _generateTemplateQuizQuestions(
+        content: enhancedContent,
+        count: quizCount,
+        difficulty: difficulty,
+      );
+
+      debugPrint('✅ Template-based generation for additional content successful');
+      return GenerationResult(
+        flashcards: flashcards,
+        quizQuestions: quizQuestions,
+        method: GenerationMethod.template,
+        processingTimeMs: 0,
+      );
+    } catch (e) {
+      debugPrint('❌ Template-based generation for additional content failed: $e');
+      return GenerationResult(
+        flashcards: [],
+        quizQuestions: [],
+        method: GenerationMethod.template,
+        errorMessage: e.toString(),
+        processingTimeMs: 0,
+      );
     }
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
-import 'package:mindload/services/openai_service.dart';
+import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:mindload/widgets/mindload_enforcement_dialog.dart';
@@ -135,21 +135,20 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
     int quizCount,
     bool useEfficientModel,
   ) async {
-    // This is a placeholder - replace with actual OpenAI service call
-    final openAIService = OpenAIService.instance;
-    
-    // Generate study set content
-            final flashcards = await openAIService.generateFlashcardsFromContent(
-      content,
-      flashcardsCount,
-      'intermediate',
+    // Use EnhancedAIService for robust AI generation
+    final enhancedResult = await EnhancedAIService.instance.generateStudyMaterials(
+      content: content,
+      flashcardCount: flashcardsCount,
+      quizCount: quizCount,
+      difficulty: 'intermediate',
     );
     
-    final quizQuestions = await openAIService.generateQuizQuestions(
-      content,
-      quizCount,
-      'intermediate',
-    );
+    if (!enhancedResult.isSuccess) {
+      throw Exception('Failed to generate content: ${enhancedResult.errorMessage}');
+    }
+    
+    final flashcards = enhancedResult.flashcards;
+    final quizQuestions = enhancedResult.quizQuestions;
 
     // Create study set
     return StudySet(

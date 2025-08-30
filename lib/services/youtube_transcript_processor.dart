@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:mindload/services/youtube_service.dart';
-import 'package:mindload/services/openai_service.dart';
+import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/local_ai_fallback_service.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
@@ -17,7 +17,7 @@ class YouTubeTranscriptProcessor {
   YouTubeTranscriptProcessor._internal();
 
   final YouTubeService _youtubeService = YouTubeService();
-  final OpenAIService _openAIService = OpenAIService.instance;
+  final EnhancedAIService _enhancedAIService = EnhancedAIService.instance;
   final LocalAIFallbackService _fallbackService =
       LocalAIFallbackService.instance;
   final EnhancedStorageService _storageService =
@@ -280,13 +280,20 @@ Generate flashcards that test understanding of the video content, focusing on:
 5. Cause and effect relationships discussed
 ''';
 
-      // Try OpenAI first
+      // Try EnhancedAIService first
       try {
-        return await _openAIService.generateFlashcardsFromContent(
-          context,
-          count,
-          'mixed',
+        final enhancedResult = await _enhancedAIService.generateStudyMaterials(
+          content: context,
+          flashcardCount: count,
+          quizCount: 0,
+          difficulty: 'mixed',
         );
+        
+        if (!enhancedResult.isSuccess) {
+          throw Exception('EnhancedAIService failed: ${enhancedResult.errorMessage}');
+        }
+        
+        return enhancedResult.flashcards;
       } catch (e) {
         if (kDebugMode) {
           debugPrint('⚠️ OpenAI failed, using fallback: $e');
@@ -337,15 +344,22 @@ Make questions directly reference the video content, such as:
 - "In the video, which example was used to explain..."
 ''';
 
-      // Try OpenAI first
+      // Try EnhancedAIService first
       try {
-        return await _openAIService.generateQuizQuestionsFromContent(
-          useSubtitlesForQuestions
+        final enhancedResult = await _enhancedAIService.generateStudyMaterials(
+          content: useSubtitlesForQuestions
               ? questionsPrompt
               : segments.map((s) => s.text).join(' '),
-          count,
-          'mixed',
+          flashcardCount: 0,
+          quizCount: count,
+          difficulty: 'mixed',
         );
+        
+        if (!enhancedResult.isSuccess) {
+          throw Exception('EnhancedAIService failed: ${enhancedResult.errorMessage}');
+        }
+        
+        return enhancedResult.quizQuestions;
       } catch (e) {
         if (kDebugMode) {
           debugPrint('⚠️ OpenAI failed for quiz, using fallback: $e');
