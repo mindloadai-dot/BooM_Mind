@@ -1,4 +1,5 @@
-export { generateFlashcards, generateQuiz, processWithAI } from './ai-processing';
+export { generateFlashcards, generateQuiz, generateStudyMaterial, testOpenAI } from './openai';
+export { processWithAI } from './ai-processing';
 export { youtubePreview, youtubeIngest, cleanupYouTubeRateLimit, resetUserRateLimits, getRateLimitStatus, cleanupYouTubeCache } from './youtube';
 export { scheduleNotification, sendNotification, getNotificationPreferences, updateNotificationPreferences, registerDeviceToken, unregisterDeviceToken, getNotificationHistory, markNotificationRead, processNotificationQueue } from './notification-functions';
 export { consumeTokens, cleanupActionHistory } from './token-consumption';
@@ -10,9 +11,13 @@ export { verifyLogicPackPurchase as verifyLogicPackPurchaseEnhanced, getPurchase
  */
 export declare const helloWorld: import("firebase-functions/v2/https").HttpsFunction;
 /**
- * Create user profile when they first sign up
+ * Create user profile - Callable function instead of blocking function
+ * This avoids GCIP configuration requirements
  */
-export declare const createUserProfile: import("firebase-functions/v1").BlockingFunction;
+export declare const createUserProfile: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    message: string;
+}>>;
 /**
  * Clean up user data when account is deleted
  * Note: beforeUserDeleted is not supported in Firebase Functions v2

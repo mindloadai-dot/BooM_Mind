@@ -23,16 +23,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUserData = exports.updateUserStats = exports.deleteUserData = exports.createUserProfile = exports.helloWorld = exports.clearPurchaseCache = exports.getPurchaseVerificationStatus = exports.getPurchaseHistory = exports.verifyLogicPackPurchaseEnhanced = exports.cleanupOldLedgerEntries = exports.getLedgerStats = exports.dailyLedgerReconciliation = exports.reconcileUserLedger = exports.getUserTokenAccount = exports.getLedgerEntries = exports.writeLedgerEntry = exports.verifyLogicPackPurchase = exports.cleanupActionHistory = exports.consumeTokens = exports.processNotificationQueue = exports.markNotificationRead = exports.getNotificationHistory = exports.unregisterDeviceToken = exports.registerDeviceToken = exports.updateNotificationPreferences = exports.getNotificationPreferences = exports.sendNotification = exports.scheduleNotification = exports.cleanupYouTubeCache = exports.getRateLimitStatus = exports.resetUserRateLimits = exports.cleanupYouTubeRateLimit = exports.youtubeIngest = exports.youtubePreview = exports.processWithAI = exports.generateQuiz = exports.generateFlashcards = void 0;
+exports.updateUserData = exports.updateUserStats = exports.deleteUserData = exports.createUserProfile = exports.helloWorld = exports.clearPurchaseCache = exports.getPurchaseVerificationStatus = exports.getPurchaseHistory = exports.verifyLogicPackPurchaseEnhanced = exports.cleanupOldLedgerEntries = exports.getLedgerStats = exports.dailyLedgerReconciliation = exports.reconcileUserLedger = exports.getUserTokenAccount = exports.getLedgerEntries = exports.writeLedgerEntry = exports.verifyLogicPackPurchase = exports.cleanupActionHistory = exports.consumeTokens = exports.processNotificationQueue = exports.markNotificationRead = exports.getNotificationHistory = exports.unregisterDeviceToken = exports.registerDeviceToken = exports.updateNotificationPreferences = exports.getNotificationPreferences = exports.sendNotification = exports.scheduleNotification = exports.cleanupYouTubeCache = exports.getRateLimitStatus = exports.resetUserRateLimits = exports.cleanupYouTubeRateLimit = exports.youtubeIngest = exports.youtubePreview = exports.processWithAI = exports.testOpenAI = exports.generateStudyMaterial = exports.generateQuiz = exports.generateFlashcards = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
-const identity_1 = require("firebase-functions/v2/identity");
 const logger = __importStar(require("firebase-functions/logger"));
 const admin_1 = require("./admin");
-// Import and export AI processing functions
+// Import and export OpenAI functions
+var openai_1 = require("./openai");
+Object.defineProperty(exports, "generateFlashcards", { enumerable: true, get: function () { return openai_1.generateFlashcards; } });
+Object.defineProperty(exports, "generateQuiz", { enumerable: true, get: function () { return openai_1.generateQuiz; } });
+Object.defineProperty(exports, "generateStudyMaterial", { enumerable: true, get: function () { return openai_1.generateStudyMaterial; } });
+Object.defineProperty(exports, "testOpenAI", { enumerable: true, get: function () { return openai_1.testOpenAI; } });
+// Import and export AI processing functions (keeping processWithAI from ai-processing)
 var ai_processing_1 = require("./ai-processing");
-Object.defineProperty(exports, "generateFlashcards", { enumerable: true, get: function () { return ai_processing_1.generateFlashcards; } });
-Object.defineProperty(exports, "generateQuiz", { enumerable: true, get: function () { return ai_processing_1.generateQuiz; } });
 Object.defineProperty(exports, "processWithAI", { enumerable: true, get: function () { return ai_processing_1.processWithAI; } });
 // Import and export YouTube functions
 var youtube_1 = require("./youtube");
@@ -85,16 +88,27 @@ exports.helloWorld = (0, https_1.onRequest)((request, response) => {
     response.send("Hello from Firebase!");
 });
 /**
- * Create user profile when they first sign up
+ * Create user profile - Callable function instead of blocking function
+ * This avoids GCIP configuration requirements
  */
-exports.createUserProfile = (0, identity_1.beforeUserCreated)(async (event) => {
-    const user = event.data;
+exports.createUserProfile = (0, https_1.onCall)(async (request) => {
+    const { auth } = request;
+    if (!auth) {
+        throw new https_1.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    const user = auth;
     try {
+        // Check if user profile already exists
+        const existingProfile = await admin_1.db.collection('users').doc(user.uid).get();
+        if (existingProfile.exists) {
+            logger.info(`User profile already exists for ${user.uid}`);
+            return { success: true, message: 'Profile already exists' };
+        }
         await admin_1.db.collection('users').doc(user.uid).set({
             uid: user.uid,
-            email: user.email,
-            displayName: user.displayName || 'User',
-            photoURL: user.photoURL || null,
+            email: user.token?.email || '',
+            displayName: user.token?.name || 'User',
+            photoURL: user.token?.picture || null,
             tier: 'free',
             credits: 3,
             xp: 0,
@@ -128,9 +142,11 @@ exports.createUserProfile = (0, identity_1.beforeUserCreated)(async (event) => {
             updatedAt: admin_1.admin.firestore.FieldValue.serverTimestamp(),
         });
         logger.info(`User profile created for ${user.uid}`);
+        return { success: true, message: 'Profile created successfully' };
     }
     catch (error) {
         logger.error(`Error creating user profile for ${user.uid}:`, error);
+        throw new https_1.HttpsError('internal', 'Failed to create user profile');
     }
 });
 /**

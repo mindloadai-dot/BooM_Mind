@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 // Google Sign-In handled via Firebase signInWithProvider for mobile and signInWithPopup for web
 import 'dart:io' show Platform; // Guarded usage
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mindload/services/storage_service.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 import 'package:mindload/firestore/firestore_data_schema.dart';
@@ -77,6 +78,8 @@ class AuthService extends ChangeNotifier {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: 'us-central1');
 
   // Microsoft OAuth configuration
   static const String _microsoftClientId =
@@ -93,45 +96,96 @@ class AuthService extends ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
 
   Future<void> initialize() async {
-    // Listen to auth state changes
-    _firebaseAuth.authStateChanges().listen((User? user) async {
-      if (user != null) {
-        final providerData = user.providerData.first;
-        AuthProvider provider = AuthProvider.email;
+    try {
+      // Listen to auth state changes with proper error handling
+      _firebaseAuth.authStateChanges().listen(
+        (User? user) async {
+          try {
+            if (user != null) {
+              if (kDebugMode) {
+                print('🔐 User signed in: ${user.email}');
+              }
 
-        switch (providerData.providerId) {
-          case 'google.com':
-            provider = AuthProvider.google;
-            break;
-          case 'apple.com':
-            provider = AuthProvider.apple;
-            break;
-          case 'microsoft.com':
-          case 'microsoft.graph.api':
-            provider = AuthProvider.microsoft;
-            break;
-          default:
-            provider = AuthProvider.email;
-        }
+              // Handle provider detection safely
+              AuthProvider provider = AuthProvider.email;
+              if (user.providerData.isNotEmpty) {
+                final providerData = user.providerData.first;
+                switch (providerData.providerId) {
+                  case 'google.com':
+                    provider = AuthProvider.google;
+                    break;
+                  case 'apple.com':
+                    provider = AuthProvider.apple;
+                    break;
+                  case 'microsoft.com':
+                  case 'microsoft.graph.api':
+                    provider = AuthProvider.microsoft;
+                    break;
+                  default:
+                    provider = AuthProvider.email;
+                }
+              }
 
-        _currentUser = AuthUser.fromFirebaseUser(user, provider);
-        await _saveUserData();
+              _currentUser = AuthUser.fromFirebaseUser(user, provider);
+              await _saveUserData();
 
-        // Create/update user profile in Firestore
-        await _syncUserToFirestore(user, provider);
+              // Create/update user profile in Firestore (non-blocking)
+              _syncUserToFirestore(user, provider).catchError((e) {
+                if (kDebugMode) {
+                  print('⚠️ Firestore sync failed: $e');
+                }
+              });
 
-        // Bootstrap entitlements for new user (20 tokens monthly allowance)
-        await EntitlementService.instance.bootstrapNewUser(user.uid);
-      } else {
-        _currentUser = null;
-        await _clearUserData();
+              // Call Cloud Function to create user profile (non-blocking)
+              _createUserProfileViaCloudFunction().catchError((e) {
+                if (kDebugMode) {
+                  print('⚠️ Cloud Function call failed: $e');
+                }
+              });
+
+              // Bootstrap entitlements for new user (non-blocking)
+              EntitlementService.instance
+                  .bootstrapNewUser(user.uid)
+                  .catchError((e) {
+                if (kDebugMode) {
+                  print('⚠️ Entitlement bootstrap failed: $e');
+                }
+              });
+            } else {
+              if (kDebugMode) {
+                print('🔐 User signed out');
+              }
+              _currentUser = null;
+              await _clearUserData();
+            }
+            notifyListeners();
+          } catch (e) {
+            if (kDebugMode) {
+              print('❌ Auth state change error: $e');
+            }
+            // Ensure we still notify listeners even if there's an error
+            notifyListeners();
+          }
+        },
+        onError: (error) {
+          if (kDebugMode) {
+            print('❌ Auth state listener error: $error');
+          }
+          // On error, clear current user and notify
+          _currentUser = null;
+          notifyListeners();
+        },
+      );
+
+      if (kDebugMode) {
+        print('✅ AuthService initialized successfully');
       }
-      notifyListeners();
-    });
-
-    // Don't automatically load cached user data - only rely on Firebase auth state
-    // This prevents authentication bypass when the app is restarted
-    // await _loadUserData();
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ AuthService initialization failed: $e');
+      }
+      // Continue without throwing - app should still work
+    }
   }
 
   // ---- Modernized Public API (kept additive so UI remains intact) ----
@@ -165,14 +219,14 @@ class AuthService extends ChangeNotifier {
         final provider = GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-        
+
         final cred = await _firebaseAuth.signInWithPopup(provider);
         final user = cred.user;
-        
+
         if (user == null) {
           throw Exception('Failed to get user from Google Sign-In');
         }
-        
+
         _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
         await _saveUserData();
         notifyListeners();
@@ -180,7 +234,7 @@ class AuthService extends ChangeNotifier {
         if (kDebugMode) {
           debugPrint('✅ Web Google Sign-In successful for user: ${user.email}');
         }
-        
+
         return _currentUser;
       }
 
@@ -188,11 +242,11 @@ class AuthService extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('📱 Mobile Google Sign-In via Firebase OAuth...');
       }
-      
+
       final provider = GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
-      
+
       // Add iOS-specific parameters to prevent crashes
       if (Platform.isIOS) {
         provider.setCustomParameters({
@@ -202,29 +256,32 @@ class AuthService extends ChangeNotifier {
 
       final cred = await _firebaseAuth.signInWithProvider(provider);
       final user = cred.user;
-      
+
       if (user == null) {
         throw Exception('Failed to get user from Google Sign-In');
       }
-      
+
       _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
       await _saveUserData();
       notifyListeners();
 
       if (kDebugMode) {
-        debugPrint('✅ Mobile Google Sign-In successful for user: ${user.email}');
+        debugPrint(
+            '✅ Mobile Google Sign-In successful for user: ${user.email}');
       }
-      
+
       return _currentUser;
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+            '❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
       }
-      
+
       // Handle specific error codes
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception('An account already exists with a different sign-in method');
+          throw Exception(
+              'An account already exists with a different sign-in method');
         case 'invalid-credential':
           throw Exception('Invalid Google credentials');
         case 'operation-not-allowed':
@@ -266,7 +323,7 @@ class AuthService extends ChangeNotifier {
 
       final rawNonce = _generateNonce();
       final nonce = _sha256ofString(rawNonce);
-      
+
       if (kDebugMode) {
         debugPrint('🍎 Requesting Apple ID credential...');
       }
@@ -279,12 +336,14 @@ class AuthService extends ChangeNotifier {
         nonce: nonce,
         webAuthenticationOptions: WebAuthenticationOptions(
           clientId: 'com.cogniflow.mindload', // Use your actual bundle ID
-          redirectUri: Uri.parse('https://mindload.app/auth/apple'), // Use your actual redirect URI
+          redirectUri: Uri.parse(
+              'https://mindload.app/auth/apple'), // Use your actual redirect URI
         ),
       );
 
       if (kDebugMode) {
-        debugPrint('🍎 Apple credential received, creating Firebase credential...');
+        debugPrint(
+            '🍎 Apple credential received, creating Firebase credential...');
       }
 
       // Validate that we received the required tokens
@@ -304,7 +363,7 @@ class AuthService extends ChangeNotifier {
 
       final cred = await _firebaseAuth.signInWithCredential(credential);
       final user = cred.user;
-      
+
       if (user == null) {
         throw Exception('Failed to create Firebase user from Apple credential');
       }
@@ -320,7 +379,8 @@ class AuthService extends ChangeNotifier {
       return _currentUser;
     } on SignInWithAppleAuthorizationException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Apple Sign-In authorization error: ${e.code} - ${e.message}');
+        debugPrint(
+            '❌ Apple Sign-In authorization error: ${e.code} - ${e.message}');
       }
       if (e.code == AuthorizationErrorCode.canceled) {
         throw Exception('Apple Sign-In was canceled by user');
@@ -328,7 +388,8 @@ class AuthService extends ChangeNotifier {
       throw Exception('Apple Sign-In authorization failed: ${e.message}');
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+            '❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
       }
       throw Exception(e.message ?? 'Apple sign-in failed');
     } catch (e) {
@@ -937,6 +998,31 @@ class AuthService extends ChangeNotifier {
       if (kDebugMode) {
         print('Error setting up local admin economy service: $e');
       }
+    }
+  }
+
+  /// Call Cloud Function to create user profile
+  Future<void> _createUserProfileViaCloudFunction() async {
+    try {
+      if (kDebugMode) {
+        print('📞 Calling createUserProfile Cloud Function...');
+      }
+
+      final result = await _functions.httpsCallable('createUserProfile').call();
+
+      if (result.data != null && result.data['success'] == true) {
+        if (kDebugMode) {
+          print(
+              '✅ User profile created via Cloud Function: ${result.data['message']}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Cloud Function createUserProfile failed: $e');
+        print(
+            'ℹ️ User profile creation will continue via local Firestore sync');
+      }
+      // Don't rethrow - this is not critical as we have local Firestore sync as fallback
     }
   }
 }

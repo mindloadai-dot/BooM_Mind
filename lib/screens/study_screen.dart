@@ -823,9 +823,9 @@ class _StudyScreenState extends State<StudyScreen>
 
       // Generate new flashcards and quizzes using the original content
       final newFlashcards = await openAIService
-          .generateFlashcards(_currentStudySet.content, count: 10);
-      final newQuizQuestions =
-          await openAIService.generateQuiz(_currentStudySet.content, count: 10);
+          .generateFlashcardsFromContent(_currentStudySet.content, 10, 'intermediate');
+              final newQuizQuestions =
+            await openAIService.generateQuizQuestions(_currentStudySet.content, 10, 'intermediate');
 
       // Create a Quiz from the quiz questions
       final newQuiz = Quiz(
@@ -1160,16 +1160,18 @@ class _StudyScreenState extends State<StudyScreen>
 
       // Generate new content based on type
       if (type == StudySetType.flashcards || type == StudySetType.both) {
-        newFlashcards = await openAIService.generateFlashcards(
+        newFlashcards = await openAIService.generateFlashcardsFromContent(
           _currentStudySet.content,
-          count: flashcardCount,
+          flashcardCount,
+          'intermediate',
         );
       }
 
       if (type == StudySetType.quiz || type == StudySetType.both) {
-        final newQuizQuestions = await openAIService.generateQuiz(
+        final newQuizQuestions = await openAIService.generateQuizQuestions(
           _currentStudySet.content,
-          count: quizCount,
+          quizCount,
+          'intermediate',
         );
         if (newQuizQuestions.isNotEmpty) {
           final newQuiz = Quiz(

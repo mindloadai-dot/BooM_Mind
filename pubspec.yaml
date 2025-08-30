@@ -1,7 +1,7 @@
 name: mindload
 description: "Mindload - AI Study Companion for focused learning with flashcards, quizzes, and ultra study mode with binaural beats"
 publish_to: "none"
-version: 1.0.0+14
+version: 1.0.0+15
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
@@ -17,15 +17,15 @@ dependencies:
   provider: ^6.1.2
   
   # Firebase - Stable Compatible Versions
-  firebase_core: ^4.0.0
-  firebase_auth: ^6.0.1
-  cloud_firestore: ^6.0.0
-  firebase_storage: ^13.0.0
-  firebase_messaging: ^16.0.0
-  firebase_analytics: ^12.0.0
-  cloud_functions: ^6.0.0
-  firebase_app_check: ^0.4.0
-  firebase_remote_config: ^6.0.0
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.6.0
+  firebase_messaging: ^14.7.10
+  firebase_analytics: ^10.7.4
+  cloud_functions: ^4.6.0
+  firebase_app_check: ^0.2.1+18
+  firebase_remote_config: ^4.3.8
   
   # UI & Fonts
   google_fonts: ^6.2.1

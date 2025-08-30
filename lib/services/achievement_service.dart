@@ -6,7 +6,6 @@ import 'package:mindload/models/achievement_models.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 
-
 /// Achievement System Service - Fully Local
 /// Handles achievement tracking, rewards, and progress calculation
 /// All data is stored locally using SharedPreferences
@@ -18,15 +17,15 @@ class AchievementService extends ChangeNotifier {
   static const String _catalogKey = 'achievements_catalog';
   static const String _userAchievementsKey = 'user_achievements';
   static const String _metaKey = 'achievements_meta';
-  
+
   // Cache
   List<AchievementCatalog> _catalog = [];
   final Map<String, UserAchievement> _userAchievements = {};
   AchievementsMeta _meta = AchievementsMeta.empty();
-  
+
   bool _isInitialized = false;
   bool _isLoading = false;
-  
+
   // Getters
   List<AchievementCatalog> get catalog => _catalog;
   Map<String, UserAchievement> get userAchievements => _userAchievements;
@@ -37,18 +36,20 @@ class AchievementService extends ChangeNotifier {
   /// Initialize achievement system - Local only
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
     try {
       _isLoading = true;
       notifyListeners();
-      
+
       await _loadLocalCatalog();
       await _loadLocalUserData();
-      
+
       _isInitialized = true;
-      developer.log('Achievement service initialized locally', name: 'AchievementService');
+      developer.log('Achievement service initialized locally',
+          name: 'AchievementService');
     } catch (e) {
-      developer.log('Failed to initialize achievement service: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to initialize achievement service: $e',
+          name: 'AchievementService', level: 900);
       // Don't rethrow - create default data instead
       await _createDefaultData();
       _isInitialized = true;
@@ -63,21 +64,24 @@ class AchievementService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final catalogJson = prefs.getString(_catalogKey);
-      
+
       if (catalogJson == null) {
         // Create default catalog if none exists
         await _createDefaultCatalog();
         return;
       }
-      
+
       final catalogData = jsonDecode(catalogJson) as List<dynamic>;
       _catalog = catalogData
-          .map((item) => AchievementCatalog.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              AchievementCatalog.fromJson(item as Map<String, dynamic>))
           .toList();
-      
-      developer.log('Loaded ${_catalog.length} achievements from local catalog', name: 'AchievementService');
+
+      developer.log('Loaded ${_catalog.length} achievements from local catalog',
+          name: 'AchievementService');
     } catch (e) {
-      developer.log('Failed to load local achievement catalog: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to load local achievement catalog: $e',
+          name: 'AchievementService', level: 900);
       await _createDefaultCatalog();
     }
   }
@@ -86,32 +90,38 @@ class AchievementService extends ChangeNotifier {
   Future<void> _loadLocalUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Load user achievements
       final achievementsJson = prefs.getString(_userAchievementsKey);
       if (achievementsJson != null) {
-        final achievementsData = jsonDecode(achievementsJson) as Map<String, dynamic>;
+        final achievementsData =
+            jsonDecode(achievementsJson) as Map<String, dynamic>;
         _userAchievements.clear();
         for (final entry in achievementsData.entries) {
-          _userAchievements[entry.key] = UserAchievement.fromJson(entry.value as Map<String, dynamic>);
+          _userAchievements[entry.key] =
+              UserAchievement.fromJson(entry.value as Map<String, dynamic>);
         }
       }
-      
+
       // Load achievements meta
       final metaJson = prefs.getString(_metaKey);
       if (metaJson != null) {
-        _meta = AchievementsMeta.fromJson(jsonDecode(metaJson) as Map<String, dynamic>);
+        _meta = AchievementsMeta.fromJson(
+            jsonDecode(metaJson) as Map<String, dynamic>);
       } else {
         _meta = AchievementsMeta.empty();
         await _saveLocalMeta();
       }
-      
+
       // Initialize missing achievements
       await _initializeMissingAchievements();
-      
-      developer.log('Loaded user achievements locally: ${_userAchievements.length}', name: 'AchievementService');
+
+      developer.log(
+          'Loaded user achievements locally: ${_userAchievements.length}',
+          name: 'AchievementService');
     } catch (e) {
-      developer.log('Failed to load local user achievement data: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to load local user achievement data: $e',
+          name: 'AchievementService', level: 900);
       // Initialize with empty data if loading fails
       _meta = AchievementsMeta.empty();
       await _initializeMissingAchievements();
@@ -121,7 +131,7 @@ class AchievementService extends ChangeNotifier {
   /// Initialize missing achievements for user - Local version
   Future<void> _initializeMissingAchievements() async {
     bool hasChanges = false;
-    
+
     for (final catalogItem in _catalog) {
       if (!_userAchievements.containsKey(catalogItem.id)) {
         final userAchievement = UserAchievement(
@@ -131,15 +141,16 @@ class AchievementService extends ChangeNotifier {
           rewardGranted: false,
           lastUpdated: DateTime.now(),
         );
-        
+
         _userAchievements[catalogItem.id] = userAchievement;
         hasChanges = true;
       }
     }
-    
+
     if (hasChanges) {
       await _saveLocalUserAchievements();
-      developer.log('Initialized missing achievements locally', name: 'AchievementService');
+      developer.log('Initialized missing achievements locally',
+          name: 'AchievementService');
     }
   }
 
@@ -147,38 +158,44 @@ class AchievementService extends ChangeNotifier {
   Future<void> updateProgress(String achievementId, int newProgress) async {
     try {
       if (!_isInitialized) {
-        developer.log('Service not initialized, skipping progress update', name: 'AchievementService', level: 900);
+        developer.log('Service not initialized, skipping progress update',
+            name: 'AchievementService', level: 900);
         return;
       }
-      
+
       AchievementCatalog? catalogItem;
       try {
         catalogItem = _catalog.firstWhere(
           (item) => item.id == achievementId,
         );
       } catch (e) {
-        developer.log('Achievement not found: $achievementId', name: 'AchievementService', level: 900);
+        developer.log('Achievement not found: $achievementId',
+            name: 'AchievementService', level: 900);
         return;
       }
-      
+
       final currentAchievement = _userAchievements[achievementId];
-      
+
       if (currentAchievement == null) {
-        developer.log('User achievement state not found: $achievementId', name: 'AchievementService', level: 900);
+        developer.log('User achievement state not found: $achievementId',
+            name: 'AchievementService', level: 900);
         return;
       }
-      if (currentAchievement.status == AchievementStatus.earned) return; // Already earned
+      if (currentAchievement.status == AchievementStatus.earned) {
+        return; // Already earned
+      }
       // Calculate new status
       AchievementStatus newStatus = currentAchievement.status;
       DateTime? earnedAt = currentAchievement.earnedAt;
-      
-      if (newProgress >= catalogItem.threshold && currentAchievement.status != AchievementStatus.earned) {
+
+      if (newProgress >= catalogItem.threshold &&
+          currentAchievement.status != AchievementStatus.earned) {
         newStatus = AchievementStatus.earned;
         earnedAt = DateTime.now();
       } else if (newProgress > 0) {
         newStatus = AchievementStatus.inProgress;
       }
-      
+
       // Update user achievement
       final updatedAchievement = currentAchievement.copyWith(
         status: newStatus,
@@ -186,26 +203,29 @@ class AchievementService extends ChangeNotifier {
         earnedAt: earnedAt,
         lastUpdated: DateTime.now(),
       );
-      
+
       _userAchievements[achievementId] = updatedAchievement;
-      
+
       // Save locally
       await _saveLocalUserAchievements();
-      
+
       // Check if this is a new achievement earn
-      if (newStatus == AchievementStatus.earned && currentAchievement.status != AchievementStatus.earned) {
+      if (newStatus == AchievementStatus.earned &&
+          currentAchievement.status != AchievementStatus.earned) {
         await _handleAchievementEarned(catalogItem, updatedAchievement);
       }
-      
+
       notifyListeners();
     } catch (e) {
-      developer.log('Failed to update achievement progress: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to update achievement progress: $e',
+          name: 'AchievementService', level: 900);
       // Don't rethrow for local version - just log the error
     }
   }
 
   /// Handle achievement earned - check for bonus credits and trigger notifications
-  Future<void> _handleAchievementEarned(AchievementCatalog catalogItem, UserAchievement achievement) async {
+  Future<void> _handleAchievementEarned(
+      AchievementCatalog catalogItem, UserAchievement achievement) async {
     try {
       // Emit telemetry
       TelemetryService.instance.logEvent(
@@ -217,36 +237,42 @@ class AchievementService extends ChangeNotifier {
           'tier': catalogItem.tier.id,
         },
       );
-      
+
       // Update bonus counter
       final updatedMeta = _meta.copyWith(bonusCounter: _meta.bonusCounter + 1);
       _meta = updatedMeta;
-      
+
       // Check if bonus credit should be granted
       if (_meta.bonusCounter % AchievementConstants.rewardEveryN == 0) {
         await _grantBonusCredit(catalogItem.id);
       }
-      
+
       await _saveLocalMeta();
-      
+
       // Trigger achievement notification automatically
       await _triggerAchievementNotification(catalogItem);
-      
-      developer.log('Achievement earned: ${catalogItem.title}', name: 'AchievementService');
+
+      developer.log('Achievement earned: ${catalogItem.title}',
+          name: 'AchievementService');
     } catch (e) {
-      developer.log('Failed to handle achievement earned: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to handle achievement earned: $e',
+          name: 'AchievementService', level: 900);
     }
   }
 
   /// Trigger achievement notification automatically
-  Future<void> _triggerAchievementNotification(AchievementCatalog achievement) async {
+  Future<void> _triggerAchievementNotification(
+      AchievementCatalog achievement) async {
     try {
       // Achievement unlocked - event bus removed for unified notification system
       // Notifications are now handled directly by WorkingNotificationService
-      
-      developer.log('✅ Achievement notification event emitted: ${achievement.title}', name: 'AchievementService');
+
+      developer.log(
+          '✅ Achievement notification event emitted: ${achievement.title}',
+          name: 'AchievementService');
     } catch (e) {
-      developer.log('❌ Failed to trigger achievement notification: $e', name: 'AchievementService', level: 900);
+      developer.log('❌ Failed to trigger achievement notification: $e',
+          name: 'AchievementService', level: 900);
     }
   }
 
@@ -262,21 +288,23 @@ class AchievementService extends ChangeNotifier {
     try {
       // Check monthly cap
       final now = DateTime.now();
-      final isNewMonth = now.month != _meta.lastMonthlyReset.month || 
-                        now.year != _meta.lastMonthlyReset.year;
-      
+      final isNewMonth = now.month != _meta.lastMonthlyReset.month ||
+          now.year != _meta.lastMonthlyReset.year;
+
       if (isNewMonth) {
         _meta = _meta.copyWith(
           monthlyBonusCount: 0,
           lastMonthlyReset: now,
         );
       }
-      
-      if (_meta.monthlyBonusCount >= AchievementConstants.maxMonthlyBonusCredits) {
-        developer.log('Monthly bonus credit cap reached', name: 'AchievementService', level: 800);
+
+      if (_meta.monthlyBonusCount >=
+          AchievementConstants.maxMonthlyBonusCredits) {
+        developer.log('Monthly bonus credit cap reached',
+            name: 'AchievementService', level: 800);
         return;
       }
-      
+
       // Grant credit through economy service
       // Note: Adding credits manually via direct economy service manipulation
       // This is a simplified implementation for achievement rewards
@@ -288,13 +316,13 @@ class AchievementService extends ChangeNotifier {
         // Update the user economy with the bonus credit
         await economyService.updateUserTier(updatedEconomy.tier);
       }
-      
+
       // Update meta
       _meta = _meta.copyWith(
         lastBonusGranted: now,
         monthlyBonusCount: _meta.monthlyBonusCount + 1,
       );
-      
+
       // Emit telemetry (if available)
       try {
         TelemetryService.instance.logEvent(
@@ -307,12 +335,15 @@ class AchievementService extends ChangeNotifier {
         );
       } catch (e) {
         // Telemetry failure shouldn't block achievement system
-        developer.log('Telemetry failed for achievement bonus: $e', name: 'AchievementService', level: 400);
+        developer.log('Telemetry failed for achievement bonus: $e',
+            name: 'AchievementService', level: 400);
       }
-      
-      developer.log('Bonus credit granted for achievement: $achievementId', name: 'AchievementService');
+
+      developer.log('Bonus credit granted for achievement: $achievementId',
+          name: 'AchievementService');
     } catch (e) {
-      developer.log('Failed to grant bonus credit: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to grant bonus credit: $e',
+          name: 'AchievementService', level: 900);
     }
   }
 
@@ -322,7 +353,8 @@ class AchievementService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_metaKey, jsonEncode(_meta.toJson()));
     } catch (e) {
-      developer.log('Failed to save local achievement meta: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to save local achievement meta: $e',
+          name: 'AchievementService', level: 900);
     }
   }
 
@@ -336,7 +368,8 @@ class AchievementService extends ChangeNotifier {
       }
       await prefs.setString(_userAchievementsKey, jsonEncode(achievementsMap));
     } catch (e) {
-      developer.log('Failed to save local user achievements: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to save local user achievements: $e',
+          name: 'AchievementService', level: 900);
     }
   }
 
@@ -347,32 +380,39 @@ class AchievementService extends ChangeNotifier {
       final catalogJson = _catalog.map((item) => item.toJson()).toList();
       await prefs.setString(_catalogKey, jsonEncode(catalogJson));
     } catch (e) {
-      developer.log('Failed to save local catalog: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to save local catalog: $e',
+          name: 'AchievementService', level: 900);
     }
   }
 
   /// Get achievements by category
-  List<AchievementDisplay> getAchievementsByCategory(AchievementCategory category) {
+  List<AchievementDisplay> getAchievementsByCategory(
+      AchievementCategory category) {
     try {
       if (!_isInitialized) {
-        developer.log('Service not initialized, returning empty list', name: 'AchievementService', level: 900);
+        developer.log('Service not initialized, returning empty list',
+            name: 'AchievementService', level: 900);
         return [];
       }
-      
+
       return _catalog
           .where((item) => item.category == category)
           .map((catalog) {
             try {
-              final userState = _userAchievements[catalog.id] ?? UserAchievement(
-                id: catalog.id,
-                status: AchievementStatus.locked,
-                progress: 0,
-                rewardGranted: false,
-                lastUpdated: DateTime.now(),
-              );
+              final userState = _userAchievements[catalog.id] ??
+                  UserAchievement(
+                    id: catalog.id,
+                    status: AchievementStatus.locked,
+                    progress: 0,
+                    rewardGranted: false,
+                    lastUpdated: DateTime.now(),
+                  );
               return AchievementDisplay(catalog: catalog, userState: userState);
             } catch (e) {
-              developer.log('Error creating achievement display for ${catalog.id}: $e', name: 'AchievementService', level: 1000);
+              developer.log(
+                  'Error creating achievement display for ${catalog.id}: $e',
+                  name: 'AchievementService',
+                  level: 1000);
               return null;
             }
           })
@@ -383,12 +423,14 @@ class AchievementService extends ChangeNotifier {
           try {
             return a.catalog.sortOrder.compareTo(b.catalog.sortOrder);
           } catch (e) {
-            developer.log('Error sorting achievements: $e', name: 'AchievementService', level: 1000);
+            developer.log('Error sorting achievements: $e',
+                name: 'AchievementService', level: 1000);
             return 0;
           }
         });
     } catch (e) {
-      developer.log('Error getting achievements by category: $e', name: 'AchievementService', level: 1000);
+      developer.log('Error getting achievements by category: $e',
+          name: 'AchievementService', level: 1000);
       return [];
     }
   }
@@ -397,25 +439,32 @@ class AchievementService extends ChangeNotifier {
   List<AchievementDisplay> getAchievementsByStatus(AchievementStatus status) {
     try {
       if (!_isInitialized) {
-        developer.log('Service not initialized, returning empty list', name: 'AchievementService', level: 900);
+        developer.log('Service not initialized, returning empty list',
+            name: 'AchievementService', level: 900);
         return [];
       }
-      
+
       return _catalog
           .where((catalog) => _userAchievements[catalog.id]?.status == status)
           .map((catalog) {
             try {
               final userState = _userAchievements[catalog.id];
               if (userState == null) {
-                developer.log('Missing user state for achievement: ${catalog.id}', name: 'AchievementService', level: 900);
+                developer.log(
+                    'Missing user state for achievement: ${catalog.id}',
+                    name: 'AchievementService',
+                    level: 900);
                 return null;
               }
               return AchievementDisplay(
-                    catalog: catalog, 
-                    userState: userState,
-                  );
+                catalog: catalog,
+                userState: userState,
+              );
             } catch (e) {
-              developer.log('Error creating achievement display for ${catalog.id}: $e', name: 'AchievementService', level: 1000);
+              developer.log(
+                  'Error creating achievement display for ${catalog.id}: $e',
+                  name: 'AchievementService',
+                  level: 1000);
               return null;
             }
           })
@@ -426,12 +475,14 @@ class AchievementService extends ChangeNotifier {
           try {
             return a.catalog.sortOrder.compareTo(b.catalog.sortOrder);
           } catch (e) {
-            developer.log('Error sorting achievements: $e', name: 'AchievementService', level: 1000);
+            developer.log('Error sorting achievements: $e',
+                name: 'AchievementService', level: 1000);
             return 0;
           }
         });
     } catch (e) {
-      developer.log('Error getting achievements by status: $e', name: 'AchievementService', level: 1000);
+      developer.log('Error getting achievements by status: $e',
+          name: 'AchievementService', level: 1000);
       return [];
     }
   }
@@ -440,30 +491,33 @@ class AchievementService extends ChangeNotifier {
   List<AchievementDisplay> getNextClosestAchievements({int limit = 3}) {
     try {
       if (!_isInitialized) {
-        developer.log('Service not initialized, returning empty list', name: 'AchievementService', level: 900);
+        developer.log('Service not initialized, returning empty list',
+            name: 'AchievementService', level: 900);
         return [];
       }
-      
+
       final inProgress = getAchievementsByStatus(AchievementStatus.inProgress);
-      
+
       if (inProgress.isEmpty) {
         return [];
       }
-      
+
       inProgress.sort((a, b) {
         try {
           final aPercent = a.progressPercent;
           final bPercent = b.progressPercent;
           return bPercent.compareTo(aPercent); // Highest progress first
         } catch (e) {
-          developer.log('Error sorting achievements by progress: $e', name: 'AchievementService', level: 1000);
+          developer.log('Error sorting achievements by progress: $e',
+              name: 'AchievementService', level: 1000);
           return 0;
         }
       });
-      
+
       return inProgress.take(limit).toList();
     } catch (e) {
-      developer.log('Error getting next closest achievements: $e', name: 'AchievementService', level: 1000);
+      developer.log('Error getting next closest achievements: $e',
+          name: 'AchievementService', level: 1000);
       return [];
     }
   }
@@ -474,13 +528,14 @@ class AchievementService extends ChangeNotifier {
     try {
       catalog = _catalog.firstWhere((item) => item.id == id);
     } catch (e) {
-      developer.log('Achievement not found: $id', name: 'AchievementService', level: 900);
+      developer.log('Achievement not found: $id',
+          name: 'AchievementService', level: 900);
       return null;
     }
-    
+
     final userState = _userAchievements[id];
     if (userState == null) return null;
-    
+
     return AchievementDisplay(catalog: catalog, userState: userState);
   }
 
@@ -488,33 +543,38 @@ class AchievementService extends ChangeNotifier {
   Future<void> bulkUpdateProgress(Map<String, int> progressUpdates) async {
     try {
       bool hasChanges = false;
-      
+
       for (final entry in progressUpdates.entries) {
         final achievementId = entry.key;
         final newProgress = entry.value;
-        
+
         AchievementCatalog? catalogItem;
         try {
           catalogItem = _catalog.firstWhere((item) => item.id == achievementId);
         } catch (e) {
-          developer.log('Achievement not found in bulk update: $achievementId', name: 'AchievementService', level: 900);
+          developer.log('Achievement not found in bulk update: $achievementId',
+              name: 'AchievementService', level: 900);
           continue;
         }
         final currentAchievement = _userAchievements[achievementId];
-        
-        if (currentAchievement == null || currentAchievement.status == AchievementStatus.earned) continue;
-        
+
+        if (currentAchievement == null ||
+            currentAchievement.status == AchievementStatus.earned) {
+          continue;
+        }
+
         // Calculate new status
         AchievementStatus newStatus = currentAchievement.status;
         DateTime? earnedAt = currentAchievement.earnedAt;
-        
-        if (newProgress >= catalogItem.threshold && currentAchievement.status != AchievementStatus.earned) {
+
+        if (newProgress >= catalogItem.threshold &&
+            currentAchievement.status != AchievementStatus.earned) {
           newStatus = AchievementStatus.earned;
           earnedAt = DateTime.now();
         } else if (newProgress > 0) {
           newStatus = AchievementStatus.inProgress;
         }
-        
+
         // Update user achievement
         final updatedAchievement = currentAchievement.copyWith(
           status: newStatus,
@@ -522,30 +582,33 @@ class AchievementService extends ChangeNotifier {
           earnedAt: earnedAt,
           lastUpdated: DateTime.now(),
         );
-        
+
         _userAchievements[achievementId] = updatedAchievement;
         hasChanges = true;
-        
+
         // Handle new achievements
-        if (newStatus == AchievementStatus.earned && currentAchievement.status != AchievementStatus.earned) {
+        if (newStatus == AchievementStatus.earned &&
+            currentAchievement.status != AchievementStatus.earned) {
           await _handleAchievementEarned(catalogItem, updatedAchievement);
         }
       }
-      
+
       if (hasChanges) {
         await _saveLocalUserAchievements();
         notifyListeners();
       }
     } catch (e) {
-      developer.log('Failed to bulk update achievement progress: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to bulk update achievement progress: $e',
+          name: 'AchievementService', level: 900);
       // Don't rethrow for local version
     }
   }
 
   /// Create default achievement catalog - Local version
   Future<void> _createDefaultCatalog() async {
-    developer.log('Creating default achievement catalog locally', name: 'AchievementService');
-    
+    developer.log('Creating default achievement catalog locally',
+        name: 'AchievementService');
+
     final achievements = [
       // Streaks
       AchievementCatalog(
@@ -603,7 +666,7 @@ class AchievementService extends ChangeNotifier {
         icon: '🔥',
         sortOrder: 104,
       ),
-      
+
       // Study Time (active minutes)
       AchievementCatalog(
         id: AchievementConstants.warmUp,
@@ -660,7 +723,7 @@ class AchievementService extends ChangeNotifier {
         icon: '⏱️',
         sortOrder: 204,
       ),
-      
+
       // Cards Created
       AchievementCatalog(
         id: AchievementConstants.forge250,
@@ -717,7 +780,7 @@ class AchievementService extends ChangeNotifier {
         icon: '🎴',
         sortOrder: 304,
       ),
-      
+
       // Quiz Mastery (≥85% score)
       AchievementCatalog(
         id: AchievementConstants.ace10,
@@ -774,12 +837,263 @@ class AchievementService extends ChangeNotifier {
         icon: '🎯',
         sortOrder: 404,
       ),
+
+      // Cards Reviewed
+      AchievementCatalog(
+        id: AchievementConstants.review1k,
+        title: 'Review 1K',
+        category: AchievementCategory.cardsReviewed,
+        tier: AchievementTier.bronze,
+        threshold: 1000,
+        description: 'Review 1,000 flashcards',
+        howTo: 'Study flashcards in any mode',
+        icon: '📖',
+        sortOrder: 500,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.review5k,
+        title: 'Review 5K',
+        category: AchievementCategory.cardsReviewed,
+        tier: AchievementTier.silver,
+        threshold: 5000,
+        description: 'Review 5,000 flashcards',
+        howTo: 'Study flashcards in any mode',
+        icon: '📖',
+        sortOrder: 501,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.review10k,
+        title: 'Review 10K',
+        category: AchievementCategory.cardsReviewed,
+        tier: AchievementTier.gold,
+        threshold: 10000,
+        description: 'Review 10,000 flashcards',
+        howTo: 'Study flashcards in any mode',
+        icon: '📖',
+        sortOrder: 502,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.review25k,
+        title: 'Review 25K',
+        category: AchievementCategory.cardsReviewed,
+        tier: AchievementTier.platinum,
+        threshold: 25000,
+        description: 'Review 25,000 flashcards',
+        howTo: 'Study flashcards in any mode',
+        icon: '📖',
+        sortOrder: 503,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.review50k,
+        title: 'Review 50K',
+        category: AchievementCategory.cardsReviewed,
+        tier: AchievementTier.legendary,
+        threshold: 50000,
+        description: 'Review 50,000 flashcards',
+        howTo: 'Study flashcards in any mode',
+        icon: '📖',
+        sortOrder: 504,
+      ),
+
+      // Consistency & Focus
+      AchievementCatalog(
+        id: AchievementConstants.fiveAWeek,
+        title: 'Five a Week',
+        category: AchievementCategory.consistency,
+        tier: AchievementTier.bronze,
+        threshold: 4, // 4 weeks of 5+ sessions
+        description: 'Study 5+ times per week for 4 weeks',
+        howTo: 'Complete at least 5 study sessions each week',
+        icon: '📅',
+        sortOrder: 600,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.distractionFree,
+        title: 'Distraction Free',
+        category: AchievementCategory.consistency,
+        tier: AchievementTier.silver,
+        threshold: 25,
+        description: 'Complete 25 distraction-free sessions',
+        howTo: 'Study without switching apps or taking breaks',
+        icon: '🎯',
+        sortOrder: 601,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.fivePerWeek,
+        title: 'Five Per Week Master',
+        category: AchievementCategory.consistency,
+        tier: AchievementTier.gold,
+        threshold: 12, // 12 weeks of 5+ sessions
+        description: 'Study 5+ times per week for 12 weeks',
+        howTo: 'Maintain consistent weekly study schedule',
+        icon: '📅',
+        sortOrder: 602,
+      ),
+
+      // Creation Discipline
+      AchievementCatalog(
+        id: AchievementConstants.efficientCreator,
+        title: 'Efficient Creator',
+        category: AchievementCategory.creation,
+        tier: AchievementTier.bronze,
+        threshold: 10,
+        description: 'Create 10 sets in under 5 minutes each',
+        howTo: 'Generate flashcard sets quickly and efficiently',
+        icon: '⚡',
+        sortOrder: 700,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.reviewMaster,
+        title: 'Review Master',
+        category: AchievementCategory.creation,
+        tier: AchievementTier.silver,
+        threshold: 100,
+        description: 'Review and edit 100 generated cards',
+        howTo: 'Improve AI-generated flashcards through editing',
+        icon: '✏️',
+        sortOrder: 701,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.setBuilder20,
+        title: 'Set Builder 20',
+        category: AchievementCategory.creation,
+        tier: AchievementTier.bronze,
+        threshold: 20,
+        description: 'Create 20 flashcard sets',
+        howTo: 'Generate flashcard sets from any source',
+        icon: '🏗️',
+        sortOrder: 702,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.setBuilder50,
+        title: 'Set Builder 50',
+        category: AchievementCategory.creation,
+        tier: AchievementTier.silver,
+        threshold: 50,
+        description: 'Create 50 flashcard sets',
+        howTo: 'Generate flashcard sets from any source',
+        icon: '🏗️',
+        sortOrder: 703,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.setBuilder100,
+        title: 'Set Builder 100',
+        category: AchievementCategory.creation,
+        tier: AchievementTier.gold,
+        threshold: 100,
+        description: 'Create 100 flashcard sets',
+        howTo: 'Generate flashcard sets from any source',
+        icon: '🏗️',
+        sortOrder: 704,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.efficiencySage,
+        title: 'Efficiency Sage',
+        category: AchievementCategory.creation,
+        tier: AchievementTier.platinum,
+        threshold: 50,
+        description: 'Create 50 sets in under 3 minutes each',
+        howTo: 'Master the art of rapid flashcard creation',
+        icon: '🧙‍♂️',
+        sortOrder: 705,
+      ),
+
+      // Ultra & Exports
+      AchievementCatalog(
+        id: AchievementConstants.ultraRuns10,
+        title: 'Ultra Runs 10',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.bronze,
+        threshold: 10,
+        description: 'Complete 10 Ultra Mode sessions',
+        howTo: 'Use Ultra Mode with binaural beats for deep focus',
+        icon: '🚀',
+        sortOrder: 800,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.ultraRuns30,
+        title: 'Ultra Runs 30',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.silver,
+        threshold: 30,
+        description: 'Complete 30 Ultra Mode sessions',
+        howTo: 'Use Ultra Mode with binaural beats for deep focus',
+        icon: '🚀',
+        sortOrder: 801,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.ultraRuns75,
+        title: 'Ultra Runs 75',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.gold,
+        threshold: 75,
+        description: 'Complete 75 Ultra Mode sessions',
+        howTo: 'Use Ultra Mode with binaural beats for deep focus',
+        icon: '🚀',
+        sortOrder: 802,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.ultraRuns150,
+        title: 'Ultra Runs 150',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.platinum,
+        threshold: 150,
+        description: 'Complete 150 Ultra Mode sessions',
+        howTo: 'Use Ultra Mode with binaural beats for deep focus',
+        icon: '🚀',
+        sortOrder: 803,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.shipIt5,
+        title: 'Ship It 5',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.bronze,
+        threshold: 5,
+        description: 'Export 5 PDF study guides',
+        howTo: 'Export your flashcards as PDF documents',
+        icon: '📄',
+        sortOrder: 804,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.shipIt20,
+        title: 'Ship It 20',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.silver,
+        threshold: 20,
+        description: 'Export 20 PDF study guides',
+        howTo: 'Export your flashcards as PDF documents',
+        icon: '📄',
+        sortOrder: 805,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.shipIt50,
+        title: 'Ship It 50',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.gold,
+        threshold: 50,
+        description: 'Export 50 PDF study guides',
+        howTo: 'Export your flashcards as PDF documents',
+        icon: '📄',
+        sortOrder: 806,
+      ),
+      AchievementCatalog(
+        id: AchievementConstants.shipIt100,
+        title: 'Ship It 100',
+        category: AchievementCategory.ultraExports,
+        tier: AchievementTier.platinum,
+        threshold: 100,
+        description: 'Export 100 PDF study guides',
+        howTo: 'Export your flashcards as PDF documents',
+        icon: '📄',
+        sortOrder: 807,
+      ),
     ];
-    
+
     // Save locally
     _catalog = achievements;
     await _saveLocalCatalog();
-    developer.log('Default achievement catalog created locally', name: 'AchievementService');
+    developer.log('Default achievement catalog created locally',
+        name: 'AchievementService');
   }
 
   /// Refresh data from local storage
@@ -787,11 +1101,12 @@ class AchievementService extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
-      
+
       await _loadLocalCatalog();
       await _loadLocalUserData();
     } catch (e) {
-      developer.log('Failed to refresh local achievement data: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to refresh local achievement data: $e',
+          name: 'AchievementService', level: 900);
       // Don't rethrow for local version
     } finally {
       _isLoading = false;
@@ -806,12 +1121,13 @@ class AchievementService extends ChangeNotifier {
       _meta = AchievementsMeta.empty();
       await _saveLocalMeta();
       await _initializeMissingAchievements();
-      developer.log('Created default achievement data locally', name: 'AchievementService');
+      developer.log('Created default achievement data locally',
+          name: 'AchievementService');
     } catch (e) {
-      developer.log('Failed to create default achievement data: $e', name: 'AchievementService', level: 900);
+      developer.log('Failed to create default achievement data: $e',
+          name: 'AchievementService', level: 900);
     }
   }
-
 
   /// Reset achievement service (for logout)
   void reset() {

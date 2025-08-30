@@ -1,6 +1,5 @@
 import {onRequest, onCall, HttpsError} from 'firebase-functions/v2/https';
 import {onDocumentCreated} from 'firebase-functions/v2/firestore';
-import {beforeUserCreated} from 'firebase-functions/v2/identity';
 import * as logger from 'firebase-functions/logger';
 import { admin, db } from './admin';
 
@@ -14,8 +13,10 @@ import {
   cleanupYouTubeCache 
 } from './youtube';
 
-// Import and export AI processing functions
-export { generateFlashcards, generateQuiz, processWithAI } from './ai-processing';
+// Import and export OpenAI functions
+export { generateFlashcards, generateQuiz, generateStudyMaterial, testOpenAI } from './openai';
+// Import and export AI processing functions (keeping processWithAI from ai-processing)
+export { processWithAI } from './ai-processing';
 
 // Import and export YouTube functions
 export { 
@@ -82,16 +83,31 @@ export const helloWorld = onRequest((request, response) => {
 });
 
 /**
- * Create user profile when they first sign up
+ * Create user profile - Callable function instead of blocking function
+ * This avoids GCIP configuration requirements
  */
-export const createUserProfile = beforeUserCreated(async (event) => {
-  const user = event.data;
+export const createUserProfile = onCall(async (request) => {
+  const { auth } = request;
+  
+  if (!auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const user = auth;
+  
   try {
+    // Check if user profile already exists
+    const existingProfile = await db.collection('users').doc(user.uid).get();
+    if (existingProfile.exists) {
+      logger.info(`User profile already exists for ${user.uid}`);
+      return { success: true, message: 'Profile already exists' };
+    }
+
     await db.collection('users').doc(user.uid).set({
       uid: user.uid,
-      email: user.email,
-      displayName: user.displayName || 'User',
-      photoURL: user.photoURL || null,
+      email: user.token?.email || '',
+      displayName: user.token?.name || 'User',
+      photoURL: user.token?.picture || null,
       tier: 'free',
       credits: 3,
       xp: 0,
@@ -128,8 +144,10 @@ export const createUserProfile = beforeUserCreated(async (event) => {
     });
 
     logger.info(`User profile created for ${user.uid}`);
+    return { success: true, message: 'Profile created successfully' };
   } catch (error) {
     logger.error(`Error creating user profile for ${user.uid}:`, error);
+    throw new HttpsError('internal', 'Failed to create user profile');
   }
 });
 

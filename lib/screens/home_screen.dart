@@ -8,6 +8,7 @@ import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 
 import 'package:mindload/services/openai_service.dart';
+import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/document_processor.dart';
 
 import 'package:mindload/screens/study_screen.dart';
@@ -1149,48 +1150,113 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             'Starting AI generation for $flashcardCount flashcards and $quizCount quiz questions');
         final futures = <Future>[];
 
-        if (flashcardCount > 0) {
-          debugPrint('Adding flashcard generation to futures');
-          futures.add(OpenAIService.instance.generateFlashcardsFromContent(
-              content, flashcardCount, 'standard'));
-        }
-
-        if (quizCount > 0) {
-          debugPrint('Adding quiz generation to futures');
-          futures.add(OpenAIService.instance.generateQuizQuestionsFromContent(
-              content, quizCount, 'standard'));
-        }
-
-        debugPrint(
-            'Waiting for ${futures.length} AI generation futures to complete');
-        final results = await Future.wait(futures);
-        debugPrint('AI generation completed with ${results.length} results');
-
-        int resultIndex = 0;
-        if (flashcardCount > 0) {
-          debugPrint('Processing flashcard results at index $resultIndex');
-          flashcards = results[resultIndex] as List<Flashcard>;
-          debugPrint('Generated ${flashcards.length} flashcards');
-          // Trim to requested count
-          if (flashcards.length > flashcardCount) {
-            flashcards = flashcards.take(flashcardCount).toList();
-          }
-          resultIndex++;
-        }
-
-        if (quizCount > 0) {
-          debugPrint('Processing quiz results at index $resultIndex');
-          final quizQuestions = results[resultIndex] as List<QuizQuestion>;
-          debugPrint('Generated ${quizQuestions.length} quiz questions');
-          // Create a quiz from the questions
-          quiz = Quiz(
-            id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
-            title: 'Quiz for $title',
-            type: QuestionType.multipleChoice,
-            questions: quizQuestions,
-            results: [],
-            createdDate: DateTime.now(),
+        // Use enhanced AI service with multiple fallback options
+        try {
+          final enhancedResult =
+              await EnhancedAIService.instance.generateStudyMaterials(
+            content: content,
+            flashcardCount: flashcardCount,
+            quizCount: quizCount,
+            difficulty: 'standard',
           );
+
+          if (enhancedResult.isSuccess) {
+            debugPrint(
+                '✅ Enhanced AI generation successful using ${enhancedResult.method.name}');
+            if (enhancedResult.isFallback) {
+              debugPrint(
+                  '⚠️ Using fallback method: ${enhancedResult.method.name}');
+            }
+
+            // Set results directly
+            if (flashcardCount > 0) {
+              flashcards = enhancedResult.flashcards;
+              debugPrint('Generated ${flashcards.length} flashcards');
+              // Trim to requested count
+              if (flashcards.length > flashcardCount) {
+                flashcards = flashcards.take(flashcardCount).toList();
+              }
+            }
+
+            if (quizCount > 0) {
+              final quizQuestions = enhancedResult.quizQuestions;
+              debugPrint('Generated ${quizQuestions.length} quiz questions');
+              // Create a quiz from the questions
+              quiz = Quiz(
+                id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
+                title: 'Quiz for $title',
+                type: QuestionType.multipleChoice,
+                questions: quizQuestions,
+                results: [],
+                createdDate: DateTime.now(),
+              );
+            }
+          } else {
+            debugPrint(
+                '❌ Enhanced AI generation failed: ${enhancedResult.errorMessage}');
+            // Fallback to original service
+            if (flashcardCount > 0) {
+              debugPrint('Adding flashcard generation to futures');
+              futures.add(OpenAIService.instance.generateFlashcardsFromContent(
+                  content, flashcardCount, 'standard'));
+            }
+
+            if (quizCount > 0) {
+              debugPrint('Adding quiz generation to futures');
+              futures.add(OpenAIService.instance
+                  .generateQuizQuestionsFromContent(
+                      content, quizCount, 'standard'));
+            }
+          }
+        } catch (e) {
+          debugPrint('❌ Enhanced AI service failed: $e');
+          // Fallback to original service
+          if (flashcardCount > 0) {
+            debugPrint('Adding flashcard generation to futures');
+            futures.add(OpenAIService.instance.generateFlashcardsFromContent(
+                content, flashcardCount, 'standard'));
+          }
+
+          if (quizCount > 0) {
+            debugPrint('Adding quiz generation to futures');
+            futures.add(OpenAIService.instance.generateQuizQuestionsFromContent(
+                content, quizCount, 'standard'));
+          }
+        }
+
+        // Only process futures if enhanced AI failed and we're using fallback
+        if (futures.isNotEmpty) {
+          debugPrint(
+              'Waiting for ${futures.length} AI generation futures to complete');
+          final results = await Future.wait(futures);
+          debugPrint('AI generation completed with ${results.length} results');
+
+          int resultIndex = 0;
+          if (flashcardCount > 0) {
+            debugPrint('Processing flashcard results at index $resultIndex');
+            flashcards = results[resultIndex] as List<Flashcard>;
+            debugPrint('Generated ${flashcards.length} flashcards');
+            // Trim to requested count
+            if (flashcards.length > flashcardCount) {
+              flashcards = flashcards.take(flashcardCount).toList();
+            }
+            resultIndex++;
+          }
+
+          if (quizCount > 0) {
+            debugPrint('Processing quiz results at index $resultIndex');
+            final quizQuestions = results[resultIndex] as List<QuizQuestion>;
+            debugPrint('Generated ${quizQuestions.length} quiz questions');
+            // Create a quiz from the questions
+            quiz = Quiz(
+              id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
+              title: 'Quiz for $title',
+              type: QuestionType.multipleChoice,
+              questions: quizQuestions,
+              results: [],
+              createdDate: DateTime.now(),
+            );
+          }
         }
 
         // Check if we actually got content
@@ -2206,9 +2272,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       // Generate new flashcards and quizzes using the original content
       final newFlashcards = await OpenAIService.instance
-          .generateFlashcards(studySet.content, count: flashcardCount);
+          .generateFlashcardsFromContent(
+              studySet.content, flashcardCount, 'intermediate');
       final newQuizQuestions = await OpenAIService.instance
-          .generateQuiz(studySet.content, count: quizCount);
+          .generateQuizQuestions(studySet.content, quizCount, 'intermediate');
 
       // Credits are already managed by MindloadEconomyService
 

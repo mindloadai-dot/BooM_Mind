@@ -98,7 +98,7 @@ class MindloadEconomyConfig {
       quizPerToken: 30, // Free tier gets basic features
       pasteCharCaps: 500000, // Increased from 100,000 to 500,000
       pdfPageCaps: 30, // Increased from 2 to 30 pages
-      activeSetLimits: 3,
+      activeSetLimits: 30,
       rolloverLimits: 0,
       tierPrice: 0.0,
       monthlyYoutubeIngests:

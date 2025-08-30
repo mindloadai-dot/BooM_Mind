@@ -29,6 +29,12 @@ class AchievementTrackerService {
   int _ultraSessionsCount = 0;
   int _totalExports = 0;
 
+  // New tracking variables for enhanced achievement systems
+  int _weeklyStudyStreak = 0; // Weeks with 5+ sessions
+  int _editedCardsCount = 0; // Cards edited/reviewed
+  int _efficientSetCount = 0; // Sets created under time limit
+  int _efficiencyMasterCount = 0; // Sets created under 3 minutes
+
   /// Initialize tracker with local data
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -67,6 +73,12 @@ class AchievementTrackerService {
         _ultraSessionsCount = trackingData['ultraSessionsCount'] ?? 0;
         _totalExports = trackingData['totalExports'] ?? 0;
 
+        // Load new tracking variables
+        _weeklyStudyStreak = trackingData['weeklyStudyStreak'] ?? 0;
+        _editedCardsCount = trackingData['editedCardsCount'] ?? 0;
+        _efficientSetCount = trackingData['efficientSetCount'] ?? 0;
+        _efficiencyMasterCount = trackingData['efficiencyMasterCount'] ?? 0;
+
         developer.log('Loaded tracking data from local storage',
             name: 'AchievementTracker');
       }
@@ -92,6 +104,12 @@ class AchievementTrackerService {
         'efficientSetsInWindow': _efficientSetsInWindow,
         'ultraSessionsCount': _ultraSessionsCount,
         'totalExports': _totalExports,
+
+        // Save new tracking variables
+        'weeklyStudyStreak': _weeklyStudyStreak,
+        'editedCardsCount': _editedCardsCount,
+        'efficientSetCount': _efficientSetCount,
+        'efficiencyMasterCount': _efficiencyMasterCount,
       };
 
       await prefs.setString(_trackingDataKey, jsonEncode(trackingData));
@@ -375,11 +393,23 @@ class AchievementTrackerService {
     int? cardCount,
     String? setType,
     bool? isPublic,
+    Duration? creationTime,
   }) async {
     try {
       await initialize();
 
       _totalSetsMade += 1;
+
+      // Track efficient creation based on time
+      if (creationTime != null) {
+        if (creationTime.inMinutes < 3) {
+          _efficiencyMasterCount += 1;
+          await _updateEfficiencyMasterAchievements();
+        } else if (creationTime.inMinutes < 5) {
+          _efficientSetCount += 1;
+          await _updateEfficientCreatorAchievements();
+        }
+      }
 
       // Save data locally
       await _saveTrackingData();
@@ -394,10 +424,60 @@ class AchievementTrackerService {
       }
 
       developer.log(
-          'Study set created tracked: $_totalSetsMade (cards: $cardCount, type: $setType)',
+          'Study set created tracked: $_totalSetsMade (cards: $cardCount, type: $setType, time: ${creationTime?.inMinutes}min)',
           name: 'AchievementTracker');
     } catch (e) {
       developer.log('Failed to track study set creation: $e',
+          name: 'AchievementTracker', level: 900);
+    }
+  }
+
+  /// Track card editing for creation discipline achievements
+  Future<void> trackCardEdited({
+    required String cardId,
+    required String editType,
+    String? originalText,
+    String? newText,
+  }) async {
+    try {
+      await initialize();
+
+      _editedCardsCount += 1;
+
+      // Save data locally
+      await _saveTrackingData();
+
+      // Update review master achievement
+      await _updateReviewMasterAchievements();
+
+      developer.log('Card edited tracked: $_editedCardsCount (type: $editType)',
+          name: 'AchievementTracker');
+    } catch (e) {
+      developer.log('Failed to track card editing: $e',
+          name: 'AchievementTracker', level: 900);
+    }
+  }
+
+  /// Track weekly consistency for 5-per-week achievements
+  Future<void> trackWeeklyConsistency(int sessionsThisWeek) async {
+    try {
+      await initialize();
+
+      if (sessionsThisWeek >= 5) {
+        _weeklyStudyStreak += 1;
+
+        // Save data locally
+        await _saveTrackingData();
+
+        // Update consistency achievements
+        await _updateConsistencyAchievements();
+
+        developer.log(
+            'Weekly consistency tracked: $_weeklyStudyStreak weeks with 5+ sessions',
+            name: 'AchievementTracker');
+      }
+    } catch (e) {
+      developer.log('Failed to track weekly consistency: $e',
           name: 'AchievementTracker', level: 900);
     }
   }
@@ -551,6 +631,69 @@ class AchievementTrackerService {
     }
   }
 
+  /// Update consistency achievements
+  Future<void> _updateConsistencyAchievements() async {
+    try {
+      final updates = <String, int>{};
+
+      // Map weekly study streak to consistency achievements
+      updates[AchievementConstants.fiveAWeek] = _weeklyStudyStreak;
+      updates[AchievementConstants.fivePerWeek] = _weeklyStudyStreak;
+      updates[AchievementConstants.distractionFree] =
+          _distractionFreeSessionsCount;
+
+      await AchievementService.instance.bulkUpdateProgress(updates);
+    } catch (e) {
+      developer.log('Failed to update consistency achievements: $e',
+          name: 'AchievementTracker', level: 900);
+    }
+  }
+
+  /// Update efficient creator achievements
+  Future<void> _updateEfficientCreatorAchievements() async {
+    try {
+      final updates = <String, int>{};
+
+      // Map efficient creation count to achievement progress
+      updates[AchievementConstants.efficientCreator] = _efficientSetCount;
+
+      await AchievementService.instance.bulkUpdateProgress(updates);
+    } catch (e) {
+      developer.log('Failed to update efficient creator achievements: $e',
+          name: 'AchievementTracker', level: 900);
+    }
+  }
+
+  /// Update efficiency master achievements
+  Future<void> _updateEfficiencyMasterAchievements() async {
+    try {
+      final updates = <String, int>{};
+
+      // Map efficiency master count to achievement progress
+      updates[AchievementConstants.efficiencySage] = _efficiencyMasterCount;
+
+      await AchievementService.instance.bulkUpdateProgress(updates);
+    } catch (e) {
+      developer.log('Failed to update efficiency master achievements: $e',
+          name: 'AchievementTracker', level: 900);
+    }
+  }
+
+  /// Update review master achievements
+  Future<void> _updateReviewMasterAchievements() async {
+    try {
+      final updates = <String, int>{};
+
+      // Map edited cards count to review master achievement
+      updates[AchievementConstants.reviewMaster] = _editedCardsCount;
+
+      await AchievementService.instance.bulkUpdateProgress(updates);
+    } catch (e) {
+      developer.log('Failed to update review master achievements: $e',
+          name: 'AchievementTracker', level: 900);
+    }
+  }
+
   /// Reset all tracking data (for testing)
   Future<void> resetTrackingData() async {
     _currentStreak = 0;
@@ -564,6 +707,12 @@ class AchievementTrackerService {
     _efficientSetsInWindow = 0;
     _ultraSessionsCount = 0;
     _totalExports = 0;
+
+    // Reset new tracking variables
+    _weeklyStudyStreak = 0;
+    _editedCardsCount = 0;
+    _efficientSetCount = 0;
+    _efficiencyMasterCount = 0;
 
     // Save reset data locally
     await _saveTrackingData();
@@ -583,6 +732,13 @@ class AchievementTrackerService {
       'ultraSessionsCount': _ultraSessionsCount,
       'totalExports': _totalExports,
       'totalSetsMade': _totalSetsMade,
+      'distractionFreeSessionsCount': _distractionFreeSessionsCount,
+
+      // New tracking stats
+      'weeklyStudyStreak': _weeklyStudyStreak,
+      'editedCardsCount': _editedCardsCount,
+      'efficientSetCount': _efficientSetCount,
+      'efficiencyMasterCount': _efficiencyMasterCount,
     };
   }
 
@@ -706,7 +862,14 @@ class AchievementTrackerService {
     try {
       final updates = <String, int>{};
 
-      // Map review count to achievement progress
+      // Map review count to achievement progress - Cards Reviewed System
+      updates[AchievementConstants.review1k] = _totalCardsReviewed;
+      updates[AchievementConstants.review5k] = _totalCardsReviewed;
+      updates[AchievementConstants.review10k] = _totalCardsReviewed;
+      updates[AchievementConstants.review25k] = _totalCardsReviewed;
+      updates[AchievementConstants.review50k] = _totalCardsReviewed;
+
+      // Map review count to creation discipline - Review Master
       updates[AchievementConstants.reviewMaster] = _totalCardsReviewed;
 
       await AchievementService.instance.bulkUpdateProgress(updates);

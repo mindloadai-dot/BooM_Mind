@@ -1466,9 +1466,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       await AuthService.instance.signOut();
 
       if (mounted) {
-        // Clear any navigation stack and go to auth screen
+        // Clear any navigation stack and go to social auth screen
         Navigator.of(context)
-            .pushNamedAndRemoveUntil('/auth', (route) => false);
+            .pushNamedAndRemoveUntil('/social-auth', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -2935,7 +2935,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         }
         return;
       }
-      
+
       if (nickname.length < 2 || nickname.length > 24) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2950,7 +2950,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
       final userProfile = UserProfileService.instance;
       await userProfile.updateNickname(nickname);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2959,10 +2959,10 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           ),
         );
       }
-      
+
       // Add haptic feedback
       HapticFeedbackService().success();
-      
+
       debugPrint('✅ Nickname saved from profile dialog: $nickname');
     } catch (e) {
       if (mounted) {

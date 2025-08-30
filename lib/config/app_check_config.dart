@@ -9,20 +9,27 @@ class AppCheckConfig {
     try {
       print('Initializing Firebase App Check...');
 
-      // In debug mode, use debug providers or skip entirely
+      // Always use debug providers for development to avoid authentication issues
       if (kDebugMode) {
-        print('Debug mode: Using debug App Check providers');
+        print('Debug mode: Setting up debug App Check providers');
         try {
+          // For development, we'll set a debug token in environment or use debug provider
           await FirebaseAppCheck.instance.activate(
             androidProvider: AndroidProvider.debug,
             appleProvider: AppleProvider.debug,
-            // Skip web provider in debug mode to avoid ReCaptcha issues
+            // Use debug for web as well in development
+            webProvider:
+                ReCaptchaV3Provider('6LfGQoIqAAAAABfRlSGNXKGvlYl0_ZW5Hd6Ys5Bq'),
           );
+
+          // Set debug token if available
+          await _setDebugTokenIfAvailable();
+
           _isInitialized = true;
-          print('Firebase App Check activated successfully (debug mode)');
+          print('✅ Firebase App Check activated successfully (debug mode)');
         } catch (debugError) {
-          print('Debug App Check failed: $debugError');
-          print('Disabling App Check for debug mode');
+          print('❌ Debug App Check failed: $debugError');
+          print('Continuing without App Check for development');
           _isDisabled = true;
         }
       } else {
@@ -35,28 +42,49 @@ class AppCheckConfig {
             appleProvider: AppleProvider.deviceCheck,
           );
           _isInitialized = true;
-          print('Firebase App Check activated successfully (production mode)');
+          print(
+              '✅ Firebase App Check activated successfully (production mode)');
         } catch (prodError) {
-          print('Production App Check failed: $prodError');
-          print('Falling back to debug providers');
+          print('❌ Production App Check failed: $prodError');
+          print('Falling back to debug providers for production');
           try {
             await FirebaseAppCheck.instance.activate(
               androidProvider: AndroidProvider.debug,
               appleProvider: AppleProvider.debug,
             );
             _isInitialized = true;
-            print('Firebase App Check activated with debug providers');
+            print(
+                '⚠️ Firebase App Check activated with debug providers in production');
           } catch (fallbackError) {
-            print('All App Check providers failed: $fallbackError');
+            print('❌ All App Check providers failed: $fallbackError');
             _isDisabled = true;
           }
         }
       }
     } catch (e) {
-      print('Error initializing Firebase App Check: $e');
+      print('❌ Error initializing Firebase App Check: $e');
       print('App will continue without App Check functionality');
       _isDisabled = true;
       // Don't rethrow - allow app to continue without App Check
+    }
+  }
+
+  // Set debug token for development
+  static Future<void> _setDebugTokenIfAvailable() async {
+    try {
+      // You can set a debug token here for consistent development
+      // This token should be registered in Firebase Console -> App Check -> Debug tokens
+      const debugToken =
+          'your-debug-token-here'; // Replace with actual debug token
+
+      if (debugToken != 'your-debug-token-here') {
+        await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
+        print('🔧 Debug token configured for development');
+      } else {
+        print('ℹ️ No debug token configured - using default debug provider');
+      }
+    } catch (e) {
+      print('⚠️ Failed to set debug token: $e');
     }
   }
 

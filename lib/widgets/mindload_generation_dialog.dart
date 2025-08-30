@@ -139,14 +139,16 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
     final openAIService = OpenAIService.instance;
     
     // Generate study set content
-    final flashcards = await openAIService.generateFlashcards(
+            final flashcards = await openAIService.generateFlashcardsFromContent(
       content,
-      count: flashcardsCount,
+      flashcardsCount,
+      'intermediate',
     );
     
-    final quizQuestions = await openAIService.generateQuiz(
+    final quizQuestions = await openAIService.generateQuizQuestions(
       content,
-      count: quizCount,
+      quizCount,
+      'intermediate',
     );
 
     // Create study set
