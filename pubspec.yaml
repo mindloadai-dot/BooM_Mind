@@ -78,7 +78,7 @@ dependencies:
   share_plus: ^11.1.0
   
   # Charts & Data Visualization
-  fl_chart: ^0.68.0
+  # fl_chart: ^0.68.0  # Removed - using custom implementations instead
 
 dependency_overrides:
   # Work around Android build issues in latest sqflite_android by pinning to a compatible version
