@@ -1091,4 +1091,95 @@ GENERATION INSTRUCTIONS:
       );
     }
   }
+
+  /// Test the EnhancedAIService functionality
+  static Future<void> testEnhancedAIService() async {
+    debugPrint('🧪 Testing EnhancedAIService functionality...');
+    
+    try {
+      // Test with simple content
+      final testContent = '''
+        Artificial Intelligence (AI) is a branch of computer science that aims to create intelligent machines that work and react like humans. 
+        Some of the activities computers with artificial intelligence are designed for include speech recognition, learning, planning, and problem solving.
+        AI can be categorized as either weak AI or strong AI. Weak AI, also known as narrow AI, is designed to perform a narrow task. 
+        Strong AI, also known as artificial general intelligence, is an AI system with generalized human cognitive abilities.
+      ''';
+      
+      debugPrint('📝 Test content length: ${testContent.length} characters');
+      
+      // Test each generation method individually
+      debugPrint('🔍 Testing OpenAI generation...');
+      try {
+        final openaiResult = await instance._tryOpenAIGeneration(
+          content: testContent,
+          flashcardCount: 2,
+          quizCount: 1,
+          difficulty: 'medium',
+        );
+        debugPrint('✅ OpenAI test result: ${openaiResult.isSuccess}');
+        if (!openaiResult.isSuccess) {
+          debugPrint('❌ OpenAI error: ${openaiResult.errorMessage}');
+        }
+      } catch (e) {
+        debugPrint('❌ OpenAI test failed: $e');
+      }
+      
+      debugPrint('🔍 Testing Local AI fallback...');
+      try {
+        final localResult = await instance._tryLocalAIGeneration(
+          content: testContent,
+          flashcardCount: 2,
+          quizCount: 1,
+          difficulty: 'medium',
+        );
+        debugPrint('✅ Local AI test result: ${localResult.isSuccess}');
+        if (!localResult.isSuccess) {
+          debugPrint('❌ Local AI error: ${localResult.errorMessage}');
+        }
+      } catch (e) {
+        debugPrint('❌ Local AI test failed: $e');
+      }
+      
+      debugPrint('🔍 Testing Template generation...');
+      try {
+        final templateResult = await instance._tryTemplateGeneration(
+          content: testContent,
+          flashcardCount: 2,
+          quizCount: 1,
+          difficulty: 'medium',
+        );
+        debugPrint('✅ Template test result: ${templateResult.isSuccess}');
+        if (!templateResult.isSuccess) {
+          debugPrint('❌ Template error: ${templateResult.errorMessage}');
+        }
+      } catch (e) {
+        debugPrint('❌ Template test failed: $e');
+      }
+      
+      // Test main generation method
+      debugPrint('🔍 Testing main generation method...');
+      final result = await instance.generateStudyMaterials(
+        content: testContent,
+        flashcardCount: 3,
+        quizCount: 2,
+        difficulty: 'medium',
+      );
+      
+      debugPrint('✅ EnhancedAIService test completed');
+      debugPrint('📊 Method used: ${result.method.name}');
+      debugPrint('📊 Flashcards generated: ${result.flashcards.length}');
+      debugPrint('📊 Quiz questions generated: ${result.quizQuestions.length}');
+      debugPrint('📊 Processing time: ${result.processingTimeMs}ms');
+      debugPrint('📊 Is fallback: ${result.isFallback}');
+      debugPrint('📊 Success: ${result.isSuccess}');
+      
+      if (!result.isSuccess) {
+        debugPrint('❌ Error message: ${result.errorMessage}');
+      }
+      
+    } catch (e, stackTrace) {
+      debugPrint('❌ EnhancedAIService test failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
 }

@@ -2450,6 +2450,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       }
                     }
                     break;
+                  case 'test_ai':
+                    // Test EnhancedAIService
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Testing EnhancedAIService...'),
+                          backgroundColor: tokens.primary,
+                        ),
+                      );
+                    }
+                    
+                    try {
+                      await EnhancedAIService.testEnhancedAIService();
+                      
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'EnhancedAIService test completed! Check console for details.'),
+                            backgroundColor: tokens.success,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'EnhancedAIService test failed: $e'),
+                            backgroundColor: tokens.error,
+                          ),
+                        );
+                      }
+                    }
+                    break;
                   case 'token_test':
                     // Test token system
                     final economyService = MindloadEconomyService.instance;
@@ -2550,6 +2585,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 12),
                       Text(
                         'Test Notifications',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'test_ai',
+                  child: Row(
+                    children: [
+                      Icon(Icons.psychology, color: tokens.accent, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Test EnhancedAIService',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
                     ],
