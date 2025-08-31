@@ -5,6 +5,8 @@ The iOS build is failing due to CocoaPods dependency resolution conflicts, speci
 
 **Specific Issue**: `AppCheckCore` version conflict between `firebase_app_check` (requires ~> 10.19) and `google_sign_in_ios` (requires ~> 11.0).
 
+**Additional Issue**: Firebase Messaging requires iOS 16.0+ deployment target.
+
 ## Root Cause
 1. **Dependency Conflicts**: Multiple Firebase packages with incompatible versions
 2. **Removed fl_chart**: The `fl_chart` package was causing conflicts and has been removed
@@ -20,12 +22,17 @@ The iOS build is failing due to CocoaPods dependency resolution conflicts, speci
 - Updated all Firebase packages to latest compatible versions (v4-6.x)
 - This resolves the `AppCheckCore` version conflict between `firebase_app_check` and `google_sign_in_ios`
 
-### 3. ✅ Updated Podfile
-- Added `install! 'cocoapods', :deterministic_uuids => false` to resolve UUID conflicts
-- Added custom `firebase_pods` function to force compatible Firebase versions
-- Enhanced post_install script with comprehensive Firebase pod configurations
+### 3. ✅ Updated iOS Deployment Target
+- Updated iOS deployment target from 15.0 to 16.0 to meet Firebase Messaging requirements
+- Updated all Firebase pod versions to ~> 12.0 for compatibility
 
-### 4. ✅ Cleaned Project
+### 4. ✅ Updated Podfile
+- Added `install! 'cocoapods', :deterministic_uuids => false` to resolve UUID conflicts
+- Added custom `firebase_pods` function to force compatible Firebase versions (~> 12.0)
+- Enhanced post_install script with comprehensive Firebase pod configurations
+- Updated all deployment target references to iOS 16.0
+
+### 5. ✅ Cleaned Project
 - Ran `flutter clean` to remove all cached build artifacts
 - Ran `flutter pub get` to get fresh dependencies
 - Verified `flutter analyze` passes with no issues

@@ -1,21 +1,21 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '15.0'
+platform :ios, '16.0'
 
 # Add this to resolve dependency conflicts
 install! 'cocoapods', :deterministic_uuids => false
 
 # Force specific versions to resolve AppCheckCore conflict
 def firebase_pods
-  pod 'Firebase/Core', '~> 11.0'
-  pod 'Firebase/Auth', '~> 11.0'
-  pod 'Firebase/Firestore', '~> 11.0'
-  pod 'Firebase/Storage', '~> 11.0'
-  pod 'Firebase/Messaging', '~> 11.0'
-  pod 'Firebase/Analytics', '~> 11.0'
-  pod 'Firebase/Functions', '~> 11.0'
-  pod 'Firebase/AppCheck', '~> 11.0'
-  pod 'Firebase/RemoteConfig', '~> 11.0'
-  pod 'AppCheckCore', '~> 11.0'
+  pod 'Firebase/Core', '~> 12.0'
+  pod 'Firebase/Auth', '~> 12.0'
+  pod 'Firebase/Firestore', '~> 12.0'
+  pod 'Firebase/Storage', '~> 12.0'
+  pod 'Firebase/Messaging', '~> 12.0'
+  pod 'Firebase/Analytics', '~> 12.0'
+  pod 'Firebase/Functions', '~> 12.0'
+  pod 'Firebase/AppCheck', '~> 12.0'
+  pod 'Firebase/RemoteConfig', '~> 12.0'
+  pod 'AppCheckCore', '~> 12.0'
 end
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
@@ -64,8 +64,8 @@ post_install do |installer|
     target.build_configurations.each do |config|
       # ===== 2025 iOS BUILD RULES COMPLIANCE =====
       
-      # 1. Force iOS 15.0+ deployment target for ALL pods
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # 1. Force iOS 16.0+ deployment target for ALL pods
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       
       # 2. Force Swift 5.0 for ALL pods (eliminates Swift version warnings)
       config.build_settings['SWIFT_VERSION'] = '5.0'
@@ -91,53 +91,53 @@ post_install do |installer|
       # 6. Fix specific problematic pods - comprehensive list
       case target.name
       when 'BoringSSL-GRPC', 'BoringSSL-GRPC-openssl_grpc'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['ENABLE_BITCODE'] = 'NO'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'Firebase', 'FirebaseCore', 'FirebaseAuth', 'FirebaseFirestore', 'FirebaseFunctions', 'FirebaseStorage', 'FirebaseMessaging', 'FirebaseRemoteConfig', 'FirebaseInstallations', 'FirebaseAppCheck', 'FirebaseABTesting'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'FirebaseCore-FirebaseCore_Privacy', 'FirebaseAuth-FirebaseAuth_Privacy', 'FirebaseFirestore-FirebaseFirestore_Privacy', 'FirebaseMessaging-FirebaseMessaging_Privacy', 'FirebaseRemoteConfig-FirebaseRemoteConfig_Privacy', 'FirebaseInstallations-FirebaseInstallations_Privacy', 'FirebaseABTesting-FirebaseABTesting_Privacy'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'FirebaseCoreInternal', 'FirebaseCoreInternal-FirebaseCoreInternal_Privacy', 'FirebaseCoreExtension', 'FirebaseCoreExtension-FirebaseCoreExtension_Privacy', 'FirebaseFirestoreInternal', 'FirebaseFirestoreInternal-FirebaseFirestoreInternal_Privacy'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'FirebaseAuthInterop', 'FirebaseMessagingInterop', 'FirebaseRemoteConfigInterop', 'FirebaseAppCheckInterop'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'FirebaseSharedSwift'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'GoogleUtilities', 'GoogleDataTransport', 'GTMSessionFetcher', 'GTMSessionFetcher-GTMSessionFetcher_Core_Privacy', 'GoogleAppMeasurement', 'GoogleAdsOnDeviceConversion', 'FirebaseAnalytics'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'GTMAppAuth', 'GTMAppAuth-GTMAppAuth_Privacy'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'AppAuth', 'AppAuth-AppAuthCore_Privacy', 'AppCheckCore'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'DKPhotoGallery', 'DKPhotoGallery-DKPhotoGallery', 'DKImagePickerController', 'DKImagePickerController-DKImagePickerController'
-        # Force these legacy pods to iOS 15.0+ and disable them if possible
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        # Force these legacy pods to iOS 16.0+ and disable them if possible
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
         config.build_settings['ENABLE_BITCODE'] = 'NO'
         # Try to suppress deprecated API warnings
         config.build_settings['GCC_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
         config.build_settings['CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
       when 'abseil', 'abseil-xcprivacy'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'Flutter'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
       when 'SDWebImage', 'SDWebImage-SDWebImage', 'SwiftyGif', 'SwiftyGif-SwiftyGif'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
         config.build_settings['ENABLE_BITCODE'] = 'NO'
       when 'gRPC-Core', 'gRPC-Core-grpc', 'gRPC-C++', 'gRPC-C++-grpcpp', 'gRPC-C++-gRPCCertificates-Cpp'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         config.build_settings['SWIFT_VERSION'] = '5.0'
         config.build_settings['ENABLE_BITCODE'] = 'NO'
       end
@@ -166,7 +166,7 @@ post_install do |installer|
     aggregate_target.user_project.targets.each do |target|
       if target.name == 'Runner'
         target.build_configurations.each do |config|
-          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
           config.build_settings['SWIFT_VERSION'] = '5.0'
           config.build_settings['ENABLE_BITCODE'] = 'NO'
           config.build_settings['VALID_ARCHS'] = 'arm64'
