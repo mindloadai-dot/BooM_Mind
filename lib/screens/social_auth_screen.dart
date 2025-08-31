@@ -1,4 +1,3 @@
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'dart:math';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
@@ -93,7 +92,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
 
   Future<void> _signInWithProvider(AuthProvider provider) async {
     if (!mounted) return;
-    
+
     setState(() {
       _isSigningIn = true;
       _currentProvider = provider.name;
@@ -101,7 +100,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
 
     try {
       print('🔐 Starting sign-in with ${provider.name}...');
-      
+
       final authService = Provider.of<AuthService>(context, listen: false);
       final firebaseClient = FirebaseClientService.instance;
       AuthUser? user;
@@ -119,7 +118,8 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                 return;
               }
             } catch (e) {
-              print('⚠️ Firebase client Google Sign-In failed, trying auth service: $e');
+              print(
+                  '⚠️ Firebase client Google Sign-In failed, trying auth service: $e');
             }
           }
           user = await authService.signInWithGoogle();
@@ -130,7 +130,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
           if (!Platform.isIOS && !Platform.isMacOS) {
             throw Exception('Apple Sign-In is only available on iOS and macOS');
           }
-          
+
           // Try Firebase client first, fallback to existing auth service
           if (firebaseClient.isInitialized) {
             try {
@@ -141,7 +141,8 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                 return;
               }
             } catch (e) {
-              print('⚠️ Firebase client Apple Sign-In failed, trying auth service: $e');
+              print(
+                  '⚠️ Firebase client Apple Sign-In failed, trying auth service: $e');
             }
           }
           user = await authService.signInWithApple();
@@ -165,7 +166,8 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                 return;
               }
             } catch (e) {
-              print('⚠️ Firebase client biometric Sign-In failed, trying auth service: $e');
+              print(
+                  '⚠️ Firebase client biometric Sign-In failed, trying auth service: $e');
             }
           }
           user = await authService.signInAsAdminTest();
@@ -367,11 +369,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
       return Scaffold(
         backgroundColor: context.tokens.surface,
         body: const Center(
-          child: AIProcessingLoadingBar(
-          statusText: 'Loading...',
-          progress: 0.5,
-          height: 40,
-        ),
+          child: CircularProgressIndicator(),
         ),
       );
     }
@@ -702,10 +700,8 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                                           ? SizedBox(
                                               width: 16,
                                               height: 16,
-                                              child: AIProcessingLoadingBar(
-                                                statusText: '',
-                                                progress: 0.7,
-                                                height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
                                               ),
                                             )
                                           : Icon(
@@ -784,10 +780,8 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
             ? SizedBox(
                 width: 20,
                 height: 20,
-                child: AIProcessingLoadingBar(
-                  statusText: '',
-                  progress: 0.7,
-                  height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
                 ),
               )
             : Icon(icon, color: textColor, size: 24),
@@ -952,10 +946,8 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                     ? SizedBox(
                         width: 24,
                         height: 24,
-                        child: AIProcessingLoadingBar(
-                          statusText: '',
-                          progress: 0.8,
-                          height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
                         ),
                       )
                     : Text(

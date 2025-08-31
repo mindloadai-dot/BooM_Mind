@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/services/auth_service.dart';
@@ -75,20 +74,21 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     try {
       final bool isAvailable = await _localAuth.canCheckBiometrics;
       final bool isDeviceSupported = await _localAuth.isDeviceSupported();
-      
+
       if (kDebugMode) {
-        debugPrint('Biometric check: isAvailable=$isAvailable, isDeviceSupported=$isDeviceSupported');
+        debugPrint(
+            'Biometric check: isAvailable=$isAvailable, isDeviceSupported=$isDeviceSupported');
       }
-      
+
       if (isAvailable && isDeviceSupported) {
         // Check what biometric methods are actually available
         final availableBiometrics = await _localAuth.getAvailableBiometrics();
         final hasBiometrics = availableBiometrics.isNotEmpty;
-        
+
         if (kDebugMode) {
           debugPrint('Available biometrics: $availableBiometrics');
         }
-        
+
         setState(() {
           _hasBiometrics = hasBiometrics;
         });
@@ -111,12 +111,12 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     if (kDebugMode) {
       debugPrint('Testing biometric authentication...');
       debugPrint('Has biometrics: $_hasBiometrics');
-      
+
       try {
         final isAvailable = await _localAuth.canCheckBiometrics;
         final isDeviceSupported = await _localAuth.isDeviceSupported();
         final availableBiometrics = await _localAuth.getAvailableBiometrics();
-        
+
         debugPrint('Test results:');
         debugPrint('  canCheckBiometrics: $isAvailable');
         debugPrint('  isDeviceSupported: $isDeviceSupported');
@@ -131,7 +131,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     // Don't automatically check cached authentication state
     // This prevents authentication bypass when the app is restarted
     // Users must go through the proper authentication flow each time
-    
+
     // Only check if user is already authenticated with Firebase
     // final bool isAuthenticated = await StorageService.instance.isAuthenticated();
     // if (isAuthenticated) {
@@ -185,8 +185,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         try {
           // Try to sign in with Firebase using stored credentials or anonymous auth
           final authService = AuthService.instance;
-          final user = await authService.signInAsAdminTest(); // For now, use admin test
-          
+          final user =
+              await authService.signInAsAdminTest(); // For now, use admin test
+
           if (user != null) {
             // Log successful authentication
             TelemetryService.instance.logEvent(
@@ -200,12 +201,14 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
             _navigateToHome();
           } else {
             setState(() {
-              _errorMessage = 'Authentication successful but failed to sign in to account';
+              _errorMessage =
+                  'Authentication successful but failed to sign in to account';
             });
           }
         } catch (firebaseError) {
           setState(() {
-            _errorMessage = 'Biometric authentication successful, but account sign-in failed: ${firebaseError.toString()}';
+            _errorMessage =
+                'Biometric authentication successful, but account sign-in failed: ${firebaseError.toString()}';
           });
         }
       } else {
@@ -226,16 +229,19 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       }
     } catch (e) {
       String errorMessage;
-      
+
       // Provide user-friendly error messages
       if (e.toString().contains('NotAvailable')) {
-        errorMessage = 'Biometric authentication is not available on this device';
+        errorMessage =
+            'Biometric authentication is not available on this device';
       } else if (e.toString().contains('NotEnrolled')) {
         errorMessage = 'No biometric methods are enrolled on this device';
       } else if (e.toString().contains('PasscodeNotSet')) {
-        errorMessage = 'Device passcode must be set to use biometric authentication';
+        errorMessage =
+            'Device passcode must be set to use biometric authentication';
       } else if (e.toString().contains('Lockout')) {
-        errorMessage = 'Biometric authentication is temporarily locked. Please try again later.';
+        errorMessage =
+            'Biometric authentication is temporarily locked. Please try again later.';
       } else if (e.toString().contains('UserCancel')) {
         errorMessage = 'Authentication was cancelled';
       } else {
@@ -271,8 +277,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     try {
       // Try to sign in with Firebase using fallback method
       final authService = AuthService.instance;
-      final user = await authService.signInAsAdminTest(); // For now, use admin test
-      
+      final user =
+          await authService.signInAsAdminTest(); // For now, use admin test
+
       if (user != null) {
         // Log successful authentication
         TelemetryService.instance.logEvent(
@@ -497,11 +504,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                           ? SizedBox(
                               width: 24,
                               height: 24,
-                              child: AIProcessingLoadingBar(
-                                statusText: '',
-                                progress: 0.8,
-                                height: 24,
-                              ),
+                              child: CircularProgressIndicator(),
                             )
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,

@@ -1,4 +1,3 @@
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -365,11 +364,7 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
           SizedBox(
             width: 20,
             height: 20,
-            child: AIProcessingLoadingBar(
-              statusText: '',
-              progress: 0.6,
-              height: 20,
-            ),
+            child: CircularProgressIndicator(),
           ),
           const SizedBox(width: 12),
           Text(

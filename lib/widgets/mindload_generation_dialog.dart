@@ -1,4 +1,3 @@
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
@@ -26,7 +25,8 @@ class MindloadGenerationDialog extends StatefulWidget {
   });
 
   @override
-  State<MindloadGenerationDialog> createState() => _MindloadGenerationDialogState();
+  State<MindloadGenerationDialog> createState() =>
+      _MindloadGenerationDialogState();
 }
 
 class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
@@ -48,7 +48,7 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
 
   Future<void> _generateContent() async {
     final economyService = context.read<MindloadEconomyService>();
-    
+
     // Create generation request
     final request = GenerationRequest(
       sourceContent: widget.sourceContent,
@@ -80,35 +80,37 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
       final outputCounts = economyService.getOutputCounts();
       final flashcardsCount = outputCounts['flashcards']!;
       final quizCount = outputCounts['quiz']!;
-      
+
       // Record budget usage (estimate cost)
       final estimatedCost = _estimateOpenAICost(
         widget.sourceContent.length,
         flashcardsCount + quizCount,
         economyService.budgetState == BudgetState.savingsMode,
       );
-      
+
       await economyService.recordBudgetUsage(estimatedCost);
 
       // Generate content with OpenAI
       final studySet = await _callOpenAI(
         widget.sourceContent,
-        _titleController.text.isNotEmpty ? _titleController.text : 'Generated Study Set',
+        _titleController.text.isNotEmpty
+            ? _titleController.text
+            : 'Generated Study Set',
         flashcardsCount,
         quizCount,
-        economyService.budgetState == BudgetState.savingsMode, // Use efficient model
+        economyService.budgetState ==
+            BudgetState.savingsMode, // Use efficient model
       );
 
       // Success - close dialog and return result
       if (mounted) {
         Navigator.of(context).pop(studySet);
       }
-
     } catch (e) {
       setState(() {
         _lastAttemptFailed = true;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -137,23 +139,26 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
     bool useEfficientModel,
   ) async {
     // Use EnhancedAIService for robust AI generation
-    final enhancedResult = await EnhancedAIService.instance.generateStudyMaterials(
+    final enhancedResult =
+        await EnhancedAIService.instance.generateStudyMaterials(
       content: content,
       flashcardCount: flashcardsCount,
       quizCount: quizCount,
       difficulty: 'intermediate',
     );
-    
+
     if (!enhancedResult.isSuccess) {
-      throw Exception('Failed to generate content: ${enhancedResult.errorMessage}');
+      throw Exception(
+          'Failed to generate content: ${enhancedResult.errorMessage}');
     }
-    
+
     final flashcards = enhancedResult.flashcards;
     final quizQuestions = enhancedResult.quizQuestions;
 
     // Create study set
     return StudySet(
-      id: widget.existingSetId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.existingSetId ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       content: content,
       flashcards: flashcards,
@@ -173,16 +178,17 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
     // Rough estimate based on OpenAI pricing
     final inputTokens = (inputLength / 4).round(); // ~4 chars per token
     final outputTokens = outputItems * 100; // ~100 tokens per item
-    
+
     const inputCostPer1k = 0.00015; // GPT-4o-mini input
     const outputCostPer1k = 0.0006; // GPT-4o-mini output
-    
-    double cost = (inputTokens * inputCostPer1k / 1000) + (outputTokens * outputCostPer1k / 1000);
-    
+
+    double cost = (inputTokens * inputCostPer1k / 1000) +
+        (outputTokens * outputCostPer1k / 1000);
+
     if (efficient) {
       cost *= 0.8; // 20% savings in efficient mode
     }
-    
+
     return cost;
   }
 
@@ -196,7 +202,8 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const PaywallScreen(trigger: 'content_generation'),
+            builder: (context) =>
+                const PaywallScreen(trigger: 'content_generation'),
             fullscreenDialog: true,
           ),
         );
@@ -207,7 +214,8 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const PaywallScreen(trigger: 'content_generation'),
+            builder: (context) =>
+                const PaywallScreen(trigger: 'content_generation'),
             fullscreenDialog: true,
           ),
         );
@@ -217,13 +225,15 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
         Navigator.of(context).pop(); // Close generation dialog
         // TODO: Navigate to set manager
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Navigate to set manager to archive sets')),
+          const SnackBar(
+              content: Text('Navigate to set manager to archive sets')),
         );
       },
       onTrimContent: () {
         Navigator.of(context).pop(); // Close enforcement dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please reduce content size and try again')),
+          const SnackBar(
+              content: Text('Please reduce content size and try again')),
         );
       },
     );
@@ -235,7 +245,7 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
       builder: (context, economyService, child) {
         final economy = economyService.userEconomy;
         final budgetState = economyService.budgetState;
-        
+
         if (economy == null) {
           return const AlertDialog(
             title: Text('Error'),
@@ -249,10 +259,11 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
         final isOverLimit = sourceCharCount > pasteLimit;
 
         final tokens = context.tokens;
-        
+
         return AlertDialog(
           backgroundColor: tokens.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(
@@ -283,21 +294,21 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                 ),
                 enabled: !_isGenerating,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Source Info
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isOverLimit 
-                      ? Colors.red.withValues(alpha:  0.1)
+                  color: isOverLimit
+                      ? Colors.red.withValues(alpha: 0.1)
                       : tokens.surfaceAlt,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isOverLimit 
-                        ? Colors.red.withValues(alpha:  0.3)
-                        : tokens.surface.withValues(alpha:  0.3),
+                    color: isOverLimit
+                        ? Colors.red.withValues(alpha: 0.3)
+                        : tokens.surface.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -308,34 +319,35 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                         Icon(
                           Icons.text_snippet_outlined,
                           size: 16,
-                          color: isOverLimit ? Colors.red : tokens.textSecondary,
+                          color:
+                              isOverLimit ? Colors.red : tokens.textSecondary,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Source Content',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: isOverLimit ? Colors.red : tokens.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: isOverLimit
+                                        ? Colors.red
+                                        : tokens.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                       ],
                     ),
-                    
                     const SizedBox(height: 8),
-                    
                     Text(
                       '${(sourceCharCount / 1000).toStringAsFixed(1)}K / ${(pasteLimit / 1000).round()}K characters',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isOverLimit ? Colors.red : tokens.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                            color:
+                                isOverLimit ? Colors.red : tokens.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
-                    
                     const SizedBox(height: 4),
-                    
                     LinearProgressIndicator(
                       value: (sourceCharCount / pasteLimit).clamp(0.0, 1.0),
-                      backgroundColor: tokens.surface.withValues(alpha:  0.3),
+                      backgroundColor: tokens.surface.withValues(alpha: 0.3),
                       valueColor: AlwaysStoppedAnimation(
                         isOverLimit ? Colors.red : tokens.primary,
                       ),
@@ -343,36 +355,37 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Output Preview
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: tokens.primary.withValues(alpha:  0.1),
+                  color: tokens.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: tokens.primary.withValues(alpha:  0.3)),
+                  border:
+                      Border.all(color: tokens.primary.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.auto_awesome, color: tokens.primary, size: 16),
+                        Icon(Icons.auto_awesome,
+                            color: tokens.primary, size: 16),
                         const SizedBox(width: 8),
                         Text(
                           'Will Generate',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: tokens.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: tokens.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                       ],
                     ),
-                    
                     const SizedBox(height: 8),
-                    
                     Row(
                       children: [
                         _buildOutputBadge(
@@ -381,7 +394,8 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                           Icons.style_outlined,
                         ),
                         const SizedBox(width: 8),
-                        Text('+', style: TextStyle(color: tokens.textSecondary)),
+                        Text('+',
+                            style: TextStyle(color: tokens.textSecondary)),
                         const SizedBox(width: 8),
                         _buildOutputBadge(
                           context,
@@ -390,19 +404,20 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                         ),
                       ],
                     ),
-                    
                     if (budgetState == BudgetState.savingsMode) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.battery_saver, size: 12, color: Colors.orange),
+                          Icon(Icons.battery_saver,
+                              size: 12, color: Colors.orange),
                           const SizedBox(width: 4),
                           Text(
                             'Efficient mode active',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.orange,
-                              fontSize: 10,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.orange,
+                                      fontSize: 10,
+                                    ),
                           ),
                         ],
                       ),
@@ -410,9 +425,9 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Credit Status
               MindloadCreditStatus(
                 economy: economy,
@@ -422,7 +437,8 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
           ),
           actions: [
             TextButton(
-              onPressed: _isGenerating ? null : () => Navigator.of(context).pop(),
+              onPressed:
+                  _isGenerating ? null : () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
                 style: TextStyle(color: tokens.textSecondary),
@@ -433,7 +449,7 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: tokens.primary,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: tokens.surface.withValues(alpha:  0.3),
+                disabledBackgroundColor: tokens.surface.withValues(alpha: 0.3),
               ),
               child: _isGenerating
                   ? const Row(
@@ -442,10 +458,8 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                         SizedBox(
                           width: 16,
                           height: 16,
-                          child: AIProcessingLoadingBar(
-                            statusText: '',
-                            progress: 0.7,
-                            height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
                           ),
                         ),
                         SizedBox(width: 8),
@@ -453,7 +467,7 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                       ],
                     )
                   : Text(
-                      widget.isRecreate 
+                      widget.isRecreate
                           ? (_lastAttemptFailed ? 'Retry (Free)' : 'Recreate')
                           : 'Generate',
                     ),
@@ -481,7 +495,7 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: tokens.primary.withValues(alpha:  0.2),
+        color: tokens.primary.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -492,10 +506,10 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
           Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: tokens.primary,
-              fontWeight: FontWeight.w500,
-              fontSize: 11,
-            ),
+                  color: tokens.primary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 11,
+                ),
           ),
         ],
       ),

@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/models/study_data.dart';
 
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 
@@ -290,10 +289,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   SizedBox(
                     width: 12,
                     height: 12,
-                    child: AIProcessingLoadingBar(
-                      statusText: '',
-                      progress: 0.8,
-                      height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
                     ),
                   ),
                 ],
@@ -600,10 +597,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: AIProcessingLoadingBar(
-                    statusText: '',
-                    progress: 0.6,
-                    height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
                   ),
                 ),
                 const SizedBox(width: Spacing.md),
@@ -2215,10 +2210,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               SizedBox(
                 width: 20,
                 height: 20,
-                child: AIProcessingLoadingBar(
-                  statusText: '',
-                  progress: 0.7,
-                  height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
                 ),
               ),
               const SizedBox(width: Spacing.md),
@@ -2424,10 +2417,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       );
                     }
-                    
+
                     try {
                       await MindLoadNotificationService.runComprehensiveTest();
-                      
+
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -2441,8 +2434,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                                'Notification test failed: $e'),
+                            content: Text('Notification test failed: $e'),
                             backgroundColor: tokens.error,
                           ),
                         );
@@ -2459,10 +2451,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       );
                     }
-                    
+
                     try {
                       await EnhancedAIService.testEnhancedAIService();
-                      
+
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -2476,8 +2468,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                                'EnhancedAIService test failed: $e'),
+                            content: Text('EnhancedAIService test failed: $e'),
                             backgroundColor: tokens.error,
                           ),
                         );
@@ -2489,18 +2480,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Testing PDF to Flashcards conversion...'),
+                          content:
+                              Text('Testing PDF to Flashcards conversion...'),
                           backgroundColor: tokens.primary,
                         ),
                       );
                     }
-                    
+
                     try {
-                      await PDFFlashcardTestService.testPDFToFlashcardsConversion();
+                      await PDFFlashcardTestService
+                          .testPDFToFlashcardsConversion();
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('PDF to Flashcards test completed! Check debug console for detailed results.'),
+                            content: Text(
+                                'PDF to Flashcards test completed! Check debug console for detailed results.'),
                             backgroundColor: tokens.success,
                             duration: Duration(seconds: 5),
                           ),
@@ -2640,7 +2634,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   value: 'test_pdf_conversion',
                   child: Row(
                     children: [
-                      Icon(Icons.picture_as_pdf, color: tokens.warning, size: 20),
+                      Icon(Icons.picture_as_pdf,
+                          color: tokens.warning, size: 20),
                       const SizedBox(width: 12),
                       Text(
                         'Test PDF to Flashcards',
@@ -2848,10 +2843,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: AIProcessingLoadingBar(
-                      statusText: 'Processing...',
-                      progress: _scanAnimation.value,
-                      height: 100,
+                    child: CircularProgressIndicator(
+                      value: _scanAnimation.value,
                     ),
                   ),
                   Center(
@@ -3752,11 +3745,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         SizedBox(
                           width: 20,
                           height: 20,
-                          child: AIProcessingLoadingBar(
-                            statusText: '',
-                            progress: 0.6,
-                            height: 20,
-                          ),
+                          child: CircularProgressIndicator(),
                         ),
                         const SizedBox(width: 12),
                         Text(
@@ -4053,10 +4042,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              AIProcessingLoadingBar(
-                statusText: '',
-                progress: percentage,
-                height: 40,
+              CircularProgressIndicator(
+                value: percentage,
               ),
               Text(
                 '$remaining',

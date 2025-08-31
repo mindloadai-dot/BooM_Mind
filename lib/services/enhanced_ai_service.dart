@@ -510,8 +510,10 @@ class EnhancedAIService {
                   }
 
                   // Validate required fields
-                  if (itemMap['question'] == null || itemMap['answer'] == null) {
-                    debugPrint('⚠️ Flashcard missing required fields: $itemMap');
+                  if (itemMap['question'] == null ||
+                      itemMap['answer'] == null) {
+                    debugPrint(
+                        '⚠️ Flashcard missing required fields: $itemMap');
                     return null;
                   }
 
@@ -519,8 +521,10 @@ class EnhancedAIService {
                   return Flashcard(
                     id: itemMap['id']?.toString() ??
                         'flashcard_${DateTime.now().millisecondsSinceEpoch}_${itemMap.hashCode}',
-                    question: itemMap['question']?.toString() ?? 'No question provided',
-                    answer: itemMap['answer']?.toString() ?? 'No answer provided',
+                    question: itemMap['question']?.toString() ??
+                        'No question provided',
+                    answer:
+                        itemMap['answer']?.toString() ?? 'No answer provided',
                     difficulty: _mapStringToDifficultyLevel(
                         itemMap['difficulty']?.toString() ?? 'intermediate'),
                   );
@@ -533,7 +537,8 @@ class EnhancedAIService {
               .cast<Flashcard>()
               .toList();
         } else {
-          debugPrint('❌ Flashcards data is not a List: ${flashcardsData.runtimeType}');
+          debugPrint(
+              '❌ Flashcards data is not a List: ${flashcardsData.runtimeType}');
         }
       } else {
         debugPrint(
@@ -617,8 +622,11 @@ class EnhancedAIService {
                   }
 
                   // Validate required fields
-                  if (itemMap['question'] == null || itemMap['options'] == null || itemMap['correctAnswer'] == null) {
-                    debugPrint('⚠️ Quiz question missing required fields: $itemMap');
+                  if (itemMap['question'] == null ||
+                      itemMap['options'] == null ||
+                      itemMap['correctAnswer'] == null) {
+                    debugPrint(
+                        '⚠️ Quiz question missing required fields: $itemMap');
                     return null;
                   }
 
@@ -630,7 +638,7 @@ class EnhancedAIService {
                         .where((option) => option.isNotEmpty)
                         .toList();
                   }
-                  
+
                   if (options.isEmpty) {
                     options = ['No options provided'];
                   }
@@ -639,14 +647,17 @@ class EnhancedAIService {
                   return QuizQuestion(
                     id: itemMap['id']?.toString() ??
                         'quiz_${DateTime.now().millisecondsSinceEpoch}_${itemMap.hashCode}',
-                    question: itemMap['question']?.toString() ?? 'No question provided',
+                    question: itemMap['question']?.toString() ??
+                        'No question provided',
                     options: options,
-                    correctAnswer: itemMap['correctAnswer']?.toString() ?? 'No correct answer provided',
+                    correctAnswer: itemMap['correctAnswer']?.toString() ??
+                        'No correct answer provided',
                     difficulty: _mapStringToDifficultyLevel(
                         itemMap['difficulty']?.toString() ?? 'intermediate'),
                   );
                 } catch (itemError) {
-                  debugPrint('❌ Error processing quiz question item: $itemError');
+                  debugPrint(
+                      '❌ Error processing quiz question item: $itemError');
                   return null;
                 }
               })
@@ -654,7 +665,8 @@ class EnhancedAIService {
               .cast<QuizQuestion>()
               .toList();
         } else {
-          debugPrint('❌ Questions data is not a List: ${questionsData.runtimeType}');
+          debugPrint(
+              '❌ Questions data is not a List: ${questionsData.runtimeType}');
         }
       } else {
         debugPrint(
@@ -1185,7 +1197,7 @@ GENERATION INSTRUCTIONS:
   /// Test the EnhancedAIService functionality
   static Future<void> testEnhancedAIService() async {
     debugPrint('🧪 Testing EnhancedAIService functionality...');
-    
+
     try {
       // Test with simple content
       final testContent = '''
@@ -1194,9 +1206,9 @@ GENERATION INSTRUCTIONS:
         AI can be categorized as either weak AI or strong AI. Weak AI, also known as narrow AI, is designed to perform a narrow task. 
         Strong AI, also known as artificial general intelligence, is an AI system with generalized human cognitive abilities.
       ''';
-      
+
       debugPrint('📝 Test content length: ${testContent.length} characters');
-      
+
       // Test each generation method individually
       debugPrint('🔍 Testing OpenAI generation...');
       try {
@@ -1213,7 +1225,7 @@ GENERATION INSTRUCTIONS:
       } catch (e) {
         debugPrint('❌ OpenAI test failed: $e');
       }
-      
+
       debugPrint('🔍 Testing Local AI fallback...');
       try {
         final localResult = await instance._tryLocalAIGeneration(
@@ -1229,7 +1241,7 @@ GENERATION INSTRUCTIONS:
       } catch (e) {
         debugPrint('❌ Local AI test failed: $e');
       }
-      
+
       debugPrint('🔍 Testing Template generation...');
       try {
         final templateResult = await instance._tryTemplateGeneration(
@@ -1245,7 +1257,7 @@ GENERATION INSTRUCTIONS:
       } catch (e) {
         debugPrint('❌ Template test failed: $e');
       }
-      
+
       // Test main generation method
       debugPrint('🔍 Testing main generation method...');
       final result = await instance.generateStudyMaterials(
@@ -1254,7 +1266,7 @@ GENERATION INSTRUCTIONS:
         quizCount: 2,
         difficulty: 'medium',
       );
-      
+
       debugPrint('✅ EnhancedAIService test completed');
       debugPrint('📊 Method used: ${result.method.name}');
       debugPrint('📊 Flashcards generated: ${result.flashcards.length}');
@@ -1262,11 +1274,10 @@ GENERATION INSTRUCTIONS:
       debugPrint('📊 Processing time: ${result.processingTimeMs}ms');
       debugPrint('📊 Is fallback: ${result.isFallback}');
       debugPrint('📊 Success: ${result.isSuccess}');
-      
+
       if (!result.isSuccess) {
         debugPrint('❌ Error message: ${result.errorMessage}');
       }
-      
     } catch (e, stackTrace) {
       debugPrint('❌ EnhancedAIService test failed: $e');
       debugPrint('❌ Stack trace: $stackTrace');

@@ -1,4 +1,3 @@
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/theme.dart';
@@ -485,10 +484,8 @@ class _ExportScreenState extends State<ExportScreen> {
                     SizedBox(
                       width: 16,
                       height: 16,
-                      child: AIProcessingLoadingBar(
-                        statusText: '',
-                        progress: 0.6,
-                        height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
                       ),
                     ),
                     const SizedBox(width: 12),

@@ -21,7 +21,7 @@ import 'package:mindload/core/youtube_utils.dart';
 import 'package:mindload/services/youtube_service.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/widgets/youtube_preview_card.dart';
-import 'package:mindload/widgets/scifi_loading_bar.dart';
+
 import 'package:flutter/foundation.dart';
 
 import 'package:mindload/services/enhanced_storage_service.dart';
@@ -1357,13 +1357,8 @@ class _CreateScreenState extends State<CreateScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: tokens.borderDefault),
               ),
-              child: AIProcessingLoadingBar(
-                progress: _processingProgress,
-                statusText: _processingStatus.isNotEmpty
-                    ? _processingStatus
-                    : 'Loading video preview...',
-                primaryColor: tokens.primary,
-                height: 10.0,
+              child: LinearProgressIndicator(
+                value: _processingProgress,
               ),
             ),
           ] else if (_currentYouTubePreview != null) ...[
@@ -1497,13 +1492,8 @@ class _CreateScreenState extends State<CreateScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: tokens.borderDefault),
               ),
-              child: AIProcessingLoadingBar(
-                progress: _processingProgress,
-                statusText: _processingStatus.isNotEmpty
-                    ? _processingStatus
-                    : 'Processing document...',
-                primaryColor: tokens.primary,
-                height: 10.0,
+              child: LinearProgressIndicator(
+                value: _processingProgress,
               ),
             ),
           ],
@@ -1693,13 +1683,8 @@ class _CreateScreenState extends State<CreateScreen>
                 border: Border.all(
                     color: tokens.borderDefault.withValues(alpha: 0.3)),
               ),
-              child: AIProcessingLoadingBar(
-                progress: _processingProgress,
-                statusText: _processingStatus.isNotEmpty
-                    ? _processingStatus
-                    : 'Processing document...',
-                primaryColor: tokens.primary,
-                height: 8.0,
+              child: LinearProgressIndicator(
+                value: _processingProgress,
               ),
             ),
           ],
@@ -2838,13 +2823,8 @@ class _CreateScreenState extends State<CreateScreen>
                           children: [
                             SizedBox(
                               width: 120,
-                              child: AIProcessingLoadingBar(
-                                progress: _processingProgress,
-                                statusText: _processingStatus.isNotEmpty
-                                    ? _processingStatus
-                                    : 'Generating...',
-                                primaryColor: tokens.onPrimary,
-                                height: 6.0,
+                              child: LinearProgressIndicator(
+                                value: _processingProgress,
                               ),
                             ),
                           ],

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/models/study_data.dart';
 
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/widgets/notification_settings_dialog.dart';
 import 'package:mindload/services/pdf_export_service.dart';
@@ -817,10 +816,8 @@ class _StudyScreenState extends State<StudyScreen>
               SizedBox(
                 width: 20,
                 height: 20,
-                child: AIProcessingLoadingBar(
-                  statusText: '',
-                  progress: 0.6,
-                  height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
                 ),
               ),
               const SizedBox(width: Spacing.md),
@@ -1159,10 +1156,8 @@ class _StudyScreenState extends State<StudyScreen>
               SizedBox(
                 width: 20,
                 height: 20,
-                child: AIProcessingLoadingBar(
-                  statusText: '',
-                  progress: 0.7,
-                  height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
                 ),
               ),
               const SizedBox(width: Spacing.md),
@@ -1626,11 +1621,7 @@ class _StudyScreenState extends State<StudyScreen>
           _currentCardIndex = 0;
         });
         return const Center(
-            child: AIProcessingLoadingBar(
-          statusText: 'Loading...',
-          progress: 0.5,
-          height: 40,
-        ));
+            child: CircularProgressIndicator());
       }
 
       final Flashcard currentCard =
@@ -2293,11 +2284,7 @@ class _StudyScreenState extends State<StudyScreen>
         _currentQuestionIndex = 0;
       });
       return const Center(
-          child: AIProcessingLoadingBar(
-        statusText: 'Loading...',
-        progress: 0.5,
-        height: 40,
-      ));
+          child: CircularProgressIndicator());
     }
 
     final tokens = context.tokens;
@@ -3137,18 +3124,20 @@ class _StudyScreenState extends State<StudyScreen>
   void _trackFlashcardInteraction() {
     final now = DateTime.now();
     _flashcardsReviewed++;
-    
+
     // Estimate response time based on when answer was shown
-    final responseTime = _flashcardSessionStart != null 
-        ? now.difference(_flashcardSessionStart!).inSeconds.toDouble() / _flashcardsReviewed
+    final responseTime = _flashcardSessionStart != null
+        ? now.difference(_flashcardSessionStart!).inSeconds.toDouble() /
+            _flashcardsReviewed
         : 3.0;
     _flashcardResponseTimes.add(responseTime);
-    
+
     // For now, assume 70% accuracy rate for flashcards (can be improved with actual user feedback)
-    if (_flashcardsReviewed % 3 != 0) { // Roughly 67% correct rate
+    if (_flashcardsReviewed % 3 != 0) {
+      // Roughly 67% correct rate
       _flashcardsCorrect++;
     }
-    
+
     // Track session data periodically
     _trackFlashcardSessionInNeuroGraph();
   }

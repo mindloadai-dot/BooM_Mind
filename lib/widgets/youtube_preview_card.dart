@@ -1,4 +1,3 @@
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
@@ -387,9 +386,12 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
     return SizedBox(
       width: double.infinity,
       child: GestureDetector(
-        onLongPressStart: (isDisabled || widget.onIngest == null) ? null : _onLongPressStart,
-        onLongPressEnd: (isDisabled || widget.onIngest == null) ? null : _onLongPressEnd,
-        onLongPressCancel: (isDisabled || widget.onIngest == null) ? null : _onLongPressCancel,
+        onLongPressStart:
+            (isDisabled || widget.onIngest == null) ? null : _onLongPressStart,
+        onLongPressEnd:
+            (isDisabled || widget.onIngest == null) ? null : _onLongPressEnd,
+        onLongPressCancel:
+            (isDisabled || widget.onIngest == null) ? null : _onLongPressCancel,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
@@ -408,11 +410,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
                 ? SizedBox(
                     height: 20,
                     width: 20,
-                    child: AIProcessingLoadingBar(
-                      statusText: '',
-                      progress: 0.6,
-                      height: 20,
-                    ),
+                    child: CircularProgressIndicator(),
                   )
                 : Text(
                     _getButtonText(),

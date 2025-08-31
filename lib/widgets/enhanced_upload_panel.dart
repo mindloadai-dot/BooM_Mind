@@ -7,7 +7,6 @@ import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/services/youtube_service.dart';
 import 'package:mindload/widgets/token_estimation_display.dart';
 import 'package:mindload/widgets/youtube_preview_card.dart';
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 
 import 'package:mindload/theme.dart';
 
@@ -325,11 +324,8 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
                   border: Border.all(
                       color: tokens.borderDefault.withValues(alpha: 0.3)),
                 ),
-                child: AIProcessingLoadingBar(
-                  progress: 0.5, // Default progress for loading
-                  statusText: 'Loading video preview...',
-                  primaryColor: tokens.primary,
-                  height: 10.0,
+                child: LinearProgressIndicator(
+                  value: 0.5, // Default progress for loading
                 ),
               ),
               const SizedBox(height: 16),
@@ -396,11 +392,8 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
                       children: [
                         SizedBox(
                           width: 120,
-                          child: AIProcessingLoadingBar(
-                            progress: 0.5, // Default progress for processing
-                            statusText: 'Processing...',
-                            primaryColor: tokens.onPrimary,
-                            height: 6.0,
+                          child: LinearProgressIndicator(
+                            value: 0.5, // Default progress for processing
                           ),
                         ),
                       ],
