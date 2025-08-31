@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:mindload/services/storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 import 'package:mindload/models/study_data.dart';
@@ -620,12 +620,12 @@ class CreditService extends ChangeNotifier {
       'lastFlashcardCount': _lastFlashcardCount,
     };
 
-    await StorageService.instance.saveCreditData(data);
+    await EnhancedStorageService.instance.saveCreditData(data);
   }
 
   Future<void> _loadCreditData() async {
     try {
-      final data = await StorageService.instance.getCreditData();
+      final data = await EnhancedStorageService.instance.getCreditData();
       if (data != null) {
         _currentPlan = SubscriptionPlan.values.firstWhere(
           (plan) => plan.name == data['currentPlan'],

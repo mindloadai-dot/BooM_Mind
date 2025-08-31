@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:mindload/services/storage_service.dart';
+
 import 'package:mindload/l10n/app_localizations.dart';
 import 'dart:io';
 
@@ -70,7 +70,7 @@ class RemoteConfigService extends ChangeNotifier {
 
   Future<void> initialize() async {
     try {
-      await _loadConfigFromStorage();
+      // Use default config values for now
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
@@ -94,6 +94,19 @@ class RemoteConfigService extends ChangeNotifier {
 
   // MindLoad Logic Pack descriptions
   String get logicPacksDescription => getString('logic_packs_description');
+
+  // IAP-specific flags
+  bool get iapOnlyMode => getBool('iap_only_mode');
+  bool get manageLinksEnabled => getBool('manage_links_enabled');
+
+  // Get all config values
+  Map<String, dynamic> getAllConfigValues() {
+    return {
+      'iap_only_mode': iapOnlyMode,
+      'manage_links_enabled': manageLinksEnabled,
+      // Add other config values as needed
+    };
+  }
 
   // Get free quota with country override
   int get freeQuotaForUser {
@@ -185,23 +198,14 @@ class RemoteConfigService extends ChangeNotifier {
     };
   }
 
+  // Load config from storage (placeholder for future implementation)
   Future<void> _loadConfigFromStorage() async {
-    try {
-      final stored = await StorageService.instance.getRemoteConfig();
-      if (stored != null) {
-        _config = {..._config, ...stored};
-      }
-    } catch (e) {
-      debugPrint('Error loading config from storage: $e');
-    }
+    // TODO: Implement remote config storage when needed
   }
 
+  // Save config to storage (placeholder for future implementation)
   Future<void> _saveConfigToStorage() async {
-    try {
-      await StorageService.instance.saveRemoteConfig(_config);
-    } catch (e) {
-      debugPrint('Error saving config to storage: $e');
-    }
+    // TODO: Implement remote config storage when needed
   }
 
   // For development/testing - reset to defaults

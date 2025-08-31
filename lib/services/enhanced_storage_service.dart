@@ -829,4 +829,229 @@ class EnhancedStorageService extends ChangeNotifier {
       return false;
     }
   }
+
+  // Clear all data (compatibility method)
+  Future<void> clearAllData() async {
+    try {
+      _metadata.clear();
+      _fullStudySets.clear();
+      _syncQueue.clear();
+
+      _totals = StorageTotals(
+        totalBytes: 0,
+        totalSets: 0,
+        totalItems: 0,
+        lastUpdated: DateTime.now(),
+      );
+
+      // Clear storage files
+      if (_isWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_metadataFileName);
+        await prefs.remove(_totalsFileName);
+        await prefs.remove(_offlineCacheFileName);
+        await prefs.remove(_syncQueueFileName);
+      } else {
+        final directory = await getApplicationDocumentsDirectory();
+        final files = [
+          _metadataFileName,
+          _totalsFileName,
+          _offlineCacheFileName,
+          _syncQueueFileName,
+        ];
+
+        for (final fileName in files) {
+          final file = File('${directory.path}/$fileName');
+          if (await file.exists()) {
+            await file.delete();
+          }
+        }
+      }
+
+      notifyListeners();
+      debugPrint('✅ All data cleared successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to clear all data: $e');
+      rethrow;
+    }
+  }
+
+  // User data compatibility methods
+  Future<void> saveUserData(Map<String, dynamic> userData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_data', jsonEncode(userData));
+      debugPrint('✅ User data saved');
+    } catch (e) {
+      debugPrint('❌ Failed to save user data: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('user_data');
+      if (data != null) {
+        return jsonDecode(data) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get user data: $e');
+      return null;
+    }
+  }
+
+  Future<void> clearUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_data');
+      debugPrint('✅ User data cleared');
+    } catch (e) {
+      debugPrint('❌ Failed to clear user data: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> setAuthenticated(bool authenticated) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_authenticated', authenticated);
+      debugPrint('✅ Authentication state set to: $authenticated');
+    } catch (e) {
+      debugPrint('❌ Failed to set authentication state: $e');
+      rethrow;
+    }
+  }
+
+  // Get storage statistics
+  Map<String, dynamic> getStorageStats() {
+    final usagePercentage =
+        _totals.getUsagePercentage(StorageConfig.storageBudgetMB);
+
+    return {
+      'totalBytes': _totals.totalBytes,
+      'totalSets': _totals.totalSets,
+      'totalItems': _totals.totalItems,
+      'budgetMB': StorageConfig.storageBudgetMB,
+      'usagePercentage': usagePercentage,
+      'freeSpaceGB':
+          10, // Placeholder - could be calculated from device storage
+      'lastUpdated': _totals.lastUpdated.toIso8601String(),
+    };
+  }
+
+  // Credit data compatibility methods
+  Future<void> saveCreditData(Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('credit_data', jsonEncode(data));
+      debugPrint('✅ Credit data saved');
+    } catch (e) {
+      debugPrint('❌ Failed to save credit data: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCreditData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('credit_data');
+      if (data != null) {
+        return jsonDecode(data) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get credit data: $e');
+      return null;
+    }
+  }
+
+  // User entitlements compatibility methods
+  Future<void> saveUserEntitlements(
+      String userId, Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_entitlements_$userId', jsonEncode(data));
+      debugPrint('✅ User entitlements saved for user: $userId');
+    } catch (e) {
+      debugPrint('❌ Failed to save user entitlements: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserEntitlements(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('user_entitlements_$userId');
+      if (data != null) {
+        return jsonDecode(data) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get user entitlements: $e');
+      return null;
+    }
+  }
+
+  // Theme compatibility methods
+  Future<String?> getSelectedTheme() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('selected_theme');
+    } catch (e) {
+      debugPrint('❌ Failed to get selected theme: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveSelectedTheme(String themeId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_theme', themeId);
+      debugPrint('✅ Selected theme saved: $themeId');
+    } catch (e) {
+      debugPrint('❌ Failed to save selected theme: $e');
+      rethrow;
+    }
+  }
+
+  // Pin management methods
+  void togglePin(String setId) {
+    if (_metadata.containsKey(setId)) {
+      final metadata = _metadata[setId]!;
+      final updatedMetadata = metadata.copyWith(isPinned: !metadata.isPinned);
+      _metadata[setId] = updatedMetadata;
+      _saveMetadata();
+      notifyListeners();
+      debugPrint(
+          '✅ Toggled pin for set: $setId (${updatedMetadata.isPinned ? 'pinned' : 'unpinned'})');
+    }
+  }
+
+  // JSON data compatibility methods
+  Future<Map<String, dynamic>?> getJsonData(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString(key);
+      if (data != null) {
+        return jsonDecode(data) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get JSON data for key $key: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveJsonData(String key, Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, jsonEncode(data));
+      debugPrint('✅ JSON data saved for key: $key');
+    } catch (e) {
+      debugPrint('❌ Failed to save JSON data for key $key: $e');
+      rethrow;
+    }
+  }
 }

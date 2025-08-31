@@ -41,8 +41,6 @@ class ProductConstants {
   static const String cortexPackDescription =
       'Extra bonus kicks in here (125% vs Neuro). Feels like a bargain';
 
-
-
   // Quantum Pack
   static const String quantumPackName = 'Quantum Pack';
   static const double quantumPackPriceUsd = 49.99;
@@ -198,4 +196,45 @@ class ProductConstants {
       'Purchase successful! MindLoad Tokens have been added to your account.';
   static const String subscriptionSuccessMessage =
       'Subscription activated! You now have access to MindLoad Tokens each month plus Ultra Mode.';
+
+  // ============================================================================
+  // NEUROGRAPH INSIGHTS STRINGS
+  // ============================================================================
+
+  // Tab and Navigation
+  static const String insightsTabLabel = 'Insights';
+  static const String neurographTitle = 'NeuroGraph';
+  static const String neurographSubtitle =
+      'Your learning patterns, beautifully mapped.';
+
+  // Empty State
+  static const String neurographEmptyTitle = 'Warming up your graph';
+  static const String neurographEmptyBody =
+      'Do one 10-minute study to start drawing your learning fingerprint.';
+  static const String neurographEmptyCta = 'Start a quick session';
+
+  // Badge
+  static const String neurographUpdatedBadge = 'Updated';
+
+  // Chart Labels
+  static const String studyHeatmapTitle = 'Study Time Heatmap';
+  static const String studyHeatmapSubtitle = 'When you study most';
+  static const String streakSparklineTitle = '30-Day Streak';
+  static const String streakSparklineSubtitle = 'Your consistency';
+  static const String recallRadarTitle = 'Recall by Subject';
+  static const String recallRadarSubtitle = 'Your strengths';
+  static const String efficiencyBarTitle = 'Study Efficiency';
+  static const String efficiencyBarSubtitle = 'Correct/min & response time';
+  static const String forgettingCurveTitle = 'Forgetting Curve';
+  static const String forgettingCurveSubtitle = 'Due vs reviewed';
+
+  // Quick Tips
+  static const String quickTipsTitle = 'Quick Tips';
+  static const String quickTipsSubtitle = 'Based on your data';
+
+  // Analysis & Tips
+  static const String analysisTitle = 'Analysis';
+  static const String analysisSubtitle = 'Your learning insights';
+  static const String quickTipsCardTitle = 'Quick Tips';
+  static const String quickTipsCardSubtitle = 'Actionable suggestions';
 }

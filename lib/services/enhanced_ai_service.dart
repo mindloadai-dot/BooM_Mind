@@ -186,10 +186,12 @@ class EnhancedAIService {
       // Get tokens
       final appCheckToken = await _getAppCheckToken();
       final idToken = await _getIdToken();
-      debugPrint('✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
+      debugPrint(
+          '✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
 
       // Generate flashcards
-      debugPrint('🔍 Enhanced AI: Calling generateFlashcards Cloud Function...');
+      debugPrint(
+          '🔍 Enhanced AI: Calling generateFlashcards Cloud Function...');
       final flashcardCallable = _functions.httpsCallable('generateFlashcards');
       final flashcardResult = await flashcardCallable.call({
         'content': content,
@@ -199,8 +201,10 @@ class EnhancedAIService {
       });
       debugPrint('✅ Enhanced AI: Flashcard Cloud Function call successful');
 
-      debugPrint('🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
-      debugPrint('🔍 Enhanced AI: Flashcard result data: ${flashcardResult.data}');
+      debugPrint(
+          '🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
+      debugPrint(
+          '🔍 Enhanced AI: Flashcard result data: ${flashcardResult.data}');
 
       // Generate quiz questions
       debugPrint('🔍 Enhanced AI: Calling generateQuiz Cloud Function...');
@@ -213,7 +217,8 @@ class EnhancedAIService {
       });
       debugPrint('✅ Enhanced AI: Quiz Cloud Function call successful');
 
-      debugPrint('🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
+      debugPrint(
+          '🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
       debugPrint('🔍 Enhanced AI: Quiz result data: ${quizResult.data}');
 
       // Parse results
@@ -714,17 +719,18 @@ class EnhancedAIService {
   }
 
   String _generateTemplateAnswer(List<String> sentences, String difficulty) {
-    if (sentences.isEmpty)
+    if (sentences.isEmpty) {
       return 'The answer can be found in the provided content.';
+    }
 
     final keySentence = sentences.first;
     switch (difficulty.toLowerCase()) {
       case 'easy':
         return keySentence;
       case 'medium':
-        return '${keySentence} This concept is important for understanding the broader context.';
+        return '$keySentence This concept is important for understanding the broader context.';
       case 'hard':
-        return '${keySentence} This has significant implications for the overall understanding of the topic.';
+        return '$keySentence This has significant implications for the overall understanding of the topic.';
       default:
         return keySentence;
     }
@@ -889,8 +895,10 @@ class EnhancedAIService {
   }) {
     // Extract existing questions to avoid duplication
     final existingQuestions = <String>[];
-    existingQuestions.addAll(existingFlashcards.map((f) => f.question.toLowerCase()));
-    existingQuestions.addAll(existingQuizQuestions.map((q) => q.question.toLowerCase()));
+    existingQuestions
+        .addAll(existingFlashcards.map((f) => f.question.toLowerCase()));
+    existingQuestions
+        .addAll(existingQuizQuestions.map((q) => q.question.toLowerCase()));
 
     // Create a comprehensive prompt that ensures different content
     final enhancedPrompt = '''
@@ -934,16 +942,19 @@ GENERATION INSTRUCTIONS:
     required String difficulty,
   }) async {
     try {
-      debugPrint('🚀 Enhanced AI: Attempting OpenAI generation for additional content...');
+      debugPrint(
+          '🚀 Enhanced AI: Attempting OpenAI generation for additional content...');
       // Ensure authentication
       await _ensureAuthentication();
       debugPrint('✅ Enhanced AI: Authentication ensured');
       // Get tokens
       final appCheckToken = await _getAppCheckToken();
       final idToken = await _getIdToken();
-      debugPrint('✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
+      debugPrint(
+          '✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
       // Generate flashcards
-      debugPrint('🔍 Enhanced AI: Calling generateFlashcards Cloud Function with enhanced prompt...');
+      debugPrint(
+          '🔍 Enhanced AI: Calling generateFlashcards Cloud Function with enhanced prompt...');
       final flashcardCallable = _functions.httpsCallable('generateFlashcards');
       final flashcardResult = await flashcardCallable.call({
         'content': enhancedContent,
@@ -952,10 +963,13 @@ GENERATION INSTRUCTIONS:
         'appCheckToken': appCheckToken,
       });
       debugPrint('✅ Enhanced AI: Flashcard Cloud Function call successful');
-      debugPrint('🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
-      debugPrint('🔍 Enhanced AI: Flashcard result data: ${flashcardResult.data}');
+      debugPrint(
+          '🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
+      debugPrint(
+          '🔍 Enhanced AI: Flashcard result data: ${flashcardResult.data}');
       // Generate quiz questions
-      debugPrint('🔍 Enhanced AI: Calling generateQuiz Cloud Function with enhanced prompt...');
+      debugPrint(
+          '🔍 Enhanced AI: Calling generateQuiz Cloud Function with enhanced prompt...');
       final quizCallable = _functions.httpsCallable('generateQuiz');
       final quizResult = await quizCallable.call({
         'content': enhancedContent,
@@ -964,14 +978,16 @@ GENERATION INSTRUCTIONS:
         'appCheckToken': appCheckToken,
       });
       debugPrint('✅ Enhanced AI: Quiz Cloud Function call successful');
-      debugPrint('🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
+      debugPrint(
+          '🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
       debugPrint('🔍 Enhanced AI: Quiz result data: ${quizResult.data}');
       // Parse results
       debugPrint('🔍 Enhanced AI: Parsing flashcards...');
       final flashcards = _parseFlashcards(flashcardResult.data);
       debugPrint('🔍 Enhanced AI: Parsing quiz questions...');
       final quizQuestions = _parseQuizQuestions(quizResult.data);
-      debugPrint('✅ Enhanced AI: OpenAI generation for additional content successful');
+      debugPrint(
+          '✅ Enhanced AI: OpenAI generation for additional content successful');
       return GenerationResult(
         flashcards: flashcards,
         quizQuestions: quizQuestions,
@@ -979,7 +995,8 @@ GENERATION INSTRUCTIONS:
         processingTimeMs: 0,
       );
     } catch (e) {
-      debugPrint('❌ Enhanced AI: OpenAI generation for additional content failed: $e');
+      debugPrint(
+          '❌ Enhanced AI: OpenAI generation for additional content failed: $e');
       return GenerationResult(
         flashcards: [],
         quizQuestions: [],
@@ -1039,7 +1056,8 @@ GENERATION INSTRUCTIONS:
     required String difficulty,
   }) async {
     try {
-      debugPrint('📋 Attempting Template-based generation for additional content...');
+      debugPrint(
+          '📋 Attempting Template-based generation for additional content...');
 
       final flashcards = await _generateTemplateFlashcards(
         content: enhancedContent,
@@ -1053,7 +1071,8 @@ GENERATION INSTRUCTIONS:
         difficulty: difficulty,
       );
 
-      debugPrint('✅ Template-based generation for additional content successful');
+      debugPrint(
+          '✅ Template-based generation for additional content successful');
       return GenerationResult(
         flashcards: flashcards,
         quizQuestions: quizQuestions,
@@ -1061,7 +1080,8 @@ GENERATION INSTRUCTIONS:
         processingTimeMs: 0,
       );
     } catch (e) {
-      debugPrint('❌ Template-based generation for additional content failed: $e');
+      debugPrint(
+          '❌ Template-based generation for additional content failed: $e');
       return GenerationResult(
         flashcards: [],
         quizQuestions: [],

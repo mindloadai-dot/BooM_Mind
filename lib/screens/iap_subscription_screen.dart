@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:mindload/models/iap_firebase_models.dart';
 import 'package:mindload/services/in_app_purchase_service.dart';
 import 'package:mindload/services/firebase_iap_service.dart';
-import 'package:mindload/services/firebase_remote_config_service.dart';
+import 'package:mindload/services/remote_config_service.dart';
 
 class IapSubscriptionScreen extends StatefulWidget {
   const IapSubscriptionScreen({super.key});
@@ -16,8 +16,7 @@ class IapSubscriptionScreen extends StatefulWidget {
 class _IapSubscriptionScreenState extends State<IapSubscriptionScreen> {
   final InAppPurchaseService _purchaseService = InAppPurchaseService.instance;
   final FirebaseIapService _firebaseIap = FirebaseIapService.instance;
-  final FirebaseRemoteConfigService _remoteConfig =
-      FirebaseRemoteConfigService.instance;
+  final RemoteConfigService _remoteConfig = RemoteConfigService.instance;
 
   FirebaseUser? _userData;
   UserEntitlement? _entitlement;

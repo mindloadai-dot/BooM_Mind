@@ -6,6 +6,7 @@ import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/theme.dart';
+
 import 'dart:math' as math;
 
 /// Modern Onboarding Screen with Enhanced UX
@@ -29,6 +30,14 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   late AnimationController _pulseController;
   late AnimationController _backgroundController;
 
+  // New enhanced animation controllers
+  late AnimationController _bounceController;
+  late AnimationController _flipController;
+  late AnimationController _waveController;
+  late AnimationController _shimmerController;
+  late AnimationController _morphController;
+  late AnimationController _particleController;
+
   // Animations
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -37,13 +46,24 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   late Animation<double> _pulseAnimation;
   late Animation<double> _backgroundAnimation;
 
+  // Enhanced animations
+  late Animation<double> _bounceAnimation;
+  late Animation<double> _flipAnimation;
+  late Animation<double> _waveAnimation;
+  late Animation<double> _shimmerAnimation;
+  late Animation<double> _morphAnimation;
+
   // State
   int _currentPage = 0;
+  int _lastPageIndex = 0;
   bool _videoInitialized = false;
   bool _isTransitioning = false;
   final TextEditingController _nicknameController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _nicknameValid = false;
+
+  // Transition direction tracking
+  bool _isForwardTransition = true;
 
   // Onboarding pages data
   final List<OnboardingPageData> _pages = [
@@ -60,6 +80,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
         'Personalized learning paths',
         'AI-generated study materials',
       ],
+      transitionType: TransitionType.morph,
     ),
     OnboardingPageData(
       title: 'Personalize Your Journey',
@@ -70,6 +91,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       primaryColor: const Color(0xFF8B5CF6),
       secondaryColor: const Color(0xFFEC4899),
       isInteractive: true,
+      transitionType: TransitionType.morph,
     ),
     OnboardingPageData(
       title: 'Intelligent Study Tools',
@@ -85,6 +107,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
         'Interactive flashcards',
         'Adaptive quizzes',
       ],
+      transitionType: TransitionType.morph,
     ),
     OnboardingPageData(
       title: 'Track Your Progress',
@@ -100,6 +123,24 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
         'Progress tracking',
         'Study streaks',
       ],
+      transitionType: TransitionType.morph,
+    ),
+    OnboardingPageData(
+      title: 'Choose Your Style',
+      subtitle: 'Personalize Your Experience',
+      description:
+          'Select from multiple beautiful themes to match your mood and preferences',
+      icon: Icons.palette_rounded,
+      primaryColor: const Color(0xFF8B5CF6),
+      secondaryColor: const Color(0xFFEC4899),
+      features: [
+        '7 unique themes available',
+        'Classic, Matrix, Retro styles',
+        'Cyber Neon & Purple Neon',
+        'Dark Mode & Minimal options',
+      ],
+      isThemeShowcase: true,
+      transitionType: TransitionType.morph,
     ),
     OnboardingPageData(
       title: 'Ready to Begin?',
@@ -110,6 +151,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       primaryColor: const Color(0xFF6366F1),
       secondaryColor: const Color(0xFF10B981),
       isFinal: true,
+      transitionType: TransitionType.morph,
     ),
   ];
 
@@ -119,6 +161,37 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     _initializeControllers();
     _initializeAnimations();
     _initializeVideo();
+
+    // Performance optimization: Reduce animation frequency on lower-end devices
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _optimizeForPerformance();
+      }
+    });
+  }
+
+  void _optimizeForPerformance() {
+    // More aggressive performance optimization to reduce ImageReader_JNI warnings
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+
+    if (devicePixelRatio < 2.0) {
+      // Lower-end device - significantly reduce animation complexity
+      _waveController.duration = const Duration(milliseconds: 4000);
+      _shimmerController.duration = const Duration(milliseconds: 5000);
+      _rotateController.duration = const Duration(seconds: 30);
+      _pulseController.duration = const Duration(seconds: 3);
+      _backgroundController.duration = const Duration(seconds: 15);
+    } else if (devicePixelRatio < 3.0) {
+      // Mid-range device - moderate reduction
+      _waveController.duration = const Duration(milliseconds: 3000);
+      _shimmerController.duration = const Duration(milliseconds: 4000);
+      _rotateController.duration = const Duration(seconds: 25);
+      _pulseController.duration = const Duration(seconds: 2);
+      _backgroundController.duration = const Duration(seconds: 12);
+    }
+
+    // Reduce floating particles for all devices
+    // This will be handled in the build method
   }
 
   void _initializeControllers() {
@@ -147,6 +220,31 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       duration: const Duration(seconds: 10),
       vsync: this,
     )..repeat(reverse: true);
+
+    // Enhanced controllers (reduced for better performance)
+    _bounceController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _flipController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _waveController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat(reverse: true);
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    )..repeat();
+    _morphController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    // Removed particle controller to reduce buffer usage
+
+    // Note: Performance optimization will be applied in _optimizeForPerformance()
   }
 
   void _initializeAnimations() {
@@ -184,22 +282,88 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       end: 1,
     ).animate(_backgroundController);
 
+    // New enhanced animations
+    _bounceAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _bounceController,
+      curve: Curves.elasticOut,
+    ));
+    _flipAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _flipController,
+      curve: Curves.easeInOutBack,
+    ));
+    _waveAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _waveController,
+      curve: Curves.easeInOut,
+    ));
+    _shimmerAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+    _morphAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _morphController,
+      curve: Curves.easeInOutCubic,
+    ));
+
     // Start initial animations with proper sequencing
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
-        _fadeController.forward();
-        Future.delayed(const Duration(milliseconds: 100), () {
+        _startPageAnimations();
+      }
+    });
+  }
+
+  void _startPageAnimations() {
+    _fadeController.forward();
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        _scaleController.forward();
+        Future.delayed(const Duration(milliseconds: 150), () {
           if (mounted) {
-            _scaleController.forward();
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (mounted) {
-                _slideController.forward();
-              }
-            });
+            _slideController.forward();
+            _startTransitionSpecificAnimations();
           }
         });
       }
     });
+  }
+
+  void _startTransitionSpecificAnimations() {
+    final currentPage = _pages[_currentPage];
+    switch (currentPage.transitionType) {
+      case TransitionType.bounce:
+        _bounceController.forward();
+        break;
+      case TransitionType.flip:
+        _flipController.forward();
+        break;
+      case TransitionType.morph:
+        _morphController.forward();
+        break;
+      case TransitionType.zoom:
+        _scaleController.forward();
+        break;
+      case TransitionType.slide:
+        _slideController.forward();
+        break;
+      case TransitionType.fade:
+        _fadeController.forward();
+        break;
+    }
   }
 
   Future<void> _initializeVideo() async {
@@ -209,6 +373,14 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       await _videoController.initialize();
       await _videoController.setLooping(true);
       await _videoController.setVolume(0);
+
+      // Performance optimization: Reduce video quality on lower-end devices
+      final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+      if (devicePixelRatio < 2.0) {
+        // Lower-end device - reduce video quality to minimize buffer usage
+        await _videoController.setPlaybackSpeed(0.8);
+      }
+
       await _videoController.play();
       if (mounted) {
         setState(() {
@@ -229,6 +401,11 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     _rotateController.stop();
     _pulseController.stop();
     _backgroundController.stop();
+    _bounceController.stop();
+    _flipController.stop();
+    _waveController.stop();
+    _shimmerController.stop();
+    _morphController.stop();
 
     // Dispose controllers
     _pageController.dispose();
@@ -239,6 +416,12 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     _rotateController.dispose();
     _pulseController.dispose();
     _backgroundController.dispose();
+    _bounceController.dispose();
+    _flipController.dispose();
+    _waveController.dispose();
+    _shimmerController.dispose();
+    _morphController.dispose();
+
     _nicknameController.dispose();
     super.dispose();
   }
@@ -256,9 +439,11 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     }
 
     if (_currentPage < _pages.length - 1) {
+      _isForwardTransition = true;
+      _lastPageIndex = _currentPage;
       _animatePageTransition(() {
         _pageController.nextPage(
-          duration: const Duration(milliseconds: 500),
+          duration: const Duration(milliseconds: 800),
           curve: Curves.easeInOutCubic,
         );
       });
@@ -270,9 +455,11 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   void _previousPage() {
     if (_isTransitioning || _currentPage == 0) return;
 
+    _isForwardTransition = false;
+    _lastPageIndex = _currentPage;
     _animatePageTransition(() {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 800),
         curve: Curves.easeInOutCubic,
       );
     });
@@ -284,25 +471,97 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     setState(() => _isTransitioning = true);
     HapticFeedbackService().lightImpact();
 
-    // Reset animations to prevent conflicts
+    // Reset all animations
+    _resetAllAnimations();
+
+    // Get current and next page transition types
+    final currentPage = _pages[_currentPage];
+    final nextPageIndex =
+        _isForwardTransition ? _currentPage + 1 : _currentPage - 1;
+    final nextPage = _pages[nextPageIndex];
+
+    // Create dynamic transition based on page types
+    _createDynamicTransition(currentPage, nextPage, transition);
+  }
+
+  void _resetAllAnimations() {
     _fadeController.reset();
     _scaleController.reset();
     _slideController.reset();
+    _bounceController.reset();
+    _flipController.reset();
+    _morphController.reset();
+  }
 
-    _fadeController.reverse().then((_) {
+  void _createDynamicTransition(OnboardingPageData currentPage,
+      OnboardingPageData nextPage, VoidCallback transition) {
+    // Exit animation for current page
+    _playExitAnimation(currentPage).then((_) {
       if (mounted) {
+        // Execute page transition
         transition();
-        // Ensure smooth forward animation
-        Future.delayed(const Duration(milliseconds: 50), () {
+
+        // Update current page index
+        setState(() {
+          _currentPage =
+              _isForwardTransition ? _currentPage + 1 : _currentPage - 1;
+        });
+
+        // Enter animation for new page
+        Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
-            _fadeController.forward();
-            _scaleController.forward();
-            _slideController.forward();
+            _playEnterAnimation(nextPage);
             setState(() => _isTransitioning = false);
           }
         });
       }
     });
+  }
+
+  Future<void> _playExitAnimation(OnboardingPageData page) async {
+    switch (page.transitionType) {
+      case TransitionType.fade:
+        await _fadeController.reverse();
+        break;
+      case TransitionType.slide:
+        await _slideController.reverse();
+        break;
+      case TransitionType.zoom:
+        await _scaleController.reverse();
+        break;
+      case TransitionType.flip:
+        await _flipController.reverse();
+        break;
+      case TransitionType.bounce:
+        await _bounceController.reverse();
+        break;
+      case TransitionType.morph:
+        await _morphController.reverse();
+        break;
+    }
+  }
+
+  void _playEnterAnimation(OnboardingPageData page) {
+    switch (page.transitionType) {
+      case TransitionType.fade:
+        _fadeController.forward();
+        break;
+      case TransitionType.slide:
+        _slideController.forward();
+        break;
+      case TransitionType.zoom:
+        _scaleController.forward();
+        break;
+      case TransitionType.flip:
+        _flipController.forward();
+        break;
+      case TransitionType.bounce:
+        _bounceController.forward();
+        break;
+      case TransitionType.morph:
+        _morphController.forward();
+        break;
+    }
   }
 
   Future<void> _saveNickname() async {
@@ -370,12 +629,20 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     );
   }
 
+  void _dismissKeyboard() {
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final size = MediaQuery.of(context).size;
+    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+    final isInteractivePage = _currentPage == 1; // Page 2 is interactive
 
     return Scaffold(
+      // Enable resize behavior for keyboard handling
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // Animated gradient background
@@ -402,8 +669,15 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
             },
           ),
 
-          // Floating particles effect
-          ...List.generate(5, (index) => _buildFloatingParticle(index, size)),
+          // Floating particles effect (further reduced for better performance)
+          // Hide particles when keyboard is visible to reduce visual clutter
+          if (!isKeyboardVisible) ...[
+            ...List.generate(
+                MediaQuery.of(context).devicePixelRatio < 2.0
+                    ? 1
+                    : (MediaQuery.of(context).devicePixelRatio < 3.0 ? 2 : 3),
+                (index) => _buildFloatingParticle(index, size)),
+          ],
 
           // Main content
           SafeArea(
@@ -418,15 +692,14 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                     controller: _pageController,
                     onPageChanged: (index) {
                       if (mounted && !_isTransitioning) {
-                        setState(() => _currentPage = index);
-                        // Only trigger animations if not already transitioning
-                        if (!_fadeController.isAnimating &&
-                            !_scaleController.isAnimating &&
-                            !_slideController.isAnimating) {
-                          _fadeController.forward(from: 0);
-                          _scaleController.forward(from: 0.8);
-                          _slideController.forward(from: 0);
-                        }
+                        setState(() {
+                          _lastPageIndex = _currentPage;
+                          _currentPage = index;
+                          _isForwardTransition = index > _lastPageIndex;
+                        });
+
+                        // Trigger page-specific animations
+                        _startTransitionSpecificAnimations();
                       }
                     },
                     itemCount: _pages.length,
@@ -440,8 +713,9 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                   ),
                 ),
 
-                // Bottom navigation
-                _buildBottomNavigation(tokens),
+                // Bottom navigation - hide when keyboard is visible on interactive page
+                if (!(isKeyboardVisible && isInteractivePage))
+                  _buildBottomNavigation(tokens),
               ],
             ),
           ),
@@ -497,69 +771,57 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
 
   Widget _buildContentPage(
       OnboardingPageData page, SemanticTokens tokens, int index) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+    return _buildTransitionWrapper(
+      page,
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height -
+                MediaQuery.of(context).padding.top -
+                MediaQuery.of(context).padding.bottom -
+                200, // Account for header and bottom nav
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated icon or video
-              if (index == 0 && _videoInitialized)
-                _buildVideoWidget()
-              else
-                _buildAnimatedIcon(page),
+              // Animated icon or video - Always show video for page 1
+              if (index == 0) _buildVideoWidget() else _buildAnimatedIcon(page),
 
               const SizedBox(height: 40),
 
-              // Title
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: Text(
-                  page.title,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: tokens.textPrimary,
-                    letterSpacing: -0.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+              // Title with enhanced animation
+              _buildAnimatedTitle(page, tokens),
 
               const SizedBox(height: 12),
 
-              // Subtitle
-              Text(
-                page.subtitle,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: page.primaryColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              // Subtitle with wave animation
+              _buildAnimatedSubtitle(page, tokens),
 
               const SizedBox(height: 24),
 
-              // Description
-              Text(
-                page.description,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: tokens.textSecondary,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              // Description with shimmer effect
+              _buildAnimatedDescription(page, tokens),
 
-              // Features list
-              if (page.features != null) ...[
+              // Theme showcase for theme page
+              if (page.isThemeShowcase) ...[
+                const SizedBox(height: 32),
+                _buildThemeShowcase(tokens),
+              ],
+
+              // Features list with staggered animation
+              if (page.features != null && !page.isThemeShowcase) ...[
                 const SizedBox(height: 32),
                 ...page.features!
-                    .map((feature) => _buildFeatureItem(feature, page, tokens)),
+                    .asMap()
+                    .entries
+                    .map((entry) => _buildAnimatedFeatureItem(
+                          entry.value,
+                          page,
+                          tokens,
+                          entry.key,
+                        )),
               ],
             ],
           ),
@@ -568,120 +830,541 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     );
   }
 
-  Widget _buildInteractivePage(OnboardingPageData page, SemanticTokens tokens) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+  Widget _buildTransitionWrapper(OnboardingPageData page,
+      {required Widget child}) {
+    switch (page.transitionType) {
+      case TransitionType.fade:
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: child,
+        );
+      case TransitionType.slide:
+        return SlideTransition(
+          position: _slideAnimation,
+          child: child,
+        );
+      case TransitionType.zoom:
+        return ScaleTransition(
+          scale: _scaleAnimation,
+          child: child,
+        );
+      case TransitionType.flip:
+        return AnimatedBuilder(
+          animation: _flipAnimation,
+          builder: (context, child) {
+            return Transform(
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..rotateY(_flipAnimation.value * math.pi),
+              alignment: Alignment.center,
+              child: child,
+            );
+          },
+          child: child,
+        );
+      case TransitionType.bounce:
+        return AnimatedBuilder(
+          animation: _bounceAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 0.8 + (_bounceAnimation.value * 0.2),
+              child: child,
+            );
+          },
+          child: child,
+        );
+      case TransitionType.morph:
+        return AnimatedBuilder(
+          animation: _morphAnimation,
+          builder: (context, child) {
+            return Transform(
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..rotateX(_morphAnimation.value * 0.1)
+                ..rotateY(_morphAnimation.value * 0.1),
+              alignment: Alignment.center,
+              child: child,
+            );
+          },
+          child: child,
+        );
+    }
+  }
+
+  Widget _buildAnimatedTitle(OnboardingPageData page, SemanticTokens tokens) {
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Text(
+            page.title,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: tokens.textPrimary,
+              letterSpacing: -0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedSubtitle(
+      OnboardingPageData page, SemanticTokens tokens) {
+    return AnimatedBuilder(
+      animation: _waveAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, math.sin(_waveAnimation.value * 2 * math.pi) * 3),
+          child: Text(
+            page.subtitle,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: page.primaryColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedDescription(
+      OnboardingPageData page, SemanticTokens tokens) {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return ShaderMask(
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                tokens.textSecondary,
+                page.primaryColor.withOpacity(0.8),
+                tokens.textSecondary,
+              ],
+              stops: [
+                0.0,
+                _shimmerAnimation.value,
+                1.0,
+              ],
+            ).createShader(bounds);
+          },
+          child: Text(
+            page.description,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedFeatureItem(String feature, OnboardingPageData page,
+      SemanticTokens tokens, int index) {
+    return AnimatedBuilder(
+      animation: _waveAnimation,
+      builder: (context, child) {
+        final delay = index * 0.1;
+        final animationValue = (_waveAnimation.value + delay) % 1.0;
+
+        return Transform.translate(
+          offset: Offset(
+            math.sin(animationValue * 2 * math.pi) * 2,
+            math.cos(animationValue * 2 * math.pi) * 1,
+          ),
+          child: Opacity(
+            opacity: 0.7 + (0.3 * math.sin(animationValue * 2 * math.pi)),
+            child: _buildFeatureItem(feature, page, tokens),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeShowcase(SemanticTokens tokens) {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 600),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildAnimatedIcon(page),
-              const SizedBox(height: 40),
+              // Theme grid with better layout
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate optimal grid layout based on available space
+                  final screenHeight = MediaQuery.of(context).size.height;
+                  final availableHeight =
+                      screenHeight * 0.4; // Use 40% of screen height
 
-              Text(
-                page.title,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: tokens.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 12),
-
-              Text(
-                page.subtitle,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: page.primaryColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 40),
-
-              // Nickname input form
-              Form(
-                key: _formKey,
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: TextFormField(
-                    controller: _nicknameController,
-                    textCapitalization: TextCapitalization.words,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: tokens.textPrimary,
+                  return SizedBox(
+                    height: availableHeight,
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.9, // Slightly taller cards
+                      children: [
+                        _buildThemeCard(
+                            'Classic',
+                            'Clean & Professional',
+                            Icons.style,
+                            const Color(0xFF6366F1),
+                            const Color(0xFF8B5CF6)),
+                        _buildThemeCard('Matrix', 'Cyberpunk Style', Icons.code,
+                            const Color(0xFF10B981), const Color(0xFF059669)),
+                        _buildThemeCard(
+                            'Retro',
+                            'Vintage Vibes',
+                            Icons.music_note,
+                            const Color(0xFFF59E0B),
+                            const Color(0xFFD97706)),
+                        _buildThemeCard(
+                            'Cyber Neon',
+                            'Futuristic Glow',
+                            Icons.electric_bolt,
+                            const Color(0xFFEC4899),
+                            const Color(0xFFBE185D)),
+                        _buildThemeCard(
+                            'Dark Mode',
+                            'Easy on Eyes',
+                            Icons.dark_mode,
+                            const Color(0xFF374151),
+                            const Color(0xFF1F2937)),
+                        _buildThemeCard(
+                            'Minimal',
+                            'Simple & Clean',
+                            Icons.crop_square,
+                            const Color(0xFF6B7280),
+                            const Color(0xFF4B5563)),
+                        _buildThemeCard(
+                            'Purple Neon',
+                            'Vibrant Purple',
+                            Icons.star,
+                            const Color(0xFF8B5CF6),
+                            const Color(0xFF7C3AED)),
+                      ],
                     ),
-                    decoration: InputDecoration(
-                      labelText: 'Your Nickname',
-                      hintText: 'Enter your preferred name',
-                      prefixIcon: Icon(
-                        Icons.person_outline_rounded,
-                        color: page.primaryColor,
-                      ),
-                      filled: true,
-                      fillColor: tokens.surface,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: page.primaryColor,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: tokens.error,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a nickname';
-                      }
-                      if (value.trim().length < 2) {
-                        return 'Nickname must be at least 2 characters';
-                      }
-                      if (value.trim().length > 20) {
-                        return 'Nickname must be less than 20 characters';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      setState(() {
-                        _nicknameValid = value.trim().length >= 2 &&
-                            value.trim().length <= 20;
-                      });
-                    },
-                  ),
-                ),
+                  );
+                },
               ),
 
               const SizedBox(height: 20),
 
-              // Helper text
-              Text(
-                'This name will be used to personalize your experience',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: tokens.textTertiary,
+              // Theme selection info
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: tokens.surface.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: tokens.borderDefault.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
-                textAlign: TextAlign.center,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: tokens.textSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'You can change your theme anytime in Settings',
+                        style: TextStyle(
+                          color: tokens.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeCard(String title, String description, IconData icon,
+      Color primaryColor, Color secondaryColor) {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: 0.95 + (_pulseAnimation.value * 0.05),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primaryColor.withOpacity(0.1),
+                  secondaryColor.withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: primaryColor.withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withOpacity(0.1),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [primaryColor, secondaryColor],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withOpacity(0.3),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      icon,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInteractivePage(OnboardingPageData page, SemanticTokens tokens) {
+    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return _buildTransitionWrapper(
+      page,
+      child: GestureDetector(
+        onTap: _dismissKeyboard, // Dismiss keyboard when tapping outside
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom -
+                  (isKeyboardVisible ? 0 : 200), // Account for bottom nav
+            ),
+            child: Column(
+              mainAxisAlignment: isKeyboardVisible
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.center,
+              children: [
+                // Show icon and title only when keyboard is not visible
+                if (!isKeyboardVisible) ...[
+                  _buildAnimatedIcon(page),
+                  const SizedBox(height: 40),
+                  _buildAnimatedTitle(page, tokens),
+                  const SizedBox(height: 12),
+                  _buildAnimatedSubtitle(page, tokens),
+                  const SizedBox(height: 40),
+                ] else ...[
+                  // When keyboard is visible, show a smaller header
+                  const SizedBox(height: 20),
+                  _buildAnimatedTitle(page, tokens),
+                  const SizedBox(height: 8),
+                  _buildAnimatedSubtitle(page, tokens),
+                  const SizedBox(height: 20),
+                ],
+
+                // Animated nickname input form
+                _buildAnimatedForm(page, tokens),
+
+                const SizedBox(height: 20),
+
+                // Animated helper text
+                _buildAnimatedHelperText(page, tokens),
+
+                // Add extra space when keyboard is visible
+                if (isKeyboardVisible) const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAnimatedForm(OnboardingPageData page, SemanticTokens tokens) {
+    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return AnimatedBuilder(
+      animation: _bounceAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: 0.95 + (_bounceAnimation.value * 0.05),
+          child: Form(
+            key: _formKey,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: TextFormField(
+                controller: _nicknameController,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.done, // iOS: "Done" button
+                keyboardType: TextInputType.name, // Optimize for name input
+                enableSuggestions: true, // Enable autocomplete suggestions
+                autocorrect: false, // Disable autocorrect for names
+                style: TextStyle(
+                  fontSize: 18,
+                  color: tokens.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Your Nickname',
+                  hintText: 'Enter your preferred name',
+                  prefixIcon: AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _pulseAnimation.value,
+                        child: Icon(
+                          Icons.person_outline_rounded,
+                          color: page.primaryColor,
+                        ),
+                      );
+                    },
+                  ),
+                  filled: true,
+                  fillColor: tokens.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: page.primaryColor,
+                      width: 2,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: tokens.error,
+                      width: 2,
+                    ),
+                  ),
+                  // Add character counter
+                  counterText: '${_nicknameController.text.length}/20',
+                  counterStyle: TextStyle(
+                    color: _nicknameController.text.length > 20
+                        ? tokens.error
+                        : tokens.textTertiary,
+                    fontSize: 12,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a nickname';
+                  }
+                  if (value.trim().length < 2) {
+                    return 'Nickname must be at least 2 characters';
+                  }
+                  if (value.trim().length > 20) {
+                    return 'Nickname must be less than 20 characters';
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  setState(() {
+                    _nicknameValid =
+                        value.trim().length >= 2 && value.trim().length <= 20;
+                  });
+                },
+                onFieldSubmitted: (value) {
+                  // Auto-advance to next page when user presses "Done" on iOS
+                  if (_nicknameValid) {
+                    _nextPage();
+                  }
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedHelperText(
+      OnboardingPageData page, SemanticTokens tokens) {
+    return AnimatedBuilder(
+      animation: _waveAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, math.sin(_waveAnimation.value * 2 * math.pi) * 2),
+          child: Text(
+            'This name will be used to personalize your experience',
+            style: TextStyle(
+              fontSize: 14,
+              color: tokens.textTertiary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      },
     );
   }
 
@@ -701,10 +1384,32 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: AspectRatio(
-          aspectRatio: _videoController.value.aspectRatio,
-          child: VideoPlayer(_videoController),
-        ),
+        child: _videoInitialized
+            ? AspectRatio(
+                aspectRatio: _videoController.value.aspectRatio,
+                child: VideoPlayer(_videoController),
+              )
+            : Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _pages[_currentPage].primaryColor,
+                      _pages[_currentPage].secondaryColor,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -910,6 +1615,16 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   }
 }
 
+/// Transition types for different page animations
+enum TransitionType {
+  fade,
+  slide,
+  zoom,
+  flip,
+  bounce,
+  morph,
+}
+
 /// Data model for onboarding pages
 class OnboardingPageData {
   final String title;
@@ -921,6 +1636,8 @@ class OnboardingPageData {
   final List<String>? features;
   final bool isInteractive;
   final bool isFinal;
+  final bool isThemeShowcase;
+  final TransitionType transitionType;
 
   const OnboardingPageData({
     required this.title,
@@ -932,5 +1649,7 @@ class OnboardingPageData {
     this.features,
     this.isInteractive = false,
     this.isFinal = false,
+    this.isThemeShowcase = false,
+    this.transitionType = TransitionType.fade,
   });
 }

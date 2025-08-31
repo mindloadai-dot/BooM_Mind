@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mindload/services/mindload_token_service.dart';
-import 'package:mindload/services/preflight_service.dart';
 
 import 'package:mindload/services/token_estimation_service.dart';
 import 'package:mindload/core/youtube_utils.dart';
@@ -34,12 +32,8 @@ class EnhancedUploadPanel extends StatefulWidget {
 
 class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
   final TextEditingController _textController = TextEditingController();
-  final PreflightService _preflightService = PreflightService();
-  final MindloadTokenService _tokenService = MindloadTokenService();
-
   String _inputType = 'text'; // 'text' or 'youtube'
   String _selectedDepth = 'standard';
-  PreflightResponse? _preflightResponse;
   bool _isProcessing = false;
   String? _errorMessage;
 
@@ -94,8 +88,8 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
     }
   }
 
-  /// Perform preflight check
-  Future<void> _performPreflight() async {
+  /// Perform basic validation
+  Future<void> _performValidation() async {
     if (_textController.text.trim().isEmpty) return;
 
     setState(() {
@@ -104,8 +98,6 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
     });
 
     try {
-      PreflightResponse response;
-
       if (_isYouTubeLink(_textController.text)) {
         final videoId = _extractYouTubeId(_textController.text);
         if (videoId == null) {
@@ -127,27 +119,14 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
             return;
           }
         }
-
-        response = await _preflightService.preflightYouTube(
-          videoId: videoId,
-          durationMinutes: _currentPreview!.durationSeconds ~/ 60,
-          hasCaptions: _currentPreview!.captionsAvailable,
-          depth: _selectedDepth,
-        );
-      } else {
-        response = await _preflightService.preflightText(
-          text: _textController.text,
-          depth: _selectedDepth,
-        );
       }
 
       setState(() {
-        _preflightResponse = response;
         _isProcessing = false;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to estimate tokens: $e';
+        _errorMessage = 'Failed to validate input: $e';
         _isProcessing = false;
       });
     }
@@ -159,14 +138,13 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
     if (newType != _inputType) {
       setState(() {
         _inputType = newType;
-        _preflightResponse = null;
       });
     }
 
-    // Auto-perform preflight after a short delay
+    // Auto-perform validation after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _textController.text == value) {
-        _performPreflight();
+        _performValidation();
       }
     });
   }
@@ -176,24 +154,19 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
     if (depth != null && depth != _selectedDepth) {
       setState(() {
         _selectedDepth = depth;
-        _preflightResponse = null;
       });
-      _performPreflight();
+      _performValidation();
     }
   }
 
-  /// Check if user can afford operation
-  bool _canAfford() {
-    if (_preflightResponse == null) return false;
-    return _tokenService.canAfford(
-      _preflightResponse!.tokensRequired,
-      widget.availableTokens,
-    );
+  /// Check if input is valid
+  bool _isValid() {
+    return _textController.text.trim().isNotEmpty && _errorMessage == null;
   }
 
   /// Handle submission
   void _handleSubmit() {
-    if (_preflightResponse == null || !_canAfford()) return;
+    if (!_isValid()) return;
 
     if (_inputType == 'youtube') {
       widget.onYouTubeSubmit(_currentVideoId!, _selectedDepth);
@@ -209,7 +182,7 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
       builder: (context) => AlertDialog(
         title: const Text('Insufficient Tokens'),
         content: Text(
-          'You need ${_preflightResponse?.tokensRequired ?? 0} tokens for this operation, '
+          'You need more tokens for this operation, '
           'but you only have ${widget.availableTokens} tokens available.',
         ),
         actions: [
@@ -387,7 +360,9 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
           ],
 
           // Token estimation display
-          if (_preflightResponse != null) ...[
+          if (_isValid() &&
+              _inputType == 'youtube' &&
+              _currentPreview != null) ...[
             _buildTokenEstimationDisplay(),
             const SizedBox(height: 16),
           ],
@@ -421,7 +396,7 @@ class _EnhancedUploadPanelState extends State<EnhancedUploadPanel> {
           SizedBox(
             height: 50,
             child: ElevatedButton(
-              onPressed: _canAfford() ? _handleSubmit : null,
+              onPressed: _isValid() ? _handleSubmit : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: tokens.primary,
                 foregroundColor: tokens.onPrimary,

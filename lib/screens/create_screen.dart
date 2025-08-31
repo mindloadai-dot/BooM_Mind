@@ -9,6 +9,7 @@ import 'package:mindload/widgets/credits_token_chip.dart';
 import 'package:mindload/widgets/deadline_date_picker.dart';
 import 'package:mindload/widgets/token_estimation_display.dart';
 import 'package:mindload/widgets/enhanced_upload_panel.dart';
+import 'package:mindload/widgets/semantic_color_picker.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/token_estimation_service.dart';
 import 'package:mindload/services/deadline_service.dart';
@@ -30,20 +31,16 @@ import 'package:mindload/services/mindload_notification_service.dart';
 import 'package:mindload/services/advanced_flashcard_generator.dart';
 import 'package:mindload/models/advanced_study_models.dart';
 
-/// Create Screen - Demonstrates the complete credits economy integration
+/// Redesigned Create Screen - Modern, intuitive study set creation
 ///
 /// Features:
-/// - TokenChip in app bar (always visible)
-/// - Credits state banners for low/empty credits
-/// - Pre-flight cost preview before generation
-/// - Post-action feedback with snackbars
-/// - Integrated upgrade and buy credits flows
-/// - Custom instruction field for AI generation
-/// - Generation type selection (quiz/flashcard/both)
-/// - Custom count inputs for questions and cards
-/// - YouTube link processing with preview
-/// - Document upload (PDF, DOCX, TXT, etc.)
-/// - Comprehensive content input options
+/// - Step-by-step wizard interface
+/// - Modern card-based design inspired by pub.dev
+/// - Improved content input methods with visual feedback
+/// - Intuitive generation controls with preview
+/// - Enhanced visual hierarchy and spacing
+/// - Better mobile responsiveness
+/// - Progressive disclosure of advanced options
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
 
@@ -51,11 +48,21 @@ class CreateScreen extends StatefulWidget {
   State<CreateScreen> createState() => _CreateScreenState();
 }
 
-class _CreateScreenState extends State<CreateScreen> {
+class _CreateScreenState extends State<CreateScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _instructionController = TextEditingController();
   final TextEditingController _youtubeController = TextEditingController();
+
+  // Animation controllers for smooth transitions
+  late AnimationController _pageController;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  // Current step in the creation process
+  int _currentStep = 0;
+  final int _totalSteps = 4;
 
   bool _isGenerating = false;
   DateTime? _selectedDeadline;
@@ -67,7 +74,7 @@ class _CreateScreenState extends State<CreateScreen> {
   int _flashcardCount = 10;
   int _quizCount = 5;
 
-  // Content input type
+  // Content input type with improved UX
   String _contentInputType = 'text'; // 'text', 'youtube', 'document'
 
   // YouTube integration state
@@ -80,17 +87,23 @@ class _CreateScreenState extends State<CreateScreen> {
   bool _isProcessingDocument = false;
   String? _extractedDocumentText;
 
+  // Study set color selection
+  String? _selectedThemeColor;
+
   // Title auto-population state
   bool _isTitleAutoPopulated = false;
+
+  // Advanced options visibility
+  bool _showAdvancedOptions = false;
 
   @override
   void initState() {
     super.initState();
+    _initializeAnimations();
 
     // Listen for manual title changes to reset auto-populated flag
     _titleController.addListener(() {
       if (_isTitleAutoPopulated && _titleController.text.trim().isNotEmpty) {
-        // User has manually modified the title, so it's no longer auto-populated
         _isTitleAutoPopulated = false;
         if (kDebugMode) {
           print('📝 User manually modified title, auto-population disabled');
@@ -107,18 +120,35 @@ class _CreateScreenState extends State<CreateScreen> {
     });
   }
 
+  void _initializeAnimations() {
+    _pageController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+  }
+
   @override
   void dispose() {
     _contentController.dispose();
     _titleController.dispose();
     _instructionController.dispose();
     _youtubeController.dispose();
+    _pageController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       appBar: MindloadAppBarFactory.standard(
@@ -132,81 +162,1052 @@ class _CreateScreenState extends State<CreateScreen> {
           // Credits state banners (low/empty credits)
           const CreditsStateBanners(),
 
+          // Step indicator
+          _buildStepIndicator(tokens),
+
           // Main content - takes up remaining screen space
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              physics: const BouncingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minHeight: 0,
-                  minWidth: double.infinity,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Title input section
-                    _buildTitleInput(context, tokens),
+            child: AnimatedBuilder(
+              animation: _fadeAnimation,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    physics: const BouncingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: size.height * 0.6,
+                        minWidth: double.infinity,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Step content based on current step
+                          _buildCurrentStepContent(tokens),
 
-                    const SizedBox(height: 24),
+                          const SizedBox(height: 32),
 
-                    // Content input type selector
-                    _buildContentInputTypeSelector(context, tokens),
-
-                    const SizedBox(height: 24),
-
-                    // Content input section (dynamic based on type)
-                    _buildDynamicContentInput(context, tokens),
-
-                    const SizedBox(height: 24),
-
-                    // Custom instruction section
-                    _buildCustomInstructionSection(context, tokens),
-
-                    const SizedBox(height: 24),
-
-                    // Generation options section
-                    _buildGenerationOptionsSection(context, tokens),
-
-                    const SizedBox(height: 24),
-
-                    // Deadline picker section
-                    DeadlineDatePicker(
-                      initialDate: _selectedDeadline,
-                      initialToggleState: _isDeadlineEnabled,
-                      onDateChanged: (date) {
-                        setState(() {
-                          _selectedDeadline = date;
-                        });
-                      },
-                      onToggleChanged: (enabled) {
-                        setState(() {
-                          _isDeadlineEnabled = enabled;
-                          if (!enabled) {
-                            _selectedDeadline = null;
-                          }
-                        });
-                      },
-                      label: 'Study Deadline',
+                          // Navigation buttons
+                          _buildNavigationButtons(tokens),
+                        ],
+                      ),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Pre-flight cost preview (if content exists)
-                    if (_hasContent()) _buildPreFlightSection(context, tokens),
-
-                    const SizedBox(height: 24),
-
-                    // Generation controls
-                    _buildGenerationControls(context, tokens),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Build step indicator
+  Widget _buildStepIndicator(SemanticTokens tokens) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: tokens.borderDefault.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: List.generate(_totalSteps, (index) {
+          final isActive = index == _currentStep;
+          final isCompleted = index < _currentStep;
+
+          return Expanded(
+            child: Row(
+              children: [
+                // Step circle
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isCompleted
+                        ? tokens.primary
+                        : isActive
+                            ? tokens.primary.withOpacity(0.2)
+                            : tokens.borderDefault.withOpacity(0.3),
+                    border: isActive
+                        ? Border.all(color: tokens.primary, width: 2)
+                        : null,
+                  ),
+                  child: Center(
+                    child: isCompleted
+                        ? Icon(
+                            Icons.check,
+                            size: 18,
+                            color: tokens.onPrimary,
+                          )
+                        : Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: isActive
+                                  ? tokens.primary
+                                  : tokens.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                  ),
+                ),
+
+                // Connector line
+                if (index < _totalSteps - 1)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: isCompleted
+                            ? tokens.primary
+                            : tokens.borderDefault.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  /// Build current step content
+  Widget _buildCurrentStepContent(SemanticTokens tokens) {
+    switch (_currentStep) {
+      case 0:
+        return _buildStep1Content(tokens);
+      case 1:
+        return _buildStep2Content(tokens);
+      case 2:
+        return _buildStep3Content(tokens);
+      case 3:
+        return _buildStep4Content(tokens);
+      default:
+        return _buildStep1Content(tokens);
+    }
+  }
+
+  /// Step 1: Basic Information
+  Widget _buildStep1Content(SemanticTokens tokens) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        _buildStepHeader(
+          tokens,
+          'Basic Information',
+          'Let\'s start with the basics for your study set',
+          Icons.info_outline,
+        ),
+
+        const SizedBox(height: 24),
+
+        // Title input card
+        _buildModernCard(
+          tokens,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCardHeader(tokens, 'Study Set Title', Icons.title),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _titleController,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: tokens.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter a descriptive title...',
+                  hintStyle: TextStyle(
+                    color: tokens.textTertiary,
+                    fontSize: 16,
+                  ),
+                  filled: true,
+                  fillColor: tokens.surfaceAlt,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              if (_isTitleAutoPopulated) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: tokens.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Auto-generated title',
+                      style: TextStyle(
+                        color: tokens.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Content input type selector
+        _buildModernCard(
+          tokens,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCardHeader(tokens, 'Content Source', Icons.input),
+              const SizedBox(height: 16),
+              _buildContentTypeSelector(tokens),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Step 2: Content Input
+  Widget _buildStep2Content(SemanticTokens tokens) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        _buildStepHeader(
+          tokens,
+          'Add Your Content',
+          'Provide the material you want to study',
+          Icons.edit_note,
+        ),
+
+        const SizedBox(height: 24),
+
+        // Dynamic content input based on type
+        _buildModernCard(
+          tokens,
+          child: _buildDynamicContentInput(context, tokens),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Study set color selection
+        _buildModernCard(
+          tokens,
+          child: SemanticColorPicker(
+            selectedColor: _selectedThemeColor,
+            onColorChanged: (color) {
+              setState(() {
+                _selectedThemeColor = color;
+              });
+            },
+            tokens: tokens,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Step 3: Generation Options
+  Widget _buildStep3Content(SemanticTokens tokens) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        _buildStepHeader(
+          tokens,
+          'Study Materials',
+          'Choose what to generate from your content',
+          Icons.school,
+        ),
+
+        const SizedBox(height: 24),
+
+        // Generation options card
+        _buildModernCard(
+          tokens,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCardHeader(tokens, 'Generate Study Materials', Icons.tune),
+              const SizedBox(height: 20),
+              _buildGenerationTypeSelector(tokens),
+              const SizedBox(height: 24),
+              _buildCountControls(tokens),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Advanced options card
+        _buildModernCard(
+          tokens,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildCardHeader(tokens, 'Advanced Options', Icons.settings),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _showAdvancedOptions = !_showAdvancedOptions;
+                      });
+                    },
+                    icon: Icon(
+                      _showAdvancedOptions
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              if (_showAdvancedOptions) ...[
+                const SizedBox(height: 16),
+                _buildAdvancedOptions(tokens),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Step 4: Review and Generate
+  Widget _buildStep4Content(SemanticTokens tokens) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        _buildStepHeader(
+          tokens,
+          'Review & Generate',
+          'Review your settings and create your study set',
+          Icons.preview,
+        ),
+
+        const SizedBox(height: 24),
+
+        // Summary card
+        _buildModernCard(
+          tokens,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCardHeader(tokens, 'Study Set Summary', Icons.summarize),
+              const SizedBox(height: 20),
+              _buildSummaryContent(tokens),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Cost preview
+        if (_hasContent()) _buildPreFlightSection(context, tokens),
+      ],
+    );
+  }
+
+  /// Build step header
+  Widget _buildStepHeader(
+      SemanticTokens tokens, String title, String subtitle, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: tokens.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: tokens.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Build modern card container
+  Widget _buildModernCard(SemanticTokens tokens, {required Widget child}) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tokens.borderDefault.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: child,
+      ),
+    );
+  }
+
+  /// Build card header
+  Widget _buildCardHeader(SemanticTokens tokens, String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: tokens.primary,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: tokens.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build content type selector
+  Widget _buildContentTypeSelector(SemanticTokens tokens) {
+    final options = [
+      {
+        'id': 'text',
+        'icon': Icons.edit_note,
+        'title': 'Text',
+        'subtitle': 'Paste or type content'
+      },
+      {
+        'id': 'youtube',
+        'icon': Icons.play_circle_outline,
+        'title': 'YouTube',
+        'subtitle': 'Process video content'
+      },
+      {
+        'id': 'document',
+        'icon': Icons.upload_file,
+        'title': 'Document',
+        'subtitle': 'Upload PDF, DOCX, etc.'
+      },
+    ];
+
+    return Column(
+      children: options.map((option) {
+        final isSelected = _contentInputType == option['id'];
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _contentInputType = option['id'] as String;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? tokens.primary.withOpacity(0.1)
+                    : tokens.surfaceAlt,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? tokens.primary
+                      : tokens.borderDefault.withOpacity(0.3),
+                  width: isSelected ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? tokens.primary
+                          : tokens.textSecondary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      option['icon'] as IconData,
+                      color:
+                          isSelected ? tokens.onPrimary : tokens.textSecondary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          option['title'] as String,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          option['subtitle'] as String,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: tokens.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected)
+                    Icon(
+                      Icons.check_circle,
+                      color: tokens.primary,
+                      size: 24,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Build generation type selector
+  Widget _buildGenerationTypeSelector(SemanticTokens tokens) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildGenerationTypeCard(
+            tokens,
+            'Flashcards',
+            'Memory cards for active recall',
+            Icons.style,
+            _generateFlashcards,
+            (value) {
+              setState(() {
+                _generateFlashcards = value ?? false;
+                if (!_generateFlashcards && !_generateQuizzes) {
+                  _generateQuizzes = true;
+                }
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildGenerationTypeCard(
+            tokens,
+            'Quiz Questions',
+            'Test your understanding',
+            Icons.quiz,
+            _generateQuizzes,
+            (value) {
+              setState(() {
+                _generateQuizzes = value ?? false;
+                if (!_generateFlashcards && !_generateQuizzes) {
+                  _generateFlashcards = true;
+                }
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build generation type card
+  Widget _buildGenerationTypeCard(
+    SemanticTokens tokens,
+    String title,
+    String subtitle,
+    IconData icon,
+    bool isSelected,
+    ValueChanged<bool?> onChanged,
+  ) {
+    return InkWell(
+      onTap: () => onChanged(!isSelected),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color:
+              isSelected ? tokens.primary.withOpacity(0.1) : tokens.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? tokens.primary
+                : tokens.borderDefault.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? tokens.primary
+                    : tokens.textSecondary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? tokens.onPrimary : tokens.textSecondary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: tokens.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: tokens.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Checkbox(
+              value: isSelected,
+              onChanged: onChanged,
+              activeColor: tokens.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build count controls
+  Widget _buildCountControls(SemanticTokens tokens) {
+    return Column(
+      children: [
+        if (_generateFlashcards) ...[
+          _buildCountControl(
+            tokens,
+            'Flashcards',
+            _flashcardCount,
+            (value) => setState(() => _flashcardCount = value),
+            min: 1,
+            max: 50,
+            icon: Icons.style,
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (_generateQuizzes) ...[
+          _buildCountControl(
+            tokens,
+            'Quiz Questions',
+            _quizCount,
+            (value) => setState(() => _quizCount = value),
+            min: 1,
+            max: 20,
+            icon: Icons.quiz,
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Build count control
+  Widget _buildCountControl(
+    SemanticTokens tokens,
+    String label,
+    int value,
+    ValueChanged<int> onChanged, {
+    required int min,
+    required int max,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.surfaceAlt,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: tokens.borderDefault.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: tokens.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$value',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              IconButton(
+                onPressed: value > min ? () => onChanged(value - 1) : null,
+                icon: Icon(
+                  Icons.remove_circle_outline,
+                  color: value > min ? tokens.primary : tokens.textTertiary,
+                ),
+              ),
+              IconButton(
+                onPressed: value < max ? () => onChanged(value + 1) : null,
+                icon: Icon(
+                  Icons.add_circle_outline,
+                  color: value < max ? tokens.primary : tokens.textTertiary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build advanced options
+  Widget _buildAdvancedOptions(SemanticTokens tokens) {
+    return Column(
+      children: [
+        // Custom instructions
+        TextField(
+          controller: _instructionController,
+          maxLines: 3,
+          style: TextStyle(
+            fontSize: 14,
+            color: tokens.textPrimary,
+          ),
+          decoration: InputDecoration(
+            labelText: 'Custom Instructions (Optional)',
+            hintText: 'Add specific instructions for AI generation...',
+            hintStyle: TextStyle(
+              color: tokens.textTertiary,
+              fontSize: 14,
+            ),
+            filled: true,
+            fillColor: tokens.surfaceAlt,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Deadline picker
+        DeadlineDatePicker(
+          initialDate: _selectedDeadline,
+          initialToggleState: _isDeadlineEnabled,
+          onDateChanged: (date) {
+            setState(() {
+              _selectedDeadline = date;
+            });
+          },
+          onToggleChanged: (enabled) {
+            setState(() {
+              _isDeadlineEnabled = enabled;
+              if (!enabled) {
+                _selectedDeadline = null;
+              }
+            });
+          },
+          label: 'Study Deadline',
+        ),
+      ],
+    );
+  }
+
+  /// Build summary content
+  Widget _buildSummaryContent(SemanticTokens tokens) {
+    return Column(
+      children: [
+        _buildSummaryItem(
+            tokens,
+            'Title',
+            _titleController.text.isNotEmpty
+                ? _titleController.text
+                : 'Not set',
+            Icons.title),
+        _buildSummaryItem(
+            tokens, 'Content Source', _getContentSourceLabel(), Icons.input),
+        _buildSummaryItem(
+            tokens, 'Study Materials', _getStudyMaterialsLabel(), Icons.school),
+        if (_instructionController.text.isNotEmpty)
+          _buildSummaryItem(tokens, 'Custom Instructions', 'Added', Icons.edit),
+        if (_isDeadlineEnabled && _selectedDeadline != null)
+          _buildSummaryItem(tokens, 'Deadline',
+              _formatDeadline(_selectedDeadline!), Icons.schedule),
+      ],
+    );
+  }
+
+  /// Build summary item
+  Widget _buildSummaryItem(
+      SemanticTokens tokens, String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: tokens.textSecondary,
+            size: 16,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build navigation buttons
+  Widget _buildNavigationButtons(SemanticTokens tokens) {
+    return Row(
+      children: [
+        if (_currentStep > 0)
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _previousStep,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: BorderSide(color: tokens.borderDefault),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.arrow_back, size: 20),
+                  const SizedBox(width: 8),
+                  Text('Previous'),
+                ],
+              ),
+            ),
+          ),
+        if (_currentStep > 0) const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _canProceedToNext() ? _nextStep : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: tokens.primary,
+              foregroundColor: tokens.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(_getNextButtonText()),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Check if can proceed to next step
+  bool _canProceedToNext() {
+    switch (_currentStep) {
+      case 0:
+        return _titleController.text.trim().isNotEmpty;
+      case 1:
+        return _hasContent();
+      case 2:
+        return _generateFlashcards || _generateQuizzes;
+      case 3:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// Get next button text
+  String _getNextButtonText() {
+    switch (_currentStep) {
+      case 0:
+      case 1:
+      case 2:
+        return 'Next';
+      case 3:
+        return _isGenerating ? 'Generating...' : 'Create Study Set';
+      default:
+        return 'Next';
+    }
+  }
+
+  /// Navigate to next step
+  void _nextStep() {
+    if (_currentStep < _totalSteps - 1) {
+      setState(() {
+        _currentStep++;
+      });
+      _fadeController.reset();
+      _fadeController.forward();
+    } else {
+      _handleGenerate();
+    }
+  }
+
+  /// Navigate to previous step
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() {
+        _currentStep--;
+      });
+      _fadeController.reset();
+      _fadeController.forward();
+    }
+  }
+
+  /// Get content source label
+  String _getContentSourceLabel() {
+    switch (_contentInputType) {
+      case 'text':
+        return 'Text Input';
+      case 'youtube':
+        return 'YouTube Video';
+      case 'document':
+        return 'Document Upload';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  /// Get study materials label
+  String _getStudyMaterialsLabel() {
+    final materials = <String>[];
+    if (_generateFlashcards) {
+      materials.add('$_flashcardCount Flashcards');
+    }
+    if (_generateQuizzes) {
+      materials.add('$_quizCount Quiz Questions');
+    }
+    return materials.join(', ');
+  }
+
+  /// Format deadline
+  String _formatDeadline(DateTime deadline) {
+    return '${deadline.day}/${deadline.month}/${deadline.year}';
   }
 
   /// Check if there's any content to process
@@ -214,167 +1215,6 @@ class _CreateScreenState extends State<CreateScreen> {
     return _contentController.text.isNotEmpty ||
         _uploadedDocument != null ||
         _currentYouTubePreview != null;
-  }
-
-  /// Build content input type selector
-  Widget _buildContentInputTypeSelector(
-      BuildContext context, SemanticTokens tokens) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: tokens.borderDefault,
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.input,
-                  size: 20,
-                  color: tokens.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Content Input Method',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: tokens.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ],
-            ),
-          ),
-
-          // Input type options
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildInputTypeOption(
-                    context,
-                    tokens,
-                    'text',
-                    Icons.edit_note,
-                    'Text',
-                    'Paste or type your content',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildInputTypeOption(
-                    context,
-                    tokens,
-                    'youtube',
-                    Icons.play_circle_outline,
-                    'YouTube',
-                    'Process video content',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildInputTypeOption(
-                    context,
-                    tokens,
-                    'document',
-                    Icons.upload_file,
-                    'Document',
-                    'Upload PDF, DOCX, etc.',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Build individual input type option
-  Widget _buildInputTypeOption(
-    BuildContext context,
-    SemanticTokens tokens,
-    String type,
-    IconData icon,
-    String label,
-    String description,
-  ) {
-    final isSelected = _contentInputType == type;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _contentInputType = type;
-          // Clear other content when switching types
-          if (type != 'text') _contentController.clear();
-          if (type != 'youtube') {
-            _youtubeController.clear();
-            _currentYouTubePreview = null;
-          }
-          if (type != 'document') {
-            _uploadedDocument = null;
-            _extractedDocumentText = null;
-          }
-
-          // Clear title when switching content types to allow fresh suggestions
-          _titleController.clear();
-
-          // Reset title auto-population flag when switching content types
-          // This allows new suggestions when switching between different content sources
-          _isTitleAutoPopulated = false;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? tokens.primary.withValues(alpha: 0.1)
-              : tokens.surfaceAlt,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? tokens.primary : tokens.borderDefault,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected ? tokens.primary : tokens.textSecondary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: isSelected ? tokens.primary : tokens.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isSelected ? tokens.primary : tokens.textSecondary,
-                  ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   /// Build dynamic content input based on selected type
@@ -2288,6 +3128,7 @@ class _CreateScreenState extends State<CreateScreen> {
         notificationsEnabled: true,
         tags: [],
         isArchived: false,
+        themeColor: _selectedThemeColor,
       );
 
       // Save the study set to storage
@@ -2650,17 +3491,19 @@ class _CreateScreenState extends State<CreateScreen> {
       String title, String content, int cardCount) async {
     try {
       // Use EnhancedAIService for robust generation
-      final enhancedResult = await EnhancedAIService.instance.generateStudyMaterials(
+      final enhancedResult =
+          await EnhancedAIService.instance.generateStudyMaterials(
         content: content,
         flashcardCount: cardCount,
         quizCount: 0,
         difficulty: 'medium',
       );
-      
+
       if (!enhancedResult.isSuccess) {
-        throw Exception('Failed to generate content: ${enhancedResult.errorMessage}');
+        throw Exception(
+            'Failed to generate content: ${enhancedResult.errorMessage}');
       }
-      
+
       final flashcards = enhancedResult.flashcards;
 
       // Convert legacy flashcards to advanced format

@@ -5,7 +5,7 @@ import 'package:mindload/models/iap_firebase_models.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/firebase_iap_service.dart';
-import 'package:mindload/services/firebase_remote_config_service.dart';
+import 'package:mindload/services/remote_config_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Enhanced IAP-only payment service with Firebase backend verification
@@ -20,8 +20,7 @@ class InAppPurchaseService extends ChangeNotifier {
   final TelemetryService _telemetry = TelemetryService.instance;
   final AuthService _authService = AuthService.instance;
   final FirebaseIapService _firebaseIap = FirebaseIapService.instance;
-  final FirebaseRemoteConfigService _remoteConfig =
-      FirebaseRemoteConfigService.instance;
+  final RemoteConfigService _remoteConfig = RemoteConfigService.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isAvailable = false;

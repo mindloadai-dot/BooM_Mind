@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mindload/services/storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'dart:developer' as developer;
 
@@ -186,7 +186,8 @@ class ThemeManager extends ChangeNotifier {
 
   Future<void> loadTheme() async {
     try {
-      final savedTheme = await StorageService.instance.getSelectedTheme();
+      final savedTheme =
+          await EnhancedStorageService.instance.getSelectedTheme();
       if (savedTheme != null) {
         _currentTheme = _parseThemeFromString(savedTheme);
       }
@@ -204,7 +205,7 @@ class ThemeManager extends ChangeNotifier {
       // Theme validation removed - contrast feature no longer needed
       _currentTheme = theme;
       _isInFallbackMode = false;
-      await StorageService.instance.saveSelectedTheme(theme.id);
+      await EnhancedStorageService.instance.saveSelectedTheme(theme.id);
 
       // Emit telemetry
       TelemetryService.instance.logEvent(

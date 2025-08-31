@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:mindload/services/mindload_token_service.dart';
 
 /// Comprehensive Token Estimation Service
 /// Provides clear pre-processing information for all content types
@@ -9,7 +8,51 @@ class TokenEstimationService {
   static TokenEstimationService get instance => _instance;
   TokenEstimationService._internal();
 
-  final MindloadTokenService _tokenService = MindloadTokenService();
+  // Token estimation methods (replacing MindloadTokenService)
+  int tokensForText(String text) {
+    // Rough estimation: 1 token ≈ 4 characters for English text
+    return (text.length / 4).ceil();
+  }
+
+  int tokensForYouTube({
+    required int durationMinutes,
+    required bool hasCaptions,
+    String? language,
+  }) {
+    // Base tokens for video duration
+    int baseTokens = (durationMinutes * 2).ceil(); // 2 tokens per minute
+
+    // Bonus for captions
+    if (hasCaptions) {
+      baseTokens +=
+          (durationMinutes * 1.5).ceil(); // 1.5 tokens per minute for captions
+    }
+
+    return baseTokens;
+  }
+
+  int tokensForPdf(int pageCount, int estimatedWordsPerPage) {
+    // Rough estimation: 1 page ≈ 250 words ≈ 62 tokens
+    return (pageCount * estimatedWordsPerPage / 4).ceil();
+  }
+
+  int tokensForSource(String sourceType, Map<String, dynamic> details) {
+    // Generic source estimation
+    switch (sourceType) {
+      case 'url':
+        return 100; // Base tokens for URL content
+      case 'file':
+        return 200; // Base tokens for file content
+      default:
+        return 150; // Default tokens
+    }
+  }
+
+  double getCostEstimate(int tokens) {
+    // Rough cost estimation (GPT-4 pricing)
+    const double costPerToken = 0.00003; // $0.03 per 1K tokens
+    return tokens * costPerToken;
+  }
 
   /// Estimate tokens for text content with detailed breakdown
   TokenEstimationResult estimateTextContent({
@@ -20,7 +63,7 @@ class TokenEstimationService {
   }) {
     final words = text.split(' ').length;
     final chars = text.length;
-    final baseTokens = _tokenService.tokensForText(text);
+    final baseTokens = tokensForText(text);
 
     // Calculate output tokens based on custom counts or defaults
     final flashcardCount = customFlashcardCount ?? 50;
@@ -50,7 +93,7 @@ class TokenEstimationService {
       },
       canProceed: true,
       warnings: _generateWarnings(words, chars, depth),
-      costEstimate: _tokenService.getCostEstimate(totalTokens),
+      costEstimate: getCostEstimate(totalTokens),
     );
   }
 
@@ -63,7 +106,7 @@ class TokenEstimationService {
     String? language,
   }) {
     final durationMinutes = durationSeconds / 60;
-    final baseTokens = _tokenService.tokensForYouTube(
+    final baseTokens = tokensForYouTube(
       durationMinutes: durationMinutes.ceil(),
       hasCaptions: hasCaptions,
       language: language,
@@ -96,7 +139,7 @@ class TokenEstimationService {
       },
       canProceed: true,
       warnings: _generateYouTubeWarnings(durationMinutes, hasCaptions, depth),
-      costEstimate: _tokenService.getCostEstimate(totalTokens),
+      costEstimate: getCostEstimate(totalTokens),
     );
   }
 
@@ -109,8 +152,7 @@ class TokenEstimationService {
     int? customQuizCount,
   }) {
     final totalWords = pageCount * estimatedWordsPerPage;
-    final baseTokens =
-        _tokenService.tokensForPdf(pageCount, estimatedWordsPerPage);
+    final baseTokens = tokensForPdf(pageCount, estimatedWordsPerPage);
 
     // Calculate output tokens based on custom counts or defaults
     final flashcardCount = customFlashcardCount ?? 50;
@@ -139,7 +181,7 @@ class TokenEstimationService {
       },
       canProceed: true,
       warnings: _generatePdfWarnings(pageCount, totalWords, depth),
-      costEstimate: _tokenService.getCostEstimate(totalTokens),
+      costEstimate: getCostEstimate(totalTokens),
     );
   }
 
@@ -152,9 +194,9 @@ class TokenEstimationService {
     int? customFlashcardCount,
     int? customQuizCount,
   }) {
-    final baseTokens = _tokenService.tokensForSource(
-      words: estimatedWords,
-      hasCaptions: true,
+    final baseTokens = tokensForSource(
+      'document',
+      {'words': estimatedWords, 'hasCaptions': true},
     );
 
     // Calculate output tokens
@@ -184,7 +226,7 @@ class TokenEstimationService {
       },
       canProceed: true,
       warnings: _generateDocumentWarnings(fileSizeBytes, estimatedWords, depth),
-      costEstimate: _tokenService.getCostEstimate(totalTokens),
+      costEstimate: getCostEstimate(totalTokens),
     );
   }
 
@@ -227,7 +269,7 @@ class TokenEstimationService {
       },
       canProceed: true,
       warnings: _generateRegenerationWarnings(newFlashcardCount, newQuizCount),
-      costEstimate: _tokenService.getCostEstimate(totalTokens),
+      costEstimate: getCostEstimate(totalTokens),
     );
   }
 

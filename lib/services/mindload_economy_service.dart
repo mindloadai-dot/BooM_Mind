@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
-import 'package:mindload/services/storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 import 'package:mindload/services/firebase_client_service.dart';
@@ -590,7 +590,8 @@ class MindloadEconomyService extends ChangeNotifier {
       }
 
       final userId = authService.currentUser!.uid;
-      final data = await StorageService.instance.getUserEconomyData(userId);
+      final data =
+          await EnhancedStorageService.instance.getUserEconomyData(userId);
 
       if (data != null) {
         _userEconomy = MindloadUserEconomy.fromJson(data);
@@ -615,7 +616,7 @@ class MindloadEconomyService extends ChangeNotifier {
     if (_userEconomy == null) return;
 
     try {
-      await StorageService.instance
+      await EnhancedStorageService.instance
           .saveUserEconomyData(_userEconomy!.userId, _userEconomy!.toJson());
 
       // Sync to Firestore if authenticated and Firebase is ready
@@ -642,7 +643,8 @@ class MindloadEconomyService extends ChangeNotifier {
 
   Future<void> _loadBudgetController() async {
     try {
-      final data = await StorageService.instance.getBudgetControllerData();
+      final data =
+          await EnhancedStorageService.instance.getBudgetControllerData();
       if (data != null) {
         _budgetController = MindloadBudgetController.fromJson(data);
       }
@@ -655,7 +657,7 @@ class MindloadEconomyService extends ChangeNotifier {
 
   Future<void> _saveBudgetController() async {
     try {
-      await StorageService.instance
+      await EnhancedStorageService.instance
           .saveBudgetControllerData(_budgetController.toJson());
     } catch (e) {
       if (kDebugMode) {
@@ -775,8 +777,8 @@ class MindloadEconomyService extends ChangeNotifier {
   }
 }
 
-// Extension methods for StorageService
-extension MindloadStorageExtension on StorageService {
+// Extension methods for EnhancedStorageService
+extension MindloadStorageExtension on EnhancedStorageService {
   Future<Map<String, dynamic>?> getUserEconomyData(String userId) async {
     return await getJsonData('mindload_user_economy_$userId');
   }

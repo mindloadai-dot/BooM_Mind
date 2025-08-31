@@ -76,6 +76,9 @@ dependencies:
   image_picker: ^1.2.0
   image: ^4.5.4
   share_plus: ^11.1.0
+  
+  # Charts & Data Visualization
+  fl_chart: ^0.68.0
 
 dependency_overrides:
   # Work around Android build issues in latest sqflite_android by pinning to a compatible version

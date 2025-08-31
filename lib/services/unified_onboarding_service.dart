@@ -15,27 +15,21 @@ class UnifiedOnboardingService extends ChangeNotifier {
   static const String _nicknameSetKey = 'unified_nickname_set';
   static const String _featuresExplainedKey = 'unified_features_explained';
   static const String _firstLaunchDateKey = 'unified_first_launch_date';
-  static const String _welcomeDialogShownKey = 'unified_welcome_dialog_shown';
 
   // Onboarding state
   bool _isOnboardingCompleted = false;
   bool _isNicknameSet = false;
   bool _areFeaturesExplained = false;
-  bool _isWelcomeDialogShown = false;
   DateTime? _firstLaunchDate;
 
   // Getters
   bool get isOnboardingCompleted => _isOnboardingCompleted;
   bool get isNicknameSet => _isNicknameSet;
   bool get areFeaturesExplained => _areFeaturesExplained;
-  bool get isWelcomeDialogShown => _isWelcomeDialogShown;
   DateTime? get firstLaunchDate => _firstLaunchDate;
 
   /// Check if user needs to complete onboarding
   bool get needsOnboarding => !_isOnboardingCompleted;
-
-  /// Check if welcome dialog should be shown
-  bool get shouldShowWelcomeDialog => !_isWelcomeDialogShown;
 
   /// Initialize the service
   Future<void> initialize() async {
@@ -45,7 +39,6 @@ class UnifiedOnboardingService extends ChangeNotifier {
       _isOnboardingCompleted = prefs.getBool(_onboardingCompletedKey) ?? false;
       _isNicknameSet = prefs.getBool(_nicknameSetKey) ?? false;
       _areFeaturesExplained = prefs.getBool(_featuresExplainedKey) ?? false;
-      _isWelcomeDialogShown = prefs.getBool(_welcomeDialogShownKey) ?? false;
 
       final firstLaunchString = prefs.getString(_firstLaunchDateKey);
       if (firstLaunchString != null) {
@@ -62,7 +55,6 @@ class UnifiedOnboardingService extends ChangeNotifier {
         debugPrint('   Onboarding completed: $_isOnboardingCompleted');
         debugPrint('   Nickname set: $_isNicknameSet');
         debugPrint('   Features explained: $_areFeaturesExplained');
-        debugPrint('   Welcome dialog shown: $_isWelcomeDialogShown');
         debugPrint('   First launch: $_firstLaunchDate');
       }
 
@@ -112,25 +104,6 @@ class UnifiedOnboardingService extends ChangeNotifier {
     }
   }
 
-  /// Mark welcome dialog as shown
-  Future<void> markWelcomeDialogShown() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_welcomeDialogShownKey, true);
-
-      _isWelcomeDialogShown = true;
-      notifyListeners();
-
-      if (kDebugMode) {
-        debugPrint('✅ Welcome dialog marked as shown');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Failed to mark welcome dialog as shown: $e');
-      }
-    }
-  }
-
   /// Complete the entire onboarding process
   Future<void> completeOnboarding() async {
     try {
@@ -160,12 +133,10 @@ class UnifiedOnboardingService extends ChangeNotifier {
       await prefs.remove(_onboardingCompletedKey);
       await prefs.remove(_nicknameSetKey);
       await prefs.remove(_featuresExplainedKey);
-      await prefs.remove(_welcomeDialogShownKey);
 
       _isOnboardingCompleted = false;
       _isNicknameSet = false;
       _areFeaturesExplained = false;
-      _isWelcomeDialogShown = false;
 
       notifyListeners();
 
@@ -196,7 +167,6 @@ class UnifiedOnboardingService extends ChangeNotifier {
       'completed': _isOnboardingCompleted,
       'nickname_set': _isNicknameSet,
       'features_explained': _areFeaturesExplained,
-      'welcome_dialog_shown': _isWelcomeDialogShown,
       'progress': onboardingProgress,
       'first_launch': _firstLaunchDate?.toIso8601String(),
       'needs_onboarding': needsOnboarding,

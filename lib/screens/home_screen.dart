@@ -30,7 +30,7 @@ import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
-import 'package:mindload/services/notification_test_service.dart';
+// Removed import: notification_test_service.dart - test service removed
 import 'package:mindload/services/user_profile_service.dart';
 
 import 'package:mindload/screens/create_screen.dart';
@@ -2425,7 +2425,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       );
                     }
-                    await NotificationTestService.runComprehensiveTest();
+                    // Removed: NotificationTestService.runComprehensiveTest() - test service removed
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

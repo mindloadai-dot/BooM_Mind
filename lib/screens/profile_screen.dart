@@ -29,6 +29,7 @@ import 'package:mindload/widgets/mindload_button_system.dart';
 import 'package:mindload/widgets/change_password_dialog.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:mindload/widgets/accessible_components.dart' show ButtonSize;
+import 'package:mindload/constants/product_constants.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1042,6 +1043,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                 MaterialPageRoute(
                     builder: (context) => const NotificationSettingsScreen()),
               ),
+            ),
+            const SizedBox(height: 12),
+            _buildActionCard(
+              ProductConstants.neurographTitle,
+              ProductConstants.neurographSubtitle,
+              Icons.analytics,
+              context.tokens.primary,
+              () => Navigator.pushNamed(context, '/neurograph'),
             ),
           ],
         ),

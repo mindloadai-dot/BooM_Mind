@@ -22,14 +22,16 @@ import 'package:mindload/config/environment_config.dart';
 import 'package:mindload/screens/social_auth_screen.dart';
 import 'package:mindload/screens/home_screen.dart';
 import 'package:mindload/screens/modern_onboarding_screen.dart';
-import 'package:mindload/widgets/welcome_dialog.dart';
 import 'package:mindload/screens/logic_packs_screen.dart';
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/screens/settings_screen.dart';
 import 'package:mindload/screens/profile_screen.dart';
+import 'package:mindload/screens/app_icon_demo_screen.dart';
+import 'package:mindload/screens/neurograph_screen.dart';
 import 'package:mindload/theme.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 void main() async {
@@ -200,6 +202,10 @@ class MindLoadApp extends StatelessWidget {
               '/achievements': (context) => const AchievementsScreen(),
               '/settings': (context) => const SettingsScreen(),
               '/profile': (context) => const ProfileScreen(),
+              '/app-icon-demo': (context) => const AppIconDemoScreen(),
+              '/neurograph': (context) => const NeuroGraphScreen(),
+              '/profile/insights/neurograph': (context) =>
+                  const NeuroGraphScreen(),
             },
           );
         },
@@ -215,7 +221,8 @@ class AppInitializer extends StatefulWidget {
   AppInitializerState createState() => AppInitializerState();
 }
 
-class AppInitializerState extends State<AppInitializer> {
+class AppInitializerState extends State<AppInitializer>
+    with TickerProviderStateMixin {
   bool _isInitialized = false;
   bool _hasError = false;
   String _statusMessage = 'Initializing MindLoad...';
@@ -223,9 +230,22 @@ class AppInitializerState extends State<AppInitializer> {
   VideoPlayerController? _videoController;
   bool _videoInitialized = false;
 
+  // Animation controllers for dynamic background
+  late AnimationController _backgroundPulseController;
+  late AnimationController _particleController;
+  late AnimationController _gradientController;
+  late AnimationController _waveController;
+
+  // Animations
+  late Animation<double> _backgroundPulseAnimation;
+  late Animation<double> _particleAnimation;
+  late Animation<double> _gradientAnimation;
+  late Animation<double> _waveAnimation;
+
   @override
   void initState() {
     super.initState();
+    _initializeBackgroundAnimations();
     _initializeVideo();
     _initializeApp();
 
@@ -238,6 +258,64 @@ class AppInitializerState extends State<AppInitializer> {
         });
       }
     });
+  }
+
+  void _initializeBackgroundAnimations() {
+    // Background pulse animation - breathing effect
+    _backgroundPulseController = AnimationController(
+      duration: const Duration(seconds: 4),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _backgroundPulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _backgroundPulseController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Particle animation - floating particles
+    _particleController = AnimationController(
+      duration: const Duration(seconds: 6),
+      vsync: this,
+    )..repeat();
+
+    _particleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _particleController,
+      curve: Curves.linear,
+    ));
+
+    // Gradient animation - color cycling
+    _gradientController = AnimationController(
+      duration: const Duration(seconds: 8),
+      vsync: this,
+    )..repeat();
+
+    _gradientAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _gradientController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Wave animation - flowing effect
+    _waveController = AnimationController(
+      duration: const Duration(seconds: 5),
+      vsync: this,
+    )..repeat();
+
+    _waveAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _waveController,
+      curve: Curves.easeInOut,
+    ));
   }
 
   /// Initialize the video player
@@ -266,6 +344,10 @@ class AppInitializerState extends State<AppInitializer> {
   void dispose() {
     _safetyTimer?.cancel();
     _videoController?.dispose();
+    _backgroundPulseController.dispose();
+    _particleController.dispose();
+    _gradientController.dispose();
+    _waveController.dispose();
     super.dispose();
   }
 
@@ -360,31 +442,128 @@ class AppInitializerState extends State<AppInitializer> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // Video background
-            if (_videoInitialized && _videoController != null)
-              Center(
-                child: AspectRatio(
-                  aspectRatio: _videoController!.value.aspectRatio,
-                  child: VideoPlayer(_videoController!),
-                ),
-              )
-            else
-              // Fallback static logo
-              Center(
-                child: Container(
-                  width: 200,
-                  height: 200,
+            // Dynamic Animated Background
+            AnimatedBuilder(
+              animation: Listenable.merge([
+                _backgroundPulseAnimation,
+                _particleAnimation,
+                _gradientAnimation,
+                _waveAnimation,
+              ]),
+              builder: (context, child) {
+                // Dynamic color calculation for background
+                final gradientProgress = _gradientAnimation.value;
+                final primaryColor = Color.lerp(
+                  const Color(0xFF6366F1), // Electric blue
+                  const Color(0xFFEC4899), // Pink
+                  gradientProgress,
+                )!;
+                final secondaryColor = Color.lerp(
+                  const Color(0xFF8B5CF6), // Purple
+                  const Color(0xFF6366F1), // Electric blue
+                  gradientProgress,
+                )!;
+                final tertiaryColor = Color.lerp(
+                  const Color(0xFFEC4899), // Pink
+                  const Color(0xFF8B5CF6), // Purple
+                  gradientProgress,
+                )!;
+
+                return Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(32),
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: _backgroundPulseAnimation.value,
+                      colors: [
+                        primaryColor.withOpacity(0.3),
+                        secondaryColor.withOpacity(0.2),
+                        tertiaryColor.withOpacity(0.1),
+                        Colors.black,
+                      ],
+                      stops: [0.0, 0.3, 0.7, 1.0],
+                    ),
                   ),
-                  child: Icon(
-                    Icons.psychology,
-                    size: 80,
-                    color: Theme.of(context).primaryColor,
+                  child: CustomPaint(
+                    painter: DynamicBackgroundPainter(
+                      particleProgress: _particleAnimation.value,
+                      waveProgress: _waveAnimation.value,
+                      primaryColor: primaryColor,
+                      secondaryColor: secondaryColor,
+                      tertiaryColor: tertiaryColor,
+                    ),
+                    size: Size.infinite,
                   ),
-                ),
+                );
+              },
+            ),
+
+            // Main content with video
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // MP4 Video Logo with enhanced glow
+                  AnimatedBuilder(
+                    animation: _backgroundPulseAnimation,
+                    builder: (context, child) {
+                      return Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withOpacity(
+                                  0.3 * _backgroundPulseAnimation.value),
+                              blurRadius: 30 * _backgroundPulseAnimation.value,
+                              spreadRadius: 5 * _backgroundPulseAnimation.value,
+                            ),
+                            BoxShadow(
+                              color: const Color(0xFF8B5CF6).withOpacity(
+                                  0.2 * _backgroundPulseAnimation.value),
+                              blurRadius: 20 * _backgroundPulseAnimation.value,
+                              spreadRadius: 3 * _backgroundPulseAnimation.value,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(32),
+                          child: _videoInitialized && _videoController != null
+                              ? AspectRatio(
+                                  aspectRatio:
+                                      _videoController!.value.aspectRatio,
+                                  child: VideoPlayer(_videoController!),
+                                )
+                              : Container(
+                                  width: 200,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        const Color(
+                                            0xFF6366F1), // Electric blue
+                                        const Color(0xFF8B5CF6), // Purple
+                                        const Color(0xFFEC4899), // Pink
+                                      ],
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 3,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
+            ),
 
             // Status overlay at the bottom
             Positioned(
@@ -443,22 +622,112 @@ class AppInitializerState extends State<AppInitializer> {
           return const ModernOnboardingScreen();
         }
 
-        // Show welcome dialog if needed
-        if (onboardingService.shouldShowWelcomeDialog) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => const WelcomeDialog(),
-              );
-            }
-          });
-        }
-
         // Main app content
         return const HomeScreen();
       },
     );
+  }
+}
+
+/// Custom painter for dynamic background effects
+class DynamicBackgroundPainter extends CustomPainter {
+  final double particleProgress;
+  final double waveProgress;
+  final Color primaryColor;
+  final Color secondaryColor;
+  final Color tertiaryColor;
+
+  DynamicBackgroundPainter({
+    required this.particleProgress,
+    required this.waveProgress,
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.tertiaryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    // Draw floating particles
+    _drawParticles(canvas, size, paint);
+
+    // Draw wave effects
+    _drawWaves(canvas, size, paint);
+  }
+
+  void _drawParticles(Canvas canvas, Size size, Paint paint) {
+    const particleCount = 15;
+    final random = Random(42); // Fixed seed for consistent particle positions
+
+    for (int i = 0; i < particleCount; i++) {
+      final x = (random.nextDouble() * size.width);
+      final y = (random.nextDouble() * size.height);
+      final radius = 2 + (random.nextDouble() * 4);
+
+      // Animate particle position
+      final animatedX = x + (sin(particleProgress * 2 * pi + i) * 20);
+      final animatedY = y + (cos(particleProgress * 2 * pi + i * 0.5) * 15);
+
+      // Particle color based on position
+      final colorProgress = (sin(particleProgress * 2 * pi + i) + 1) / 2;
+      final particleColor =
+          Color.lerp(primaryColor, secondaryColor, colorProgress)!;
+
+      paint.color = particleColor.withOpacity(0.6);
+      canvas.drawCircle(Offset(animatedX, animatedY), radius, paint);
+
+      // Glow effect
+      paint.color = particleColor.withOpacity(0.2);
+      canvas.drawCircle(Offset(animatedX, animatedY), radius * 3, paint);
+    }
+  }
+
+  void _drawWaves(Canvas canvas, Size size, Paint paint) {
+    final path = Path();
+    final waveHeight = 30.0;
+    final waveCount = 3;
+
+    for (int wave = 0; wave < waveCount; wave++) {
+      final waveOffset = wave * (size.height / waveCount);
+      final currentWaveProgress = waveProgress + (wave * 0.3);
+
+      path.reset();
+      path.moveTo(0, size.height);
+
+      for (double x = 0; x <= size.width; x += 5) {
+        final y = waveOffset +
+            sin((x / size.width) * 2 * pi + currentWaveProgress * 2 * pi) *
+                waveHeight +
+            sin((x / size.width) * 4 * pi + currentWaveProgress * 4 * pi) *
+                (waveHeight * 0.5);
+
+        path.lineTo(x, y);
+      }
+
+      path.lineTo(size.width, size.height);
+      path.close();
+
+      // Wave color based on wave index
+      final waveColor = wave == 0
+          ? primaryColor
+          : wave == 1
+              ? secondaryColor
+              : tertiaryColor;
+
+      paint.color = waveColor.withOpacity(0.1);
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(DynamicBackgroundPainter oldDelegate) {
+    return oldDelegate.particleProgress != particleProgress ||
+        oldDelegate.waveProgress != waveProgress ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.secondaryColor != secondaryColor ||
+        oldDelegate.tertiaryColor != tertiaryColor;
   }
 }

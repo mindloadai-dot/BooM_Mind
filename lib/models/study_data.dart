@@ -24,6 +24,7 @@ class StudySet {
   final Map<String, dynamic>? metadata;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? themeColor; // Semantic theme color for the study set
 
   StudySet({
     required this.id,
@@ -47,6 +48,7 @@ class StudySet {
     this.metadata,
     this.createdAt,
     this.updatedAt,
+    this.themeColor,
   });
 
   Map<String, dynamic> toJson() => {
@@ -71,6 +73,7 @@ class StudySet {
         'metadata': metadata,
         'createdAt': createdAt?.toIso8601String(),
         'updatedAt': updatedAt?.toIso8601String(),
+        'themeColor': themeColor,
       };
 
   factory StudySet.fromJson(Map<String, dynamic> json) => StudySet(
@@ -109,6 +112,7 @@ class StudySet {
         updatedAt: json['updatedAt'] != null
             ? DateTime.parse(json['updatedAt'])
             : null,
+        themeColor: json['themeColor'] as String?,
       );
 
   StudySet copyWith({
@@ -128,6 +132,7 @@ class StudySet {
     int? sourceLength,
     List<String>? tags,
     bool? isArchived,
+    String? themeColor,
   }) =>
       StudySet(
         id: id ?? this.id,
@@ -146,6 +151,7 @@ class StudySet {
         sourceLength: sourceLength ?? this.sourceLength,
         tags: tags ?? this.tags,
         isArchived: isArchived ?? this.isArchived,
+        themeColor: themeColor ?? this.themeColor,
       );
 
   // Convert to StudySetMetadata for storage

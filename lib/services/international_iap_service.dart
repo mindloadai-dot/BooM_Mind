@@ -1,20 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:mindload/models/pricing_models.dart';
 import 'package:mindload/services/in_app_purchase_service.dart';
-import 'package:mindload/services/firebase_remote_config_service.dart';
+import 'package:mindload/services/remote_config_service.dart';
 import 'package:mindload/services/firebase_iap_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 
 // International IAP configuration service for worldwide compliance
 // Handles territory availability, local currency pricing, and payout readiness
 class InternationalIapService {
-  static final InternationalIapService _instance = InternationalIapService._internal();
+  static final InternationalIapService _instance =
+      InternationalIapService._internal();
   factory InternationalIapService() => _instance;
   static InternationalIapService get instance => _instance;
   InternationalIapService._internal();
 
   final InAppPurchaseService _iapService = InAppPurchaseService.instance;
-  final FirebaseRemoteConfigService _remoteConfig = FirebaseRemoteConfigService.instance;
+  final RemoteConfigService _remoteConfig = RemoteConfigService.instance;
   final FirebaseIapService _firebaseIap = FirebaseIapService.instance;
   final TelemetryService _telemetry = TelemetryService.instance;
 
@@ -78,10 +79,10 @@ class InternationalIapService {
       // Initialize dependent services
       await _iapService.initialize();
       await _remoteConfig.initialize();
-      
+
       // Set device timezone (ops timezone defaults to America/Chicago)
       _deviceTimezone = 'America/Chicago';
-      
+
       // Try to get user's device timezone for user-visible dates
       try {
         // Get user's actual timezone for display
@@ -203,7 +204,8 @@ class InternationalIapService {
   }
 
   // Record compliance telemetry
-  Future<void> recordComplianceTelemetry(String event, Map<String, dynamic> data) async {
+  Future<void> recordComplianceTelemetry(
+      String event, Map<String, dynamic> data) async {
     try {
       await _telemetry.logEvent('iap_compliance_$event', {
         ...data,
@@ -230,14 +232,15 @@ class InternationalIapService {
   Future<bool> areAllProductsConfigured() async {
     final availableProducts = _iapService.products;
     final requiredProductIds = internationalProductCatalog.keys.toSet();
-    final configuredProductIds = availableProducts.where((p) => p.id != null).map((p) => p.id).toSet();
-    
+    final configuredProductIds =
+        availableProducts.where((p) => p.id != null).map((p) => p.id).toSet();
+
     final missing = requiredProductIds.difference(configuredProductIds);
     if (missing.isNotEmpty) {
       debugPrint('Missing product configurations: $missing');
       return false;
     }
-    
+
     return true;
   }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:mindload/constants/product_constants.dart';
-import 'package:mindload/services/storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 
@@ -20,10 +20,11 @@ class EntitlementService extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
 
   // Token allowance getters
-  int get monthlyAllowanceRemaining => _currentEntitlements.monthlyAllowanceRemaining;
+  int get monthlyAllowanceRemaining =>
+      _currentEntitlements.monthlyAllowanceRemaining;
   int get logicPackBalance => _currentEntitlements.logicPackBalance;
   int get totalAvailableTokens => monthlyAllowanceRemaining + logicPackBalance;
-  
+
   // Reset schedule info
   DateTime get nextResetDate => _calculateNextResetDate();
   Duration get timeUntilReset => nextResetDate.difference(DateTime.now());
@@ -55,10 +56,8 @@ class EntitlementService extends ChangeNotifier {
 
     // Check if user is admin and give them 1000 tokens instead of 20
     final isAdmin = _isAdminUser(userId);
-    _currentEntitlements = UserEntitlements.initial(
-      userId: userId, 
-      isAdmin: isAdmin
-    );
+    _currentEntitlements =
+        UserEntitlements.initial(userId: userId, isAdmin: isAdmin);
     await _saveEntitlements();
     notifyListeners();
   }
@@ -86,9 +85,9 @@ class EntitlementService extends ChangeNotifier {
   /// Consume tokens (monthly allowance first, then Logic Pack balance)
   Future<bool> consumeTokens(int tokensToConsume) async {
     if (tokensToConsume <= 0) return true;
-    
+
     await _checkMonthlyReset();
-    
+
     if (totalAvailableTokens < tokensToConsume) {
       return false;
     }
@@ -98,9 +97,10 @@ class EntitlementService extends ChangeNotifier {
       _currentEntitlements.monthlyAllowanceRemaining -= tokensToConsume;
     } else {
       // Use remaining monthly allowance
-      final remainingFromAllowance = _currentEntitlements.monthlyAllowanceRemaining;
+      final remainingFromAllowance =
+          _currentEntitlements.monthlyAllowanceRemaining;
       _currentEntitlements.monthlyAllowanceRemaining = 0;
-      
+
       // Use Logic Pack balance for the rest
       final remainingFromLogicPack = tokensToConsume - remainingFromAllowance;
       _currentEntitlements.logicPackBalance -= remainingFromLogicPack;
@@ -124,7 +124,7 @@ class EntitlementService extends ChangeNotifier {
   Future<void> _checkMonthlyReset() async {
     final now = DateTime.now();
     final lastReset = _currentEntitlements.lastMonthlyReset;
-    
+
     if (_shouldResetThisMonth(now, lastReset)) {
       await _performMonthlyReset();
     }
@@ -135,10 +135,10 @@ class EntitlementService extends ChangeNotifier {
     // Reset on 1st of month at 00:00 America/Chicago
     final chicagoTime = _convertToChicagoTime(now);
     final lastResetChicago = _convertToChicagoTime(lastReset);
-    
+
     // Check if it's a new month since last reset
-    return chicagoTime.year != lastResetChicago.year || 
-           chicagoTime.month != lastResetChicago.month;
+    return chicagoTime.year != lastResetChicago.year ||
+        chicagoTime.month != lastResetChicago.month;
   }
 
   /// Convert UTC time to America/Chicago time
@@ -153,7 +153,7 @@ class EntitlementService extends ChangeNotifier {
   DateTime _calculateNextResetDate() {
     final now = DateTime.now();
     final chicagoTime = _convertToChicagoTime(now);
-    
+
     // Get 1st of next month
     DateTime nextMonth;
     if (chicagoTime.month == 12) {
@@ -161,7 +161,7 @@ class EntitlementService extends ChangeNotifier {
     } else {
       nextMonth = DateTime(chicagoTime.year, chicagoTime.month + 1, 1);
     }
-    
+
     // Convert back to UTC (add 6 hours to get UTC time)
     return nextMonth.add(const Duration(hours: 6));
   }
@@ -171,27 +171,29 @@ class EntitlementService extends ChangeNotifier {
     // Check if user is admin and reset accordingly
     final isAdmin = _isAdminUser(_currentEntitlements.userId);
     final resetAmount = isAdmin ? 1000 : ProductConstants.freeMonthlyTokens;
-    
+
     // Reset monthly allowance to appropriate amount
     _currentEntitlements.monthlyAllowanceRemaining = resetAmount;
-    
+
     // Update last reset timestamp
     _currentEntitlements.lastMonthlyReset = DateTime.now();
-    
+
     // Logic Pack balance persists (does not reset)
-    
+
     await _saveEntitlements();
     notifyListeners();
-    
+
     if (kDebugMode) {
-      print('Monthly allowance reset: $resetAmount tokens available for ${isAdmin ? 'admin' : 'regular'} user');
+      print(
+          'Monthly allowance reset: $resetAmount tokens available for ${isAdmin ? 'admin' : 'regular'} user');
     }
   }
 
   /// Create default entitlements for new user
   Future<void> _createDefaultEntitlements(String userId) async {
     final isAdmin = _isAdminUser(userId);
-    _currentEntitlements = UserEntitlements.initial(userId: userId, isAdmin: isAdmin);
+    _currentEntitlements =
+        UserEntitlements.initial(userId: userId, isAdmin: isAdmin);
     await _saveEntitlements();
   }
 
@@ -199,23 +201,26 @@ class EntitlementService extends ChangeNotifier {
   Future<void> _loadEntitlements(String userId) async {
     try {
       // Try to load from local storage first
-      final localData = await StorageService.instance.getUserEntitlements(userId);
+      final localData =
+          await EnhancedStorageService.instance.getUserEntitlements(userId);
       if (localData != null) {
         _currentEntitlements = UserEntitlements.fromJson(localData);
         return;
       }
-      
+
       // Try to load from Firestore if online
       if (!AuthService.instance.isLocalMode) {
-        final firestoreData = await FirestoreRepository.instance.getUserEntitlements(userId);
+        final firestoreData =
+            await FirestoreRepository.instance.getUserEntitlements(userId);
         if (firestoreData != null) {
           _currentEntitlements = UserEntitlements.fromJson(firestoreData);
           // Save to local storage
-          await StorageService.instance.saveUserEntitlements(userId, firestoreData);
+          await EnhancedStorageService.instance
+              .saveUserEntitlements(userId, firestoreData);
           return;
         }
       }
-      
+
       // Create default entitlements if none exist
       await _createDefaultEntitlements(userId);
     } catch (e) {
@@ -230,13 +235,11 @@ class EntitlementService extends ChangeNotifier {
   Future<void> _saveEntitlements() async {
     try {
       final data = _currentEntitlements.toJson();
-      
+
       // Save to local storage
-      await StorageService.instance.saveUserEntitlements(
-        _currentEntitlements.userId, 
-        data
-      );
-      
+      await EnhancedStorageService.instance
+          .saveUserEntitlements(_currentEntitlements.userId, data);
+
       // Save to Firestore if online
       if (!AuthService.instance.isLocalMode) {
         await FirestoreRepository.instance.saveUserEntitlements(
@@ -256,11 +259,11 @@ class EntitlementService extends ChangeNotifier {
     if (monthlyAllowanceRemaining == 0 && logicPackBalance == 0) {
       return 'No ${ProductConstants.tokenUnitName} remaining. Get more with a Logic Pack or upgrade to ${ProductConstants.axonMonthlyName}.';
     }
-    
+
     if (monthlyAllowanceRemaining <= 5) {
       return 'Running low on monthly allowance. Consider a Logic Pack for immediate access.';
     }
-    
+
     return '';
   }
 
@@ -313,7 +316,8 @@ class UserEntitlements {
   factory UserEntitlements.fromJson(Map<String, dynamic> json) {
     return UserEntitlements(
       userId: json['userId'] ?? '',
-      monthlyAllowanceRemaining: json['monthlyAllowanceRemaining'] ?? ProductConstants.freeMonthlyTokens,
+      monthlyAllowanceRemaining: json['monthlyAllowanceRemaining'] ??
+          ProductConstants.freeMonthlyTokens,
       logicPackBalance: json['logicPackBalance'] ?? 0,
       lastMonthlyReset: DateTime.parse(json['lastMonthlyReset']),
       createdAt: DateTime.parse(json['createdAt']),
@@ -344,7 +348,8 @@ class UserEntitlements {
   }) {
     return UserEntitlements(
       userId: userId ?? this.userId,
-      monthlyAllowanceRemaining: monthlyAllowanceRemaining ?? this.monthlyAllowanceRemaining,
+      monthlyAllowanceRemaining:
+          monthlyAllowanceRemaining ?? this.monthlyAllowanceRemaining,
       logicPackBalance: logicPackBalance ?? this.logicPackBalance,
       lastMonthlyReset: lastMonthlyReset ?? this.lastMonthlyReset,
       createdAt: createdAt ?? this.createdAt,

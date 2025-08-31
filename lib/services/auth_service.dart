@@ -7,13 +7,13 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 // Google Sign-In handled via Firebase signInWithProvider for mobile and signInWithPopup for web
 import 'dart:io' show Platform; // Guarded usage
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:mindload/services/storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 import 'package:mindload/firestore/firestore_data_schema.dart';
 import 'package:mindload/services/entitlement_service.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/local_image_storage_service.dart';
-import 'package:mindload/services/promotional_consent_service.dart';
+
 import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
 
@@ -768,11 +768,11 @@ class AuthService extends ChangeNotifier {
           print('🗑️ Clearing local data...');
         }
         await _clearUserData();
-        await StorageService.instance.clearAllData();
+        await EnhancedStorageService.instance.clearAllData();
 
         // Step 4: Clear promotional consent data
         try {
-          await PromotionalConsentService().cleanupConsentData(user.uid);
+          // PromotionalConsentService was removed - skip this step
           if (kDebugMode) {
             print('🗑️ Promotional consent data cleared');
           }
@@ -830,13 +830,14 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _saveUserData() async {
     if (_currentUser != null) {
-      await StorageService.instance.saveUserData(_currentUser!.toJson());
-      await StorageService.instance.setAuthenticated(true);
+      await EnhancedStorageService.instance
+          .saveUserData(_currentUser!.toJson());
+      await EnhancedStorageService.instance.setAuthenticated(true);
     }
   }
 
   Future<void> _loadUserData() async {
-    final userData = await StorageService.instance.getUserData();
+    final userData = await EnhancedStorageService.instance.getUserData();
     if (userData != null) {
       try {
         _currentUser = AuthUser.fromJson(userData);
@@ -851,8 +852,8 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _clearUserData() async {
-    await StorageService.instance.clearUserData();
-    await StorageService.instance.setAuthenticated(false);
+    await EnhancedStorageService.instance.clearUserData();
+    await EnhancedStorageService.instance.setAuthenticated(false);
   }
 
   String _generateNonce([int length = 32]) {

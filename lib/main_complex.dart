@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:mindload/services/storage_service.dart';
+import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
@@ -29,26 +29,25 @@ void main() async {
   // Initialize core services
   try {
     // Initialize storage service
-    await StorageService.instance.initialize();
-    
+    await EnhancedStorageService.instance.initialize();
+
     // Initialize theme manager
     await ThemeManager.instance.loadTheme();
-    
+
     // Initialize telemetry service
     TelemetryService.instance.setEnabled(true);
-    
+
     // Initialize Firebase
     await Firebase.initializeApp();
-    
+
     // Initialize auth service
     await AuthService.instance.initialize();
-    
+
     // Initialize Ultra Audio Controller
     await UltraAudioController.instance.initialize();
-    
+
     // Initialize Mindload Economy Service
     await MindloadEconomyService.instance.initialize();
-    
   } catch (e) {
     // Continue with limited functionality
   }
@@ -69,8 +68,8 @@ class MindLoadApp extends StatelessWidget {
         ChangeNotifierProvider<AuthService>.value(
           value: AuthService.instance,
         ),
-        ChangeNotifierProvider<StorageService>.value(
-          value: StorageService.instance,
+        ChangeNotifierProvider<EnhancedStorageService>.value(
+          value: EnhancedStorageService.instance,
         ),
         ChangeNotifierProvider<UltraAudioController>.value(
           value: UltraAudioController.instance,
@@ -99,7 +98,8 @@ class _AppInitializationScreen extends StatefulWidget {
   const _AppInitializationScreen();
 
   @override
-  State<_AppInitializationScreen> createState() => _AppInitializationScreenState();
+  State<_AppInitializationScreen> createState() =>
+      _AppInitializationScreenState();
 }
 
 class _AppInitializationScreenState extends State<_AppInitializationScreen> {
@@ -166,16 +166,16 @@ class _AppInitializationScreenState extends State<_AppInitializationScreen> {
             Text(
               'MindLoad',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: tokens.brandTitle,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: tokens.brandTitle,
+                  ),
             ),
             const SizedBox(height: 16),
             Text(
               _statusMessage,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: tokens.textMuted,
-              ),
+                    color: tokens.textMuted,
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),

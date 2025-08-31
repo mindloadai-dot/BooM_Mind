@@ -227,6 +227,8 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
 
   Widget _buildCardContent(
       SemanticTokens tokens, int daysSinceStudied, double progressPercentage) {
+    final themeColor = _getThemeColor(tokens);
+    
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -238,7 +240,7 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
           ],
         ),
         border: Border.all(
-          color: tokens.primary.withValues(alpha: _isHovered ? 0.3 : 0.1),
+          color: themeColor.withValues(alpha: _isHovered ? 0.3 : 0.1),
           width: _isHovered ? 2 : 1,
         ),
       ),
@@ -261,6 +263,8 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
   }
 
   Widget _buildHeader(SemanticTokens tokens) {
+    final themeColor = _getThemeColor(tokens);
+    
     return Row(
       children: [
         // Study set icon with animation
@@ -268,15 +272,15 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: tokens.primary.withValues(alpha: 0.1),
+            color: themeColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: tokens.primary.withValues(alpha: 0.2),
+              color: themeColor.withValues(alpha: 0.2),
             ),
           ),
           child: Icon(
             Icons.school,
-            color: tokens.primary,
+            color: themeColor,
             size: 20,
           ),
         ),
@@ -471,6 +475,8 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
   }
 
   Widget _buildProgressBar(SemanticTokens tokens, double progressPercentage) {
+    final themeColor = _getThemeColor(tokens);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -488,7 +494,7 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
             Text(
               '${(progressPercentage * 100).round()}%',
               style: TextStyle(
-                color: tokens.primary,
+                color: themeColor,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -510,7 +516,7 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
                 width: constraints.maxWidth * progressPercentage,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [tokens.primary, tokens.secondary],
+                    colors: [themeColor, themeColor.withValues(alpha: 0.8)],
                   ),
                   borderRadius: BorderRadius.circular(3),
                 ),
@@ -620,5 +626,34 @@ class _AnimatedStudySetCardState extends State<AnimatedStudySetCard>
     if (daysSinceStudied <= 14) return 0.4;
     if (daysSinceStudied <= 30) return 0.2;
     return 0.0;
+  }
+
+  /// Get the theme color for this study set based on the selected semantic color
+  Color _getThemeColor(SemanticTokens tokens) {
+    if (widget.studySet.themeColor == null) {
+      return tokens.primary; // Default to primary theme color
+    }
+
+    // Map semantic token names to actual colors
+    switch (widget.studySet.themeColor) {
+      case 'primary':
+        return tokens.primary;
+      case 'secondary':
+        return tokens.secondary;
+      case 'accent':
+        return tokens.accent;
+      case 'success':
+        return tokens.success;
+      case 'warning':
+        return tokens.warning;
+      case 'brandTitle':
+        return tokens.brandTitle;
+      case 'surface':
+        return tokens.surface;
+      case 'muted':
+        return tokens.muted;
+      default:
+        return tokens.primary; // Fallback to primary
+    }
   }
 }
