@@ -83,8 +83,8 @@
             </intent-filter>
         </service>
 
-        <!-- Boot receiver for scheduled notifications (commented out due to compatibility issues) -->
-        <!-- <receiver
+        <!-- Boot receiver for scheduled notifications -->
+        <receiver
             android:name="io.flutter.plugins.flutter_local_notifications.ScheduledNotificationBootReceiver"
             android:enabled="true"
             android:exported="false"
@@ -97,15 +97,15 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
             </intent-filter>
-        </receiver> -->
+        </receiver>
         
-        <!-- Notification receiver (commented out due to compatibility issues) -->
-        <!-- <receiver
+        <!-- Notification receiver -->
+        <receiver
             android:name="io.flutter.plugins.flutter_local_notifications.ScheduledNotificationReceiver"
             android:enabled="true"
             android:exported="false"
             android:directBootAware="true"
-            tools:ignore="ExportedReceiver" /> -->
+            tools:ignore="ExportedReceiver" />
         
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

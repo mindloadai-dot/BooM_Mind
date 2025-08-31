@@ -68,6 +68,14 @@ class MindLoadNotificationService {
     try {
       debugPrint('🔔 Initializing MindLoadNotificationService...');
 
+      // Check if platform supports notifications
+      if (!Platform.isIOS && !Platform.isAndroid) {
+        debugPrint('⚠️ Platform ${Platform.operatingSystem} does not support local notifications');
+        debugPrint('✅ MindLoadNotificationService initialized (no-op for unsupported platform)');
+        _initialized = true;
+        return;
+      }
+
       // Configure timezone first
       await _configureTimezone();
 
@@ -178,6 +186,12 @@ class MindLoadNotificationService {
       await initialize();
     }
 
+    // Skip notification on unsupported platforms
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      debugPrint('⚠️ Skipping notification on unsupported platform: ${Platform.operatingSystem}');
+      return;
+    }
+
     try {
       // Check permissions first
       debugPrint('🔐 Checking notification permissions...');
@@ -225,6 +239,12 @@ class MindLoadNotificationService {
     if (!_initialized) {
       debugPrint('⚠️ Notification service not initialized');
       await initialize();
+    }
+
+    // Skip notification on unsupported platforms
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      debugPrint('⚠️ Skipping scheduled notification on unsupported platform: ${Platform.operatingSystem}');
+      return;
     }
 
     if (when.isBefore(DateTime.now())) {
@@ -832,7 +852,8 @@ class MindLoadNotificationService {
       } else if (Platform.isAndroid) {
         await testAndroidPermissions();
       } else {
-        debugPrint('⚠️ Platform not supported for notifications');
+        debugPrint('⚠️ Platform ${Platform.operatingSystem} not supported for notifications');
+        debugPrint('✅ Notification system is properly configured to skip unsupported platforms');
         return;
       }
 
