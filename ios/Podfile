@@ -4,6 +4,20 @@ platform :ios, '15.0'
 # Add this to resolve dependency conflicts
 install! 'cocoapods', :deterministic_uuids => false
 
+# Force specific versions to resolve AppCheckCore conflict
+def firebase_pods
+  pod 'Firebase/Core', '~> 11.0'
+  pod 'Firebase/Auth', '~> 11.0'
+  pod 'Firebase/Firestore', '~> 11.0'
+  pod 'Firebase/Storage', '~> 11.0'
+  pod 'Firebase/Messaging', '~> 11.0'
+  pod 'Firebase/Analytics', '~> 11.0'
+  pod 'Firebase/Functions', '~> 11.0'
+  pod 'Firebase/AppCheck', '~> 11.0'
+  pod 'Firebase/RemoteConfig', '~> 11.0'
+  pod 'AppCheckCore', '~> 11.0'
+end
+
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -32,6 +46,9 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks! :linkage => :static
+
+  # Use our custom Firebase pod definitions
+  firebase_pods
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do

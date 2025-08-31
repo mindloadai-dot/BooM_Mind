@@ -3,6 +3,8 @@
 ## Issue Summary
 The iOS build is failing due to CocoaPods dependency resolution conflicts, specifically with the `molinillo` gem trying to resolve conflicting Firebase and other dependency versions.
 
+**Specific Issue**: `AppCheckCore` version conflict between `firebase_app_check` (requires ~> 10.19) and `google_sign_in_ios` (requires ~> 11.0).
+
 ## Root Cause
 1. **Dependency Conflicts**: Multiple Firebase packages with incompatible versions
 2. **Removed fl_chart**: The `fl_chart` package was causing conflicts and has been removed
@@ -14,11 +16,16 @@ The iOS build is failing due to CocoaPods dependency resolution conflicts, speci
 - Commented out `fl_chart: ^0.68.0` from `pubspec.yaml`
 - This package was causing conflicts and is no longer needed (replaced with custom chart implementations)
 
-### 2. ✅ Updated Podfile
+### 2. ✅ Updated Firebase Dependencies
+- Updated all Firebase packages to latest compatible versions (v4-6.x)
+- This resolves the `AppCheckCore` version conflict between `firebase_app_check` and `google_sign_in_ios`
+
+### 3. ✅ Updated Podfile
 - Added `install! 'cocoapods', :deterministic_uuids => false` to resolve UUID conflicts
+- Added custom `firebase_pods` function to force compatible Firebase versions
 - Enhanced post_install script with comprehensive Firebase pod configurations
 
-### 3. ✅ Cleaned Project
+### 4. ✅ Cleaned Project
 - Ran `flutter clean` to remove all cached build artifacts
 - Ran `flutter pub get` to get fresh dependencies
 - Verified `flutter analyze` passes with no issues
