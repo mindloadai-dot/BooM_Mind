@@ -5,6 +5,7 @@ import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/accessible_components.dart';
+import 'package:mindload/services/mindload_notification_service.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -378,18 +379,33 @@ class _NotificationSettingsScreenState
                     const SizedBox(height: 20),
                     AccessibleButton(
                       onPressed: () async {
-                        // Placeholder - iOS notifications are handled by the service
-                        await Future.delayed(const Duration(milliseconds: 100));
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Test notification sent! Check your notifications.',
-                                style: TextStyle(color: tokens.textPrimary),
+                        try {
+                          // Run comprehensive notification test
+                          await MindLoadNotificationService.runComprehensiveTest();
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Notification test completed! Check your notifications.',
+                                  style: TextStyle(color: tokens.textPrimary),
+                                ),
+                                backgroundColor: tokens.success,
                               ),
-                              backgroundColor: tokens.success,
-                            ),
-                          );
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Notification test failed: $e',
+                                  style: TextStyle(color: tokens.textPrimary),
+                                ),
+                                backgroundColor: tokens.error,
+                              ),
+                            );
+                          }
                         }
                       },
                       variant: ButtonVariant.secondary,
@@ -398,7 +414,53 @@ class _NotificationSettingsScreenState
                         children: [
                           Icon(Icons.phonelink_ring),
                           SizedBox(width: 8),
-                          Text('Test iOS Notifications'),
+                          Text('Test Notifications'),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // Add Android-specific test button
+                  if (Platform.isAndroid) ...[
+                    const SizedBox(height: 20),
+                    AccessibleButton(
+                      onPressed: () async {
+                        try {
+                          // Run comprehensive notification test
+                          await MindLoadNotificationService.runComprehensiveTest();
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Notification test completed! Check your notifications.',
+                                  style: TextStyle(color: tokens.textPrimary),
+                                ),
+                                backgroundColor: tokens.success,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Notification test failed: $e',
+                                  style: TextStyle(color: tokens.textPrimary),
+                                ),
+                                backgroundColor: tokens.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      variant: ButtonVariant.secondary,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.notifications_active),
+                          SizedBox(width: 8),
+                          Text('Test Notifications'),
                         ],
                       ),
                     ),

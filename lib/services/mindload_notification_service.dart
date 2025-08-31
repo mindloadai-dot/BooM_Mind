@@ -751,19 +751,108 @@ class MindLoadNotificationService {
 
       if (status != PermissionStatus.granted &&
           status != PermissionStatus.provisional) {
-        debugPrint('🔔 Requesting notification permissions...');
+        debugPrint('🔐 Requesting notification permissions...');
         final result = await Permission.notification.request();
         debugPrint('🍎 Permission request result: $result');
+        
+        if (result != PermissionStatus.granted && 
+            result != PermissionStatus.provisional) {
+          debugPrint('❌ Permission request denied');
+          return;
+        }
       }
 
-      // Now try to send a test notification
-      debugPrint('📤 Sending test notification...');
-      await MindLoadNotificationService.scheduleInstant(
-          '🍎 iOS Test', 'Notifications are working on iOS!');
+      // Test notification functionality
+      debugPrint('✅ Permissions granted, testing notification...');
+      await scheduleInstant(
+        '🍎 iOS Test Notification',
+        'This is a test notification from MindLoad!',
+      );
+      
+      debugPrint('✅ iOS notification test completed successfully');
+    } catch (e, stackTrace) {
+      debugPrint('❌ iOS notification test failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
 
-      debugPrint('✅ iOS notification test complete');
-    } catch (e) {
-      debugPrint('❌ iOS test failed: $e');
+  /// Test Android notification permissions and functionality
+  static Future<void> testAndroidPermissions() async {
+    if (!Platform.isAndroid) {
+      debugPrint('⚠️ This test is for Android only');
+      return;
+    }
+
+    debugPrint('🤖 Starting Android notification test...');
+
+    try {
+      // Check current permission status
+      final status = await Permission.notification.status;
+      debugPrint('🤖 Current permission status: $status');
+
+      if (status == PermissionStatus.denied) {
+        debugPrint('🔐 Requesting notification permissions...');
+        final result = await Permission.notification.request();
+        debugPrint('🤖 Permission request result: $result');
+        
+        if (result != PermissionStatus.granted) {
+          debugPrint('❌ Permission request denied');
+          return;
+        }
+      }
+
+      // Test notification functionality
+      debugPrint('✅ Permissions granted, testing notification...');
+      await scheduleInstant(
+        '🤖 Android Test Notification',
+        'This is a test notification from MindLoad!',
+      );
+      
+      debugPrint('✅ Android notification test completed successfully');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Android notification test failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  /// Comprehensive notification system test
+  static Future<void> runComprehensiveTest() async {
+    debugPrint('🧪 Starting comprehensive notification test...');
+
+    try {
+      // Ensure service is initialized
+      if (!_initialized) {
+        debugPrint('⚠️ Service not initialized, initializing now...');
+        await initialize();
+      }
+
+      // Test platform-specific functionality
+      if (Platform.isIOS) {
+        await testIOSPermissions();
+      } else if (Platform.isAndroid) {
+        await testAndroidPermissions();
+      } else {
+        debugPrint('⚠️ Platform not supported for notifications');
+        return;
+      }
+
+      // Test scheduled notification
+      debugPrint('⏰ Testing scheduled notification...');
+      await scheduleAt(
+        DateTime.now().add(const Duration(seconds: 5)),
+        '⏰ Scheduled Test',
+        'This notification was scheduled 5 seconds ago!',
+        payload: 'test_scheduled',
+      );
+
+      // Test first-run notification
+      debugPrint('🎉 Testing first-run notification...');
+      await fireFirstStudySetNotificationIfNeeded();
+
+      debugPrint('✅ Comprehensive notification test completed successfully');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Comprehensive notification test failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
     }
   }
 }

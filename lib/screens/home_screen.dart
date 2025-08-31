@@ -2425,15 +2425,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       );
                     }
-                    // Removed: NotificationTestService.runComprehensiveTest() - test service removed
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Notification test completed! Check console for details.'),
-                          backgroundColor: tokens.success,
-                        ),
-                      );
+                    
+                    try {
+                      await MindLoadNotificationService.runComprehensiveTest();
+                      
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Notification test completed! Check your notifications.'),
+                            backgroundColor: tokens.success,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Notification test failed: $e'),
+                            backgroundColor: tokens.error,
+                          ),
+                        );
+                      }
                     }
                     break;
                   case 'token_test':
