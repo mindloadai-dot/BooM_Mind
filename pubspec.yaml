@@ -30,7 +30,7 @@ dependencies:
   # UI & Fonts
   google_fonts: ^6.2.1
   
-  # Authentication - Updated for iOS compatibility
+  # Authentication - Latest versions from pub.dev for iOS compatibility
   local_auth: ^2.3.0
   google_sign_in: ^7.1.1
   sign_in_with_apple: ^7.0.1

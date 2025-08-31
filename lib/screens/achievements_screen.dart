@@ -1,8 +1,9 @@
-import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mindload/services/achievement_service.dart';
+import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
+import 'package:mindload/widgets/enhanced_achievement_card.dart';
 
 import 'package:mindload/theme.dart';
 import 'package:mindload/models/achievement_models.dart';
@@ -212,40 +213,72 @@ class _AchievementsScreenState extends State<AchievementsScreen>
               ),
               child: Column(
                 children: [
-                  // Title and Animated Progress Ring
+                  // Enhanced Progress Ring with better design
                   ScaleTransition(
                     scale: _progressScaleAnimation,
-                    child: SizedBox(
-                      width: 120,
-                      height: 120,
+                    child: Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: tokens.primary.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
+                          // Background circle
+                          SizedBox(
+                            width: 140,
+                            height: 140,
+                            child: CircularProgressIndicator(
+                              value: 1.0,
+                              strokeWidth: 8,
+                              backgroundColor: tokens.textMuted.withOpacity(0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                tokens.textMuted.withOpacity(0.1),
+                              ),
+                            ),
+                          ),
+                          // Animated progress circle
                           AnimatedBuilder(
                             animation: _progressFillAnimation,
                             builder: (context, child) {
-                              return AIProcessingLoadingBar(
-                                statusText: '',
-                                progress: _progressFillAnimation.value *
-                                    completionRate,
-                                height: 120,
+                              return SizedBox(
+                                width: 140,
+                                height: 140,
+                                child: CircularProgressIndicator(
+                                  value: _progressFillAnimation.value * completionRate,
+                                  strokeWidth: 8,
+                                  backgroundColor: Colors.transparent,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    tokens.primary,
+                                  ),
+                                ),
                               );
                             },
                           ),
+                          // Center content with enhanced styling
                           Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 '${(completionRate * 100).toInt()}%',
-                                style: theme.textTheme.headlineSmall?.copyWith(
+                                style: theme.textTheme.headlineMedium?.copyWith(
                                   color: tokens.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Text(
                                 'Complete',
-                                style: theme.textTheme.bodyMedium?.copyWith(
+                                style: theme.textTheme.labelLarge?.copyWith(
                                   color: tokens.textSecondary,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -269,6 +302,10 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                       color: tokens.textSecondary,
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  
+                  // Quick stats row
+                  _buildQuickStatsRow(tokens, theme),
                 ],
               ),
             ),
@@ -405,7 +442,14 @@ class _AchievementsScreenState extends State<AchievementsScreen>
               itemCount: achievements.length,
               itemBuilder: (context, index) {
                 final achievement = achievements[index];
-                return _buildAchievementCard(tokens, theme, achievement);
+                return AnimatedContainer(
+                  duration: Duration(milliseconds: 200 + (index * 50)),
+                  curve: Curves.easeOutBack,
+                  child: EnhancedAchievementCard(
+                    achievement: achievement,
+                    onTap: () => _showAchievementDetails(achievement),
+                  ),
+                );
               },
             ),
           ),
@@ -651,10 +695,98 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     );
   }
 
+  Widget _buildQuickStatsRow(SemanticTokens tokens, ThemeData theme) {
+    final service = AchievementService.instance;
+    final inProgressAchievements = service
+        .getAchievementsByStatus(AchievementStatus.inProgress)
+        .length;
+    final totalPoints = service.meta.bonusCounter;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildEnhancedStatItem(
+          tokens,
+          theme,
+          'In Progress',
+          '$inProgressAchievements',
+          Icons.trending_up,
+          tokens.warning,
+        ),
+        _buildEnhancedStatItem(
+          tokens,
+          theme,
+          'Points Earned',
+          '$totalPoints',
+          Icons.star,
+          tokens.primary,
+        ),
+        _buildEnhancedStatItem(
+          tokens,
+          theme,
+          'Categories',
+          '${AchievementCategory.values.length}',
+          Icons.category,
+          tokens.accent,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnhancedStatItem(
+    SemanticTokens tokens,
+    ThemeData theme,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: tokens.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
   void _refreshAchievements() async {
+    HapticFeedbackService().lightImpact();
     try {
       await AchievementService.instance.initialize();
       if (mounted) setState(() {});
+      HapticFeedbackService().success();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Achievements refreshed!'),
@@ -662,6 +794,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
         ),
       );
     } catch (e) {
+      HapticFeedbackService().error();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
