@@ -1,3 +1,4 @@
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mindload/services/achievement_service.dart';
@@ -223,13 +224,11 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                           AnimatedBuilder(
                             animation: _progressFillAnimation,
                             builder: (context, child) {
-                              return CircularProgressIndicator(
-                                value: _progressFillAnimation.value *
+                              return AIProcessingLoadingBar(
+                                statusText: '',
+                                progress: _progressFillAnimation.value *
                                     completionRate,
-                                strokeWidth: 8,
-                                backgroundColor: tokens.muted.withOpacity(0.5),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    tokens.primary),
+                                height: 120,
                               );
                             },
                           ),

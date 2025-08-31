@@ -1,3 +1,4 @@
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
@@ -407,10 +408,10 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
                 ? SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator.adaptive(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          ThemeManager.instance.currentTokens.textInverse),
+                    child: AIProcessingLoadingBar(
+                      statusText: '',
+                      progress: 0.6,
+                      height: 20,
                     ),
                   )
                 : Text(

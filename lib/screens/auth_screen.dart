@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/services/auth_service.dart';
@@ -496,9 +497,10 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                           ? SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(
-                                color: context.tokens.onPrimary,
-                                strokeWidth: 2,
+                              child: AIProcessingLoadingBar(
+                                statusText: '',
+                                progress: 0.8,
+                                height: 24,
                               ),
                             )
                           : Row(

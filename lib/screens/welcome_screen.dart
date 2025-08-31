@@ -1,3 +1,4 @@
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:mindload/services/auth_service.dart';
@@ -489,11 +490,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   ? SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child: CircularProgressIndicator(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .tertiary,
-                                        strokeWidth: 2,
+                                      child: AIProcessingLoadingBar(
+                                        statusText: '',
+                                        progress: 0.7,
+                                        height: 16,
                                       ),
                                     )
                                   : Icon(
@@ -674,11 +674,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                     ? SizedBox(
                                         height: 20,
                                         width: 20,
-                                        child: CircularProgressIndicator(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary,
-                                          strokeWidth: 2,
+                                        child: AIProcessingLoadingBar(
+                                          statusText: '',
+                                          progress: 0.8,
+                                          height: 20,
                                         ),
                                       )
                                     : Text(
@@ -798,9 +797,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ? SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  color: textColor,
-                  strokeWidth: 2,
+                child: AIProcessingLoadingBar(
+                  statusText: '',
+                  progress: 0.7,
+                  height: 20,
                 ),
               )
             : Icon(icon, color: textColor),

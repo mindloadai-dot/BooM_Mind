@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:mindload/config/app_check_config.dart';
 
 import 'package:mindload/services/auth_service.dart';
@@ -551,9 +552,10 @@ class AppInitializerState extends State<AppInitializer>
                                     ),
                                   ),
                                   child: const Center(
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 3,
+                                    child: AIProcessingLoadingBar(
+                                      statusText: 'Initializing...',
+                                      progress: 0.5,
+                                      height: 40,
                                     ),
                                   ),
                                 ),
@@ -573,11 +575,10 @@ class AppInitializerState extends State<AppInitializer>
               child: Column(
                 children: [
                   // Loading indicator
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.white.withOpacity(0.8),
-                    ),
-                    strokeWidth: 3,
+                  AIProcessingLoadingBar(
+                    statusText: 'Initializing...',
+                    progress: 0.7,
+                    height: 6,
                   ),
                   const SizedBox(height: 24),
 

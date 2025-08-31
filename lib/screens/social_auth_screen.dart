@@ -1,3 +1,4 @@
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'dart:math';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
@@ -366,7 +367,11 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
       return Scaffold(
         backgroundColor: context.tokens.surface,
         body: const Center(
-          child: CircularProgressIndicator(),
+          child: AIProcessingLoadingBar(
+          statusText: 'Loading...',
+          progress: 0.5,
+          height: 40,
+        ),
         ),
       );
     }
@@ -697,9 +702,10 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                                           ? SizedBox(
                                               width: 16,
                                               height: 16,
-                                              child: CircularProgressIndicator(
-                                                color: context.tokens.secondary,
-                                                strokeWidth: 2,
+                                              child: AIProcessingLoadingBar(
+                                                statusText: '',
+                                                progress: 0.7,
+                                                height: 16,
                                               ),
                                             )
                                           : Icon(
@@ -778,9 +784,10 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
             ? SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  color: textColor,
-                  strokeWidth: 2,
+                child: AIProcessingLoadingBar(
+                  statusText: '',
+                  progress: 0.7,
+                  height: 20,
                 ),
               )
             : Icon(icon, color: textColor, size: 24),
@@ -945,9 +952,10 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                     ? SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(
-                          color: context.tokens.onPrimary,
-                          strokeWidth: 2,
+                        child: AIProcessingLoadingBar(
+                          statusText: '',
+                          progress: 0.8,
+                          height: 24,
                         ),
                       )
                     : Text(

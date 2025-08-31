@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/models/study_data.dart';
 
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/widgets/notification_settings_dialog.dart';
 import 'package:mindload/services/pdf_export_service.dart';
@@ -800,9 +801,10 @@ class _StudyScreenState extends State<StudyScreen>
               SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(tokens.onPrimary),
+                child: AIProcessingLoadingBar(
+                  statusText: '',
+                  progress: 0.6,
+                  height: 20,
                 ),
               ),
               const SizedBox(width: Spacing.md),
@@ -1141,9 +1143,10 @@ class _StudyScreenState extends State<StudyScreen>
               SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(tokens.onPrimary),
+                child: AIProcessingLoadingBar(
+                  statusText: '',
+                  progress: 0.7,
+                  height: 20,
                 ),
               ),
               const SizedBox(width: Spacing.md),
@@ -1606,7 +1609,11 @@ class _StudyScreenState extends State<StudyScreen>
         setState(() {
           _currentCardIndex = 0;
         });
-        return const Center(child: CircularProgressIndicator());
+        return const Center(child: AIProcessingLoadingBar(
+          statusText: 'Loading...',
+          progress: 0.5,
+          height: 40,
+        ));
       }
 
       final Flashcard currentCard =
@@ -2268,7 +2275,11 @@ class _StudyScreenState extends State<StudyScreen>
       setState(() {
         _currentQuestionIndex = 0;
       });
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AIProcessingLoadingBar(
+        statusText: 'Loading...',
+        progress: 0.5,
+        height: 40,
+      ));
     }
 
     final tokens = context.tokens;

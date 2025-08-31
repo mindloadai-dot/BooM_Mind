@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/models/study_data.dart';
 
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 
@@ -288,13 +289,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   SizedBox(
                     width: 12,
                     height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        storageService.isOnline
-                            ? tokens.success
-                            : tokens.warning,
-                      ),
+                    child: AIProcessingLoadingBar(
+                      statusText: '',
+                      progress: 0.8,
+                      height: 12,
                     ),
                   ),
                 ],
@@ -601,11 +599,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      tokens.onPrimary,
-                    ),
+                  child: AIProcessingLoadingBar(
+                    statusText: '',
+                    progress: 0.6,
+                    height: 20,
                   ),
                 ),
                 const SizedBox(width: Spacing.md),
@@ -2217,9 +2214,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(tokens.onPrimary),
+                child: AIProcessingLoadingBar(
+                  statusText: '',
+                  progress: 0.7,
+                  height: 20,
                 ),
               ),
               const SizedBox(width: Spacing.md),
@@ -2802,10 +2800,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: CircularProgressIndicator(
-                      value: _scanAnimation.value,
-                      color: tokens.primary,
-                      strokeWidth: 3,
+                    child: AIProcessingLoadingBar(
+                      statusText: 'Processing...',
+                      progress: _scanAnimation.value,
+                      height: 100,
                     ),
                   ),
                   Center(
@@ -3706,10 +3704,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(tokens.primary),
+                          child: AIProcessingLoadingBar(
+                            statusText: '',
+                            progress: 0.6,
+                            height: 20,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -4007,11 +4005,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              CircularProgressIndicator(
-                value: percentage,
-                backgroundColor: color.withOpacity(0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-                strokeWidth: 5,
+              AIProcessingLoadingBar(
+                statusText: '',
+                progress: percentage,
+                height: 40,
               ),
               Text(
                 '$remaining',

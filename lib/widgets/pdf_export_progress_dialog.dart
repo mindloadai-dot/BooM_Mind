@@ -1,3 +1,4 @@
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:mindload/models/pdf_export_models.dart';
 import 'package:mindload/services/pdf_export_service.dart';
@@ -390,7 +391,11 @@ class _PdfExportProgressDialogState extends State<PdfExportProgressDialog> {
   Widget _buildLoadingContent() {
     return Column(
       children: [
-        const CircularProgressIndicator(),
+        AIProcessingLoadingBar(
+          statusText: 'Preparing export...',
+          progress: 0.5,
+          height: 40,
+        ),
         const SizedBox(height: 16),
         Text(
           'Preparing export...',

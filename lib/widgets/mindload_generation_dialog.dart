@@ -1,3 +1,4 @@
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
@@ -441,9 +442,10 @@ class _MindloadGenerationDialogState extends State<MindloadGenerationDialog> {
                         SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          child: AIProcessingLoadingBar(
+                            statusText: '',
+                            progress: 0.7,
+                            height: 16,
                           ),
                         ),
                         SizedBox(width: 8),
