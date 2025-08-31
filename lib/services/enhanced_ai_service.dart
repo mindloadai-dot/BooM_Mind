@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -461,6 +462,21 @@ class EnhancedAIService {
       } else if (data is Map<String, dynamic>) {
         parsedData = data;
         debugPrint('✅ Data is already Map<String, dynamic>');
+      } else if (data is String) {
+        // Handle case where data is a JSON string
+        try {
+          final decoded = json.decode(data);
+          if (decoded is Map<String, dynamic>) {
+            parsedData = decoded;
+            debugPrint('✅ Parsed JSON string to Map<String, dynamic>');
+          } else {
+            debugPrint('❌ Decoded JSON is not a Map: ${decoded.runtimeType}');
+            return [];
+          }
+        } catch (jsonError) {
+          debugPrint('❌ Failed to parse JSON string: $jsonError');
+          return [];
+        }
       } else {
         debugPrint(
             '❌ Error parsing flashcards: Invalid data type: ${data.runtimeType}');
@@ -468,42 +484,66 @@ class EnhancedAIService {
       }
 
       if (parsedData.containsKey('flashcards')) {
-        final List<dynamic> flashcardsData = parsedData['flashcards'];
-        debugPrint('✅ Found ${flashcardsData.length} flashcards in data');
-        return flashcardsData
-            .map((item) {
-              // Convert each item to Map<String, dynamic> if needed
-              Map<String, dynamic> itemMap;
-              if (item is Map<Object?, Object?>) {
-                itemMap = Map<String, dynamic>.from(item);
-              } else if (item is Map<String, dynamic>) {
-                itemMap = item;
-              } else {
-                debugPrint(
-                    '❌ Invalid flashcard item type: ${item.runtimeType}');
-                return null;
-              }
+        final flashcardsData = parsedData['flashcards'];
+        if (flashcardsData is List) {
+          debugPrint('✅ Found ${flashcardsData.length} flashcards in data');
+          return flashcardsData
+              .map((item) {
+                try {
+                  // Convert each item to Map<String, dynamic> if needed
+                  Map<String, dynamic> itemMap;
+                  if (item is Map<Object?, Object?>) {
+                    itemMap = <String, dynamic>{};
+                    item.forEach((key, value) {
+                      if (key is String) {
+                        itemMap[key] = value;
+                      } else {
+                        itemMap[key.toString()] = value;
+                      }
+                    });
+                  } else if (item is Map<String, dynamic>) {
+                    itemMap = item;
+                  } else {
+                    debugPrint(
+                        '❌ Invalid flashcard item type: ${item.runtimeType}');
+                    return null;
+                  }
 
-              // Create a complete flashcard with required fields
-              return Flashcard(
-                id: itemMap['id'] ??
-                    'flashcard_${DateTime.now().millisecondsSinceEpoch}_${itemMap.hashCode}',
-                question: itemMap['question'] ?? 'No question provided',
-                answer: itemMap['answer'] ?? 'No answer provided',
-                difficulty: _mapStringToDifficultyLevel(
-                    itemMap['difficulty'] ?? 'intermediate'),
-              );
-            })
-            .where((flashcard) => flashcard != null)
-            .cast<Flashcard>()
-            .toList();
+                  // Validate required fields
+                  if (itemMap['question'] == null || itemMap['answer'] == null) {
+                    debugPrint('⚠️ Flashcard missing required fields: $itemMap');
+                    return null;
+                  }
+
+                  // Create a complete flashcard with required fields
+                  return Flashcard(
+                    id: itemMap['id']?.toString() ??
+                        'flashcard_${DateTime.now().millisecondsSinceEpoch}_${itemMap.hashCode}',
+                    question: itemMap['question']?.toString() ?? 'No question provided',
+                    answer: itemMap['answer']?.toString() ?? 'No answer provided',
+                    difficulty: _mapStringToDifficultyLevel(
+                        itemMap['difficulty']?.toString() ?? 'intermediate'),
+                  );
+                } catch (itemError) {
+                  debugPrint('❌ Error processing flashcard item: $itemError');
+                  return null;
+                }
+              })
+              .where((flashcard) => flashcard != null)
+              .cast<Flashcard>()
+              .toList();
+        } else {
+          debugPrint('❌ Flashcards data is not a List: ${flashcardsData.runtimeType}');
+        }
       } else {
         debugPrint(
             '❌ No flashcards key found in data. Keys: ${parsedData.keys}');
+        debugPrint('🔍 Full parsed data: $parsedData');
       }
       return [];
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error parsing flashcards: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       return [];
     }
   }
@@ -529,6 +569,21 @@ class EnhancedAIService {
       } else if (data is Map<String, dynamic>) {
         parsedData = data;
         debugPrint('✅ Data is already Map<String, dynamic>');
+      } else if (data is String) {
+        // Handle case where data is a JSON string
+        try {
+          final decoded = json.decode(data);
+          if (decoded is Map<String, dynamic>) {
+            parsedData = decoded;
+            debugPrint('✅ Parsed JSON string to Map<String, dynamic>');
+          } else {
+            debugPrint('❌ Decoded JSON is not a Map: ${decoded.runtimeType}');
+            return [];
+          }
+        } catch (jsonError) {
+          debugPrint('❌ Failed to parse JSON string: $jsonError');
+          return [];
+        }
       } else {
         debugPrint(
             '❌ Error parsing quiz questions: Invalid data type: ${data.runtimeType}');
@@ -536,45 +591,80 @@ class EnhancedAIService {
       }
 
       if (parsedData.containsKey('questions')) {
-        final List<dynamic> questionsData = parsedData['questions'];
-        debugPrint('✅ Found ${questionsData.length} quiz questions in data');
-        return questionsData
-            .map((item) {
-              // Convert each item to Map<String, dynamic> if needed
-              Map<String, dynamic> itemMap;
-              if (item is Map<Object?, Object?>) {
-                itemMap = Map<String, dynamic>.from(item);
-              } else if (item is Map<String, dynamic>) {
-                itemMap = item;
-              } else {
-                debugPrint(
-                    '❌ Invalid quiz question item type: ${item.runtimeType}');
-                return null;
-              }
-              // Create a complete quiz question with required fields
-              return QuizQuestion(
-                id: itemMap['id'] ??
-                    'quiz_${DateTime.now().millisecondsSinceEpoch}_${itemMap.hashCode}',
-                question: itemMap['question'] ?? 'No question provided',
-                options:
-                    (itemMap['options'] as List<dynamic>?)?.cast<String>() ??
-                        ['No options provided'],
-                correctAnswer:
-                    itemMap['correctAnswer'] ?? 'No correct answer provided',
-                difficulty: _mapStringToDifficultyLevel(
-                    itemMap['difficulty'] ?? 'intermediate'),
-              );
-            })
-            .where((question) => question != null)
-            .cast<QuizQuestion>()
-            .toList();
+        final questionsData = parsedData['questions'];
+        if (questionsData is List) {
+          debugPrint('✅ Found ${questionsData.length} quiz questions in data');
+          return questionsData
+              .map((item) {
+                try {
+                  // Convert each item to Map<String, dynamic> if needed
+                  Map<String, dynamic> itemMap;
+                  if (item is Map<Object?, Object?>) {
+                    itemMap = <String, dynamic>{};
+                    item.forEach((key, value) {
+                      if (key is String) {
+                        itemMap[key] = value;
+                      } else {
+                        itemMap[key.toString()] = value;
+                      }
+                    });
+                  } else if (item is Map<String, dynamic>) {
+                    itemMap = item;
+                  } else {
+                    debugPrint(
+                        '❌ Invalid quiz question item type: ${item.runtimeType}');
+                    return null;
+                  }
+
+                  // Validate required fields
+                  if (itemMap['question'] == null || itemMap['options'] == null || itemMap['correctAnswer'] == null) {
+                    debugPrint('⚠️ Quiz question missing required fields: $itemMap');
+                    return null;
+                  }
+
+                  // Parse options safely
+                  List<String> options = [];
+                  if (itemMap['options'] is List) {
+                    options = (itemMap['options'] as List)
+                        .map((option) => option?.toString() ?? '')
+                        .where((option) => option.isNotEmpty)
+                        .toList();
+                  }
+                  
+                  if (options.isEmpty) {
+                    options = ['No options provided'];
+                  }
+
+                  // Create a complete quiz question with required fields
+                  return QuizQuestion(
+                    id: itemMap['id']?.toString() ??
+                        'quiz_${DateTime.now().millisecondsSinceEpoch}_${itemMap.hashCode}',
+                    question: itemMap['question']?.toString() ?? 'No question provided',
+                    options: options,
+                    correctAnswer: itemMap['correctAnswer']?.toString() ?? 'No correct answer provided',
+                    difficulty: _mapStringToDifficultyLevel(
+                        itemMap['difficulty']?.toString() ?? 'intermediate'),
+                  );
+                } catch (itemError) {
+                  debugPrint('❌ Error processing quiz question item: $itemError');
+                  return null;
+                }
+              })
+              .where((question) => question != null)
+              .cast<QuizQuestion>()
+              .toList();
+        } else {
+          debugPrint('❌ Questions data is not a List: ${questionsData.runtimeType}');
+        }
       } else {
         debugPrint(
             '❌ No questions key found in data. Keys: ${parsedData.keys}');
+        debugPrint('🔍 Full parsed data: $parsedData');
       }
       return [];
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error parsing quiz questions: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
       return [];
     }
   }

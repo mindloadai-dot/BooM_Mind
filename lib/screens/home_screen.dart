@@ -10,6 +10,7 @@ import 'package:mindload/services/auth_service.dart';
 
 import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/document_processor.dart';
+import 'package:mindload/services/pdf_flashcard_test_service.dart';
 
 import 'package:mindload/screens/study_screen.dart';
 import 'package:mindload/screens/ultra_mode_screen.dart';
@@ -2483,6 +2484,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       }
                     }
                     break;
+                  case 'test_pdf_conversion':
+                    // Test PDF to Flashcards conversion
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Testing PDF to Flashcards conversion...'),
+                          backgroundColor: tokens.primary,
+                        ),
+                      );
+                    }
+                    
+                    try {
+                      await PDFFlashcardTestService.testPDFToFlashcardsConversion();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('PDF to Flashcards test completed! Check debug console for detailed results.'),
+                            backgroundColor: tokens.success,
+                            duration: Duration(seconds: 5),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('PDF to Flashcards test failed: $e'),
+                            backgroundColor: tokens.error,
+                            duration: Duration(seconds: 5),
+                          ),
+                        );
+                      }
+                    }
+                    break;
                   case 'token_test':
                     // Test token system
                     final economyService = MindloadEconomyService.instance;
@@ -2596,6 +2631,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 12),
                       Text(
                         'Test EnhancedAIService',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'test_pdf_conversion',
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf, color: tokens.warning, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Test PDF to Flashcards',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
                     ],
