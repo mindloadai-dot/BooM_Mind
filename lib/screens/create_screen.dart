@@ -21,6 +21,7 @@ import 'package:mindload/core/youtube_utils.dart';
 import 'package:mindload/services/youtube_service.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/widgets/youtube_preview_card.dart';
+import 'package:mindload/widgets/scifi_loading_bar.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:mindload/services/enhanced_storage_service.dart';
@@ -96,10 +97,17 @@ class _CreateScreenState extends State<CreateScreen>
   // Advanced options visibility
   bool _showAdvancedOptions = false;
 
+  // Progress tracking for AI processing
+  double _processingProgress = 0.0;
+  String _processingStatus = '';
+
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+
+    // Start the fade animation to make content visible
+    _fadeController.forward();
 
     // Listen for manual title changes to reset auto-populated flag
     _titleController.addListener(() {
@@ -802,29 +810,19 @@ class _CreateScreenState extends State<CreateScreen>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? tokens.primary
-                    : tokens.textSecondary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? tokens.onPrimary : tokens.textSecondary,
-                size: 24,
-              ),
+            Icon(
+              icon,
+              size: 24,
+              color: isSelected ? tokens.primary : tokens.textSecondary,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               title,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: tokens.textPrimary,
+                color: isSelected ? tokens.primary : tokens.textPrimary,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
@@ -834,12 +832,6 @@ class _CreateScreenState extends State<CreateScreen>
                 color: tokens.textSecondary,
               ),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Checkbox(
-              value: isSelected,
-              onChanged: onChanged,
-              activeColor: tokens.primary,
             ),
           ],
         ),
@@ -897,53 +889,56 @@ class _CreateScreenState extends State<CreateScreen>
           color: tokens.borderDefault.withOpacity(0.3),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: tokens.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: tokens.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$value',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: tokens.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
           Row(
             children: [
-              IconButton(
-                onPressed: value > min ? () => onChanged(value - 1) : null,
-                icon: Icon(
-                  Icons.remove_circle_outline,
-                  color: value > min ? tokens.primary : tokens.textTertiary,
+              Icon(
+                icon,
+                size: 20,
+                color: tokens.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Number of $label',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: tokens.textPrimary,
                 ),
               ),
-              IconButton(
-                onPressed: value < max ? () => onChanged(value + 1) : null,
-                icon: Icon(
-                  Icons.add_circle_outline,
-                  color: value < max ? tokens.primary : tokens.textTertiary,
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$value',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: tokens.textPrimary,
                 ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: value > min ? () => onChanged(value - 1) : null,
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      color: value > min ? tokens.primary : tokens.textTertiary,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: value < max ? () => onChanged(value + 1) : null,
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      color: value < max ? tokens.primary : tokens.textTertiary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1035,15 +1030,19 @@ class _CreateScreenState extends State<CreateScreen>
 
   /// Build summary item
   Widget _buildSummaryItem(
-      SemanticTokens tokens, String label, String value, IconData icon) {
+    SemanticTokens tokens,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           Icon(
             icon,
+            size: 20,
             color: tokens.textSecondary,
-            size: 16,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1055,14 +1054,15 @@ class _CreateScreenState extends State<CreateScreen>
                   style: TextStyle(
                     fontSize: 12,
                     color: tokens.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
                   value,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
                     color: tokens.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -1296,7 +1296,7 @@ class _CreateScreenState extends State<CreateScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'Paste a YouTube URL to extract video content and generate study materials',
+              'Paste a YouTube URL to automatically extract video content and generate study materials',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: tokens.textSecondary,
                     height: 1.4,
@@ -1357,26 +1357,13 @@ class _CreateScreenState extends State<CreateScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: tokens.borderDefault),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(tokens.primary),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Loading video preview...',
-                    style: TextStyle(
-                      color: tokens.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              child: AIProcessingLoadingBar(
+                progress: _processingProgress,
+                statusText: _processingStatus.isNotEmpty
+                    ? _processingStatus
+                    : 'Loading video preview...',
+                primaryColor: tokens.primary,
+                height: 10.0,
               ),
             ),
           ] else if (_currentYouTubePreview != null) ...[
@@ -1384,7 +1371,7 @@ class _CreateScreenState extends State<CreateScreen>
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: YouTubePreviewCard(
                 preview: _currentYouTubePreview!,
-                onIngest: () => _handleYouTubeIngest(),
+                onIngest: null, // Disable manual ingest since it's automatic
                 isLoading: false,
                 errorMessage: null,
               ),
@@ -1484,7 +1471,7 @@ class _CreateScreenState extends State<CreateScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'Upload PDF, DOCX, TXT, or other supported documents to extract content',
+              'Upload PDF, DOCX, TXT, or other supported documents to automatically extract content',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: tokens.textSecondary,
                     height: 1.4,
@@ -1510,26 +1497,13 @@ class _CreateScreenState extends State<CreateScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: tokens.borderDefault),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(tokens.primary),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Processing document...',
-                    style: TextStyle(
-                      color: tokens.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              child: AIProcessingLoadingBar(
+                progress: _processingProgress,
+                statusText: _processingStatus.isNotEmpty
+                    ? _processingStatus
+                    : 'Processing document...',
+                primaryColor: tokens.primary,
+                height: 10.0,
               ),
             ),
           ],
@@ -1636,6 +1610,14 @@ class _CreateScreenState extends State<CreateScreen>
                     color: tokens.textTertiary,
                   ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Content will be automatically extracted',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: tokens.textTertiary,
+                    fontStyle: FontStyle.italic,
+                  ),
+            ),
           ],
         ),
       ),
@@ -1689,6 +1671,7 @@ class _CreateScreenState extends State<CreateScreen>
                   setState(() {
                     _uploadedDocument = null;
                     _extractedDocumentText = null;
+                    _contentController.clear();
                   });
                 },
                 icon: Icon(
@@ -1699,24 +1682,27 @@ class _CreateScreenState extends State<CreateScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isProcessingDocument ? null : _processDocument,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: tokens.primary,
-                foregroundColor: tokens.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+          // Show processing status if document is being processed
+          if (_isProcessingDocument) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: tokens.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: tokens.borderDefault.withValues(alpha: 0.3)),
               ),
-              child: Text(
-                _isProcessingDocument ? 'Processing...' : 'Process Document',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              child: AIProcessingLoadingBar(
+                progress: _processingProgress,
+                statusText: _processingStatus.isNotEmpty
+                    ? _processingStatus
+                    : 'Processing document...',
+                primaryColor: tokens.primary,
+                height: 8.0,
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1756,6 +1742,9 @@ class _CreateScreenState extends State<CreateScreen>
           _uploadedDocument = result.files.first;
           _extractedDocumentText = null;
         });
+
+        // Automatically process the document after upload
+        await _processDocument();
       }
     } catch (e) {
       setState(() {
@@ -1771,6 +1760,8 @@ class _CreateScreenState extends State<CreateScreen>
     setState(() {
       _isProcessingDocument = true;
       _errorMessage = null;
+      _processingProgress = 0.0;
+      _processingStatus = 'Initializing document processing...';
     });
 
     try {
@@ -1778,7 +1769,18 @@ class _CreateScreenState extends State<CreateScreen>
       final extension = _uploadedDocument!.extension ?? '';
       final fileName = _uploadedDocument!.name;
 
+      // Update progress for document analysis
+      setState(() {
+        _processingProgress = 0.2;
+        _processingStatus = 'Analyzing document structure...';
+      });
+
       // Extract text from document
+      setState(() {
+        _processingProgress = 0.4;
+        _processingStatus = 'Extracting text content...';
+      });
+
       final extractedText = await DocumentProcessor.extractTextFromFile(
         fileBytes,
         extension,
@@ -1786,8 +1788,15 @@ class _CreateScreenState extends State<CreateScreen>
       );
 
       setState(() {
+        _processingProgress = 0.8;
+        _processingStatus = 'Finalizing extraction...';
+      });
+
+      setState(() {
         _extractedDocumentText = extractedText;
         _isProcessingDocument = false;
+        _processingProgress = 1.0;
+        _processingStatus = 'Document processed successfully!';
       });
 
       // Update content controller for generation
@@ -1795,11 +1804,47 @@ class _CreateScreenState extends State<CreateScreen>
 
       // Auto-populate title from document name if title is empty or not customized
       _suggestTitleFromDocument(_uploadedDocument!.name);
+
+      // Show success feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text('Document processed successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to process document: $e';
         _isProcessingDocument = false;
+        _processingProgress = 0.0;
+        _processingStatus = '';
       });
+
+      // Show error feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text('Failed to process document: $e'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -1829,6 +1874,8 @@ class _CreateScreenState extends State<CreateScreen>
     setState(() {
       _isLoadingYouTubePreview = true;
       _errorMessage = null;
+      _processingProgress = 0.0;
+      _processingStatus = 'Initializing YouTube preview...';
     });
 
     try {
@@ -1840,16 +1887,41 @@ class _CreateScreenState extends State<CreateScreen>
             '🔍 Video ID pattern: ${RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(videoId)}');
       }
 
+      // Update progress for video analysis
+      setState(() {
+        _processingProgress = 0.3;
+        _processingStatus = 'Analyzing video metadata...';
+      });
+
+      // Update progress for content extraction
+      setState(() {
+        _processingProgress = 0.6;
+        _processingStatus = 'Extracting video content...';
+      });
+
       final preview = await YouTubeService().getPreview(videoId);
+
+      // Update progress for final processing
+      setState(() {
+        _processingProgress = 0.9;
+        _processingStatus = 'Finalizing preview...';
+      });
 
       if (mounted) {
         setState(() {
           _currentYouTubePreview = preview;
           _isLoadingYouTubePreview = false;
+          _processingProgress = 1.0;
+          _processingStatus = 'Preview loaded successfully!';
         });
 
         // Auto-populate title if it's empty or user hasn't customized it
         _suggestTitleFromYouTube(preview);
+
+        // Automatically process the YouTube content if it can proceed
+        if (preview.canProceed) {
+          _handleYouTubeIngest();
+        }
 
         if (kDebugMode) {
           print('✅ YouTube preview loaded successfully: ${preview.title}');
@@ -1857,6 +1929,12 @@ class _CreateScreenState extends State<CreateScreen>
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoadingYouTubePreview = false;
+          _processingProgress = 0.0;
+          _processingStatus = '';
+        });
+
         // Enhanced error handling with specific error types
         String errorMessage;
         String debugInfo = '';
@@ -2759,20 +2837,14 @@ class _CreateScreenState extends State<CreateScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    tokens.onPrimary),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Generating...',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                              width: 120,
+                              child: AIProcessingLoadingBar(
+                                progress: _processingProgress,
+                                statusText: _processingStatus.isNotEmpty
+                                    ? _processingStatus
+                                    : 'Generating...',
+                                primaryColor: tokens.onPrimary,
+                                height: 6.0,
                               ),
                             ),
                           ],
@@ -3036,6 +3108,8 @@ class _CreateScreenState extends State<CreateScreen>
     // Proceed with generation
     setState(() {
       _isGenerating = true;
+      _processingProgress = 0.0;
+      _processingStatus = 'Initializing AI generation...';
     });
 
     // Real AI-powered generation process
@@ -3059,6 +3133,18 @@ class _CreateScreenState extends State<CreateScreen>
         print('📝 Custom instructions: ${_instructionController.text}');
       }
 
+      // Update progress for AI analysis
+      setState(() {
+        _processingProgress = 0.2;
+        _processingStatus = 'Analyzing content structure...';
+      });
+
+      // Update progress for AI generation
+      setState(() {
+        _processingProgress = 0.4;
+        _processingStatus = 'Generating study materials...';
+      });
+
       // Generate advanced flashcard set
       final advancedSet = await _generateAdvancedStudySet(
         title: _titleController.text.trim(),
@@ -3066,6 +3152,12 @@ class _CreateScreenState extends State<CreateScreen>
         cardCount: totalCardCount,
         customInstructions: _instructionController.text.trim(),
       );
+
+      // Update progress for content processing
+      setState(() {
+        _processingProgress = 0.7;
+        _processingStatus = 'Processing generated content...';
+      });
 
       // Convert to legacy format for compatibility
       final flashcards = advancedSet.cards
@@ -3086,6 +3178,12 @@ class _CreateScreenState extends State<CreateScreen>
         print('📊 Bloom\'s mix: ${advancedSet.bloomMix}');
         print('🎯 Difficulty: ${advancedSet.difficulty}');
       }
+
+      // Update progress for final processing
+      setState(() {
+        _processingProgress = 0.9;
+        _processingStatus = 'Finalizing study set...';
+      });
 
       // Create the study set with AI-generated content
       final studySetId = 'study_${DateTime.now().millisecondsSinceEpoch}';
@@ -3258,6 +3356,11 @@ class _CreateScreenState extends State<CreateScreen>
         print('❌ Error creating study set: $e');
       }
 
+      setState(() {
+        _processingProgress = 0.0;
+        _processingStatus = '';
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error creating study set: ${e.toString()}'),
@@ -3269,6 +3372,8 @@ class _CreateScreenState extends State<CreateScreen>
       if (mounted) {
         setState(() {
           _isGenerating = false;
+          _processingProgress = 1.0;
+          _processingStatus = 'Generation complete!';
         });
       }
     }
@@ -3313,7 +3418,7 @@ class _CreateScreenState extends State<CreateScreen>
     }
   }
 
-  /// Generate advanced study set using new Bloom's taxonomy system
+  /// Generate advanced study set using EnhancedAIService
   Future<AdvancedStudySet> _generateAdvancedStudySet({
     required String title,
     required String content,
@@ -3322,7 +3427,7 @@ class _CreateScreenState extends State<CreateScreen>
   }) async {
     try {
       if (kDebugMode) {
-        print('🧠 Generating advanced study set...');
+        print('🧠 Generating study set using EnhancedAIService...');
         print('📊 Card count: $cardCount');
         print('📝 Custom instructions: ${customInstructions ?? 'None'}');
       }
@@ -3330,32 +3435,59 @@ class _CreateScreenState extends State<CreateScreen>
       // Determine difficulty based on content complexity and user preference
       final difficulty = _calculateContentDifficulty(content);
 
-      // Determine audience based on content analysis
-      final audience = _determineAudience(content);
-
-      // Extract focus anchors from custom instructions
-      final focusAnchors = _extractFocusAnchors(customInstructions ?? '');
-
-      // Generate advanced flashcard set
-      final generationSchema = await AdvancedFlashcardGenerator.instance
-          .generateAdvancedFlashcardSet(
+      // Use EnhancedAIService for robust AI generation
+      final enhancedResult =
+          await EnhancedAIService.instance.generateStudyMaterials(
         content: content,
-        setTitle: title,
-        cardCount: cardCount,
-        audience: audience,
-        priorKnowledge: 'medium', // Default to medium
-        difficulty: difficulty,
-        focusAnchors: focusAnchors,
-        scenarioPercentage: 0.4, // 40% scenario-based questions
-        maxRecallPercentage: 0.1, // Only 10% pure recall
+        flashcardCount: cardCount,
+        quizCount: 0, // Focus on flashcards for now
+        difficulty: _mapDifficultyToString(difficulty),
+        questionTypes: customInstructions != null ? 'comprehensive' : null,
+        cognitiveLevel: _determineAudience(content),
+        realWorldContext: customInstructions != null ? 'high' : null,
+        challengeLevel: _mapDifficultyToString(difficulty),
+        learningStyle: 'adaptive',
+        promptEnhancement: customInstructions,
       );
 
-      // Convert to AdvancedStudySet
-      final advancedSet = AdvancedStudySet.fromGenerationSchema(
-        'study_${DateTime.now().millisecondsSinceEpoch}',
-        title,
-        content,
-        generationSchema,
+      if (!enhancedResult.isSuccess) {
+        throw Exception(
+            'EnhancedAIService failed: ${enhancedResult.errorMessage}');
+      }
+
+      if (kDebugMode) {
+        print(
+            '✅ EnhancedAIService generation successful using ${enhancedResult.method.name}');
+        if (enhancedResult.isFallback) {
+          print('⚠️ Using fallback method: ${enhancedResult.method.name}');
+        }
+        print('📊 Generated ${enhancedResult.flashcards.length} flashcards');
+        print('⏱️ Processing time: ${enhancedResult.processingTimeMs}ms');
+      }
+
+      // Convert EnhancedAIService flashcards to AdvancedFlashcard format
+      final advancedCards = enhancedResult.flashcards
+          .map((f) => AdvancedFlashcard.fromLegacyFlashcard(f))
+          .toList();
+
+      // Create advanced study set with enhanced metadata
+      final advancedSet = AdvancedStudySet(
+        id: 'study_${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        content: content,
+        sourceSummary:
+            'Generated using EnhancedAIService (${enhancedResult.method.name})',
+        tags: [
+          'ai_generated',
+          'enhanced_ai',
+          enhancedResult.method.name,
+          if (enhancedResult.isFallback) 'fallback',
+        ],
+        difficulty: difficulty,
+        bloomMix: _calculateBloomMix(enhancedResult.flashcards),
+        cards: advancedCards,
+        createdDate: DateTime.now(),
+        lastStudied: DateTime.now(),
       );
 
       if (kDebugMode) {
@@ -3369,12 +3501,12 @@ class _CreateScreenState extends State<CreateScreen>
       return advancedSet;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Advanced generation failed: $e');
-        print('📋 Falling back to legacy generation...');
+        print('❌ EnhancedAIService generation failed: $e');
+        print('📋 Falling back to template generation...');
       }
 
-      // Fallback to legacy generation
-      return await _fallbackToLegacyGeneration(title, content, cardCount);
+      // Fallback to template-based generation
+      return await _fallbackToTemplateGeneration(title, content, cardCount);
     }
   }
 
@@ -3484,6 +3616,112 @@ class _CreateScreenState extends State<CreateScreen>
       'that'
     };
     return stopWords.contains(word.toLowerCase());
+  }
+
+  /// Map difficulty level to string for EnhancedAIService
+  String _mapDifficultyToString(int difficulty) {
+    switch (difficulty) {
+      case 1:
+      case 2:
+        return 'easy';
+      case 3:
+      case 4:
+        return 'medium';
+      case 5:
+      case 6:
+      case 7:
+        return 'hard';
+      default:
+        return 'medium';
+    }
+  }
+
+  /// Calculate Bloom's taxonomy mix from flashcards
+  Map<String, double> _calculateBloomMix(List<Flashcard> flashcards) {
+    final bloomCounts = <String, int>{};
+
+    for (final card in flashcards) {
+      final difficulty = card.difficulty;
+      if (difficulty == DifficultyLevel.beginner) {
+        bloomCounts['Understand'] = (bloomCounts['Understand'] ?? 0) + 1;
+      } else if (difficulty == DifficultyLevel.intermediate) {
+        bloomCounts['Apply'] = (bloomCounts['Apply'] ?? 0) + 1;
+      } else if (difficulty == DifficultyLevel.advanced) {
+        bloomCounts['Analyze'] = (bloomCounts['Analyze'] ?? 0) + 1;
+      }
+    }
+
+    final total = flashcards.length;
+    if (total == 0) return {'Apply': 0.6, 'Understand': 0.4};
+
+    return {
+      'Understand': (bloomCounts['Understand'] ?? 0) / total,
+      'Apply': (bloomCounts['Apply'] ?? 0) / total,
+      'Analyze': (bloomCounts['Analyze'] ?? 0) / total,
+      'Evaluate': 0.0,
+      'Create': 0.0,
+    };
+  }
+
+  /// Fallback to template-based generation using AdvancedFlashcardGenerator
+  Future<AdvancedStudySet> _fallbackToTemplateGeneration(
+      String title, String content, int cardCount) async {
+    try {
+      if (kDebugMode) {
+        print('🔄 Using template-based generation as fallback...');
+      }
+
+      // Determine difficulty based on content complexity
+      final difficulty = _calculateContentDifficulty(content);
+      final audience = _determineAudience(content);
+      final focusAnchors = _extractFocusAnchors('');
+
+      // Generate using AdvancedFlashcardGenerator as fallback
+      final generationSchema = await AdvancedFlashcardGenerator.instance
+          .generateAdvancedFlashcardSet(
+        content: content,
+        setTitle: title,
+        cardCount: cardCount,
+        audience: audience,
+        priorKnowledge: 'medium',
+        difficulty: difficulty,
+        focusAnchors: focusAnchors,
+        scenarioPercentage: 0.4,
+        maxRecallPercentage: 0.1,
+      );
+
+      // Convert to AdvancedStudySet
+      final advancedSet = AdvancedStudySet.fromGenerationSchema(
+        'study_${DateTime.now().millisecondsSinceEpoch}',
+        title,
+        content,
+        generationSchema,
+      );
+
+      if (kDebugMode) {
+        print('✅ Template-based generation successful');
+      }
+
+      return advancedSet;
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Template generation also failed: $e');
+      }
+
+      // Return empty study set as last resort
+      return AdvancedStudySet(
+        id: 'study_${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        content: content,
+        sourceSummary: 'Generation failed - empty set created',
+        tags: ['generation_failed'],
+        difficulty: 3,
+        bloomMix: {},
+        cards: [],
+        createdDate: DateTime.now(),
+        lastStudied: DateTime.now(),
+      );
+    }
   }
 
   /// Fallback to legacy generation if advanced generation fails

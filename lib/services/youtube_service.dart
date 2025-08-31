@@ -47,11 +47,8 @@ class YouTubeService {
       throw YouTubeIngestError.unknown;
     }
 
-    // Get user ID for rate limiting
-    final userId = _authService.currentUserId;
-    if (userId == null) {
-      throw YouTubeIngestError.unknown;
-    }
+    // Get user ID for rate limiting (allow anonymous users)
+    final userId = _authService.currentUserId ?? 'anonymous';
 
     // Check rate limits before proceeding
     await _checkRateLimits(userId, isIngest: false);
@@ -166,11 +163,8 @@ class YouTubeService {
       throw YouTubeIngestError.unknown;
     }
 
-    // Get user ID for rate limiting
-    final userId = _authService.currentUserId;
-    if (userId == null) {
-      throw YouTubeIngestError.unknown;
-    }
+    // Get user ID for rate limiting (allow anonymous users)
+    final userId = _authService.currentUserId ?? 'anonymous';
 
     // Check rate limits for ingest (more restrictive)
     await _checkRateLimits(userId, isIngest: true);

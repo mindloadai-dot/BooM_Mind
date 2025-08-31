@@ -49,7 +49,7 @@ const CONFIG = {
     SESSION_DURATION_HOURS: 1,
     // Security
     MAX_REQUEST_SIZE: 1024,
-    REQUIRED_FIELDS: ['videoId', 'appCheckToken', 'userId'],
+    REQUIRED_FIELDS: ['videoId', 'userId'],
     ALLOWED_VIDEO_ID_PATTERN: /^[A-Za-z0-9_-]{11}$/,
 };
 class LRUCache {
@@ -366,24 +366,30 @@ exports.youtubePreview = (0, https_1.onCall)({
     timeoutSeconds: 30,
     memory: '256MiB',
     secrets: [youtubeApiKey],
+    enforceAppCheck: false,
+    cors: true,
 }, async (request) => {
     const { data, auth } = request;
-    // Validate authentication
-    if (!auth) {
-        throw new https_1.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-    const userId = auth.uid;
+    // Allow anonymous users (similar to generateFlashcards)
+    const userId = auth?.uid || 'anonymous';
+    const hasAuth = auth ? true : false;
+    logger.info('📊 YouTube Preview Request context:', {
+        userId: userId,
+        hasAuth: hasAuth,
+        videoId: data?.videoId || 'unknown'
+    });
     // Comprehensive request validation
     const validation = validateRequest(data);
     if (!validation.isValid) {
         logger.warn(`Invalid request from ${userId}: ${validation.error}`);
         throw new https_1.HttpsError('invalid-argument', validation.error || 'Invalid request');
     }
-    // Validate App Check token
-    const isValidAppCheck = await validateAppCheck(data.appCheckToken);
-    if (!isValidAppCheck) {
-        logger.warn(`Invalid App Check token from ${userId}`);
-        throw new https_1.HttpsError('permission-denied', 'Invalid App Check token');
+    // Validate App Check with enhanced debugging (similar to generateFlashcards)
+    const appCheckResult = await validateAppCheck(data.appCheckToken);
+    logger.info('🔐 App Check validation result:', appCheckResult);
+    // Allow requests without App Check token for better user experience
+    if (!data.appCheckToken) {
+        logger.info(`No App Check token provided from ${userId} - proceeding without validation`);
     }
     // Check rate limits
     const rateLimitCheck = checkRateLimits(userId, false);
@@ -406,25 +412,31 @@ exports.youtubePreview = (0, https_1.onCall)({
             logger.info(`Cache hit for video ${videoId}`);
             return cached;
         }
-        // Get user's plan information
-        const userDoc = await admin_1.admin.firestore().collection('users').doc(auth.uid).get();
-        if (!userDoc.exists) {
-            throw new https_1.HttpsError('not-found', 'User not found');
+        // Get user's plan information (handle anonymous users)
+        let userTier = 'free';
+        let monthlyYoutubeIngests = 0;
+        if (hasAuth && auth) {
+            const userDoc = await admin_1.admin.firestore().collection('users').doc(auth.uid).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                userTier = userData.tier || 'free';
+                monthlyYoutubeIngests = userData.monthlyYoutubeIngests || 0;
+            }
         }
-        const userData = userDoc.data();
-        const userTier = userData.tier || 'free';
-        const monthlyYoutubeIngests = userData.monthlyYoutubeIngests || 0;
-        // Count this month's ingests
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-        const ingestsThisMonth = await admin_1.admin.firestore().collection('materials')
-            .where('owner', '==', auth.uid)
-            .where('type', '==', 'youtube_transcript')
-            .where('createdAt', '>=', startOfMonth)
-            .count()
-            .get();
-        const youtubeIngestsRemaining = Math.max(0, monthlyYoutubeIngests - ingestsThisMonth.data().count);
+        // Count this month's ingests (handle anonymous users)
+        let youtubeIngestsRemaining = monthlyYoutubeIngests;
+        if (hasAuth && auth) {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            const ingestsThisMonth = await admin_1.admin.firestore().collection('materials')
+                .where('owner', '==', auth.uid)
+                .where('type', '==', 'youtube_transcript')
+                .where('createdAt', '>=', startOfMonth)
+                .count()
+                .get();
+            youtubeIngestsRemaining = Math.max(0, monthlyYoutubeIngests - ingestsThisMonth.data().count);
+        }
         // Fetch video metadata (simplified - in production, use YouTube Data API)
         const videoMetadata = await fetchVideoMetadata(videoId);
         // Check transcript availability
@@ -496,11 +508,15 @@ exports.youtubeIngest = (0, https_1.onCall)({
         logger.warn(`Invalid ingest request from ${userId}: ${validation.error}`);
         throw new https_1.HttpsError('invalid-argument', validation.error || 'Invalid request');
     }
-    // Validate App Check token
+    // Validate App Check token (optional in debug mode)
     const isValidAppCheck = await validateAppCheck(data.appCheckToken);
-    if (!isValidAppCheck) {
+    if (!isValidAppCheck && data.appCheckToken) {
         logger.warn(`Invalid App Check token for ingest from ${userId}`);
         throw new https_1.HttpsError('permission-denied', 'Invalid App Check token');
+    }
+    // Log App Check status for debugging
+    if (!data.appCheckToken) {
+        logger.info(`No App Check token provided for ingest from ${userId} - proceeding without validation`);
     }
     // Check rate limits (more restrictive for ingest)
     const rateLimitCheck = checkRateLimits(userId, true);

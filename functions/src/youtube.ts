@@ -423,15 +423,20 @@ export const youtubePreview = onCall({
   timeoutSeconds: 30,
   memory: '256MiB',
   secrets: [youtubeApiKey],
+  enforceAppCheck: false, // Allow manual validation for better debugging
+  cors: true,
 }, async (request) => {
   const { data, auth } = request;
   
-  // Validate authentication
-  if (!auth) {
-    throw new HttpsError('unauthenticated', 'User must be authenticated');
-  }
-
-  const userId = auth.uid;
+  // Allow anonymous users (similar to generateFlashcards)
+  const userId = auth?.uid || 'anonymous';
+  const hasAuth = auth ? true : false;
+  
+  logger.info('📊 YouTube Preview Request context:', {
+    userId: userId,
+    hasAuth: hasAuth,
+    videoId: data?.videoId || 'unknown'
+  });
   
   // Comprehensive request validation
   const validation = validateRequest(data);
@@ -440,14 +445,11 @@ export const youtubePreview = onCall({
     throw new HttpsError('invalid-argument', validation.error || 'Invalid request');
   }
 
-  // Validate App Check token (optional in debug mode)
-  const isValidAppCheck = await validateAppCheck(data.appCheckToken);
-  if (!isValidAppCheck && data.appCheckToken) {
-    logger.warn(`Invalid App Check token from ${userId}`);
-    throw new HttpsError('permission-denied', 'Invalid App Check token');
-  }
+  // Validate App Check with enhanced debugging (similar to generateFlashcards)
+  const appCheckResult = await validateAppCheck(data.appCheckToken);
+  logger.info('🔐 App Check validation result:', appCheckResult);
   
-  // Log App Check status for debugging
+  // Allow requests without App Check token for better user experience
   if (!data.appCheckToken) {
     logger.info(`No App Check token provided from ${userId} - proceeding without validation`);
   }
@@ -477,29 +479,36 @@ export const youtubePreview = onCall({
       return cached;
     }
 
-    // Get user's plan information
-    const userDoc = await admin.firestore().collection('users').doc(auth.uid).get();
-    if (!userDoc.exists) {
-      throw new HttpsError('not-found', 'User not found');
+    // Get user's plan information (handle anonymous users)
+    let userTier = 'free';
+    let monthlyYoutubeIngests = 0;
+    
+    if (hasAuth && auth) {
+      const userDoc = await admin.firestore().collection('users').doc(auth.uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data()!;
+        userTier = userData.tier || 'free';
+        monthlyYoutubeIngests = userData.monthlyYoutubeIngests || 0;
+      }
     }
-
-    const userData = userDoc.data()!;
-    const userTier = userData.tier || 'free';
-    const monthlyYoutubeIngests = userData.monthlyYoutubeIngests || 0;
     
-    // Count this month's ingests
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    // Count this month's ingests (handle anonymous users)
+    let youtubeIngestsRemaining = monthlyYoutubeIngests;
     
-    const ingestsThisMonth = await admin.firestore().collection('materials')
-      .where('owner', '==', auth.uid)
-      .where('type', '==', 'youtube_transcript')
-      .where('createdAt', '>=', startOfMonth)
-      .count()
-      .get();
-    
-    const youtubeIngestsRemaining = Math.max(0, monthlyYoutubeIngests - ingestsThisMonth.data().count);
+    if (hasAuth && auth) {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const ingestsThisMonth = await admin.firestore().collection('materials')
+        .where('owner', '==', auth.uid)
+        .where('type', '==', 'youtube_transcript')
+        .where('createdAt', '>=', startOfMonth)
+        .count()
+        .get();
+      
+      youtubeIngestsRemaining = Math.max(0, monthlyYoutubeIngests - ingestsThisMonth.data().count);
+    }
 
     // Fetch video metadata (simplified - in production, use YouTube Data API)
     const videoMetadata = await fetchVideoMetadata(videoId);

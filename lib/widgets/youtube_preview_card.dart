@@ -3,7 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/theme.dart';
 
-
 /// YouTube preview card widget
 /// Displays video information and handles long-press confirmation for ingest
 class YouTubePreviewCard extends StatefulWidget {
@@ -54,11 +53,14 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
   }
 
   void _onLongPressStart(LongPressStartDetails details) {
+    // Don't handle long press if onIngest is null (automatic processing)
+    if (widget.onIngest == null) return;
+
     setState(() {
       _isLongPressing = true;
     });
     _animationController.forward();
-    
+
     // Trigger long press after 600ms
     Future.delayed(const Duration(milliseconds: 600), () {
       if (_isLongPressing && mounted) {
@@ -66,7 +68,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           _hasTriggeredLongPress = true;
         });
         _animationController.reverse();
-        
+
         if (widget.onIngest != null) {
           widget.onIngest!();
         }
@@ -91,7 +93,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    
+
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
@@ -119,7 +121,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
               children: [
                 // Thumbnail and status
                 _buildThumbnailSection(tokens),
-                
+
                 // Video information
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -129,16 +131,17 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
                       // Title
                       Text(
                         widget.preview.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: tokens.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: tokens.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Channel and duration
                       Row(
                         children: [
@@ -151,9 +154,12 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
                           Expanded(
                             child: Text(
                               widget.preview.channel,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: tokens.textSecondary,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: tokens.textSecondary,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -167,25 +173,26 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
                           const SizedBox(width: 4),
                           Text(
                             widget.preview.formattedDuration,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: tokens.textSecondary,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: tokens.textSecondary,
+                                    ),
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 12),
-                      
+
                       // Status pill
                       _buildStatusPill(tokens),
-                      
+
                       const SizedBox(height: 12),
-                      
+
                       // Token information
                       _buildTokenInfo(tokens),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Ingest button
                       _buildIngestButton(tokens),
                     ],
@@ -234,7 +241,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
             ),
           ),
         ),
-        
+
         // Play button overlay
         Positioned.fill(
           child: Center(
@@ -252,7 +259,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
             ),
           ),
         ),
-        
+
         // Duration badge
         Positioned(
           bottom: 8,
@@ -279,7 +286,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
 
   Widget _buildStatusPill(SemanticTokens tokens) {
     final statusColor = _getStatusColor(tokens);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -323,35 +330,73 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
         Text(
           'Estimated: ',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: tokens.textSecondary,
-          ),
+                color: tokens.textSecondary,
+              ),
         ),
         Text(
           '${widget.preview.estimatedMindLoadTokens} MindLoad Tokens',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: tokens.primary,
-            fontWeight: FontWeight.w600,
-          ),
+                color: tokens.primary,
+                fontWeight: FontWeight.w600,
+              ),
         ),
       ],
     );
   }
 
   Widget _buildIngestButton(SemanticTokens tokens) {
+    // If onIngest is null, show automatic processing status instead of button
+    if (widget.onIngest == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: tokens.success.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: tokens.success.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: tokens.success,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Content automatically extracted',
+                style: TextStyle(
+                  color: tokens.success,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final isDisabled = !widget.preview.canProceed || widget.isLoading;
-    
+
     return SizedBox(
       width: double.infinity,
       child: GestureDetector(
-        onLongPressStart: isDisabled ? null : _onLongPressStart,
-        onLongPressEnd: isDisabled ? null : _onLongPressEnd,
-        onLongPressCancel: isDisabled ? null : _onLongPressCancel,
+        onLongPressStart: (isDisabled || widget.onIngest == null) ? null : _onLongPressStart,
+        onLongPressEnd: (isDisabled || widget.onIngest == null) ? null : _onLongPressEnd,
+        onLongPressCancel: (isDisabled || widget.onIngest == null) ? null : _onLongPressCancel,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: isDisabled 
-                ? tokens.surfaceAlt 
-                : (_isLongPressing ? tokens.primary.withValues(alpha: 0.8) : tokens.primary),
+            color: isDisabled
+                ? tokens.surfaceAlt
+                : (_isLongPressing
+                    ? tokens.primary.withValues(alpha: 0.8)
+                    : tokens.primary),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isDisabled ? tokens.borderDefault : tokens.primary,
@@ -364,13 +409,15 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
                     width: 20,
                     child: CircularProgressIndicator.adaptive(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(ThemeManager.instance.currentTokens.textInverse),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          ThemeManager.instance.currentTokens.textInverse),
                     ),
                   )
                 : Text(
                     _getButtonText(),
                     style: TextStyle(
-                      color: isDisabled ? tokens.textTertiary : tokens.textInverse,
+                      color:
+                          isDisabled ? tokens.textTertiary : tokens.textInverse,
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -382,10 +429,15 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
   }
 
   String _getButtonText() {
+    // If onIngest is null, this method shouldn't be called, but provide fallback
+    if (widget.onIngest == null) {
+      return 'Content automatically extracted';
+    }
+
     if (_isLongPressing) {
       return 'Release to confirm';
     }
-    
+
     if (!widget.preview.canProceed) {
       if (!widget.preview.captionsAvailable) {
         return 'No transcript available';
@@ -395,7 +447,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
       }
       return 'Cannot proceed';
     }
-    
+
     return 'Hold to spend ${widget.preview.estimatedMindLoadTokens} MindLoad Tokens';
   }
 
@@ -413,10 +465,10 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
     switch (widget.preview.statusColor) {
       case 'success':
         return tokens.success;
-              case 'warning':
-          return tokens.warning;
-        case 'error':
-          return tokens.error;
+      case 'warning':
+        return tokens.warning;
+      case 'error':
+        return tokens.error;
       default:
         return tokens.textSecondary;
     }
