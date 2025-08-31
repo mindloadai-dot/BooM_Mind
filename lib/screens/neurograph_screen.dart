@@ -87,11 +87,36 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
     }
   }
 
+  Future<void> _refreshData() async {
+    debugPrint('🔄 Refreshing NeuroGraph data...');
+    await _loadData();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_hasData
+              ? 'NeuroGraph data refreshed! Found ${_studyData.length} study sessions.'
+              : 'No study data found. Complete some quizzes or flashcard sessions first.'),
+          backgroundColor: _hasData ? Colors.green : Colors.orange,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.tokens.surface,
-      appBar: const MindloadAppBar(title: 'NeuroGraph'),
+      appBar: MindloadAppBar(
+        title: 'NeuroGraph',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshData,
+            tooltip: 'Refresh Data',
+          ),
+        ],
+      ),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
@@ -102,6 +127,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
+                const SizedBox(height: 16),
+                _buildInfoPanel(),
                 const SizedBox(height: 24),
                 if (_hasData) ...[
                   _buildStudyHeatmap(),
@@ -117,6 +144,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                   _buildAnalysisCard(),
                   const SizedBox(height: 24),
                   _buildQuickTipsCard(),
+                  const SizedBox(height: 24),
+                  _buildGraphExplanations(),
                 ] else ...[
                   _buildEmptyState(),
                 ],
@@ -255,6 +284,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
     return _buildChartCard(
       title: ProductConstants.studyHeatmapTitle,
       subtitle: ProductConstants.studyHeatmapSubtitle,
+      helpText:
+          'This heatmap shows your study activity throughout the day and week. Darker colors indicate more study time. Use this to identify when you learn most effectively.',
       child: SizedBox(
         height: 200,
         child: _buildHeatmapChart(),
@@ -266,6 +297,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
     return _buildChartCard(
       title: ProductConstants.streakSparklineTitle,
       subtitle: ProductConstants.streakSparklineSubtitle,
+      helpText:
+          'This sparkline tracks your daily study consistency over time. Higher peaks indicate longer study streaks. Maintaining consistency is crucial for memory retention.',
       child: SizedBox(
         height: 150,
         child: _buildSparklineChart(),
@@ -277,6 +310,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
     return _buildChartCard(
       title: ProductConstants.recallRadarTitle,
       subtitle: ProductConstants.recallRadarSubtitle,
+      helpText:
+          'This radar chart measures your recall ability across different subjects and difficulty levels. Larger areas indicate stronger memory performance in those areas.',
       child: SizedBox(
         height: 250,
         child: _buildRadarChart(),
@@ -288,6 +323,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
     return _buildChartCard(
       title: ProductConstants.efficiencyBarTitle,
       subtitle: ProductConstants.efficiencyBarSubtitle,
+      helpText:
+          'This bar chart shows your learning efficiency over time - how much you learn per minute of study. Higher bars mean you\'re absorbing information more effectively.',
       child: SizedBox(
         height: 200,
         child: _buildBarChart(),
@@ -299,6 +336,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
     return _buildChartCard(
       title: ProductConstants.forgettingCurveTitle,
       subtitle: ProductConstants.forgettingCurveSubtitle,
+      helpText:
+          'Based on Hermann Ebbinghaus\'s research, this curve shows how quickly you forget information without review. The steeper the drop, the more urgent the need for review.',
       child: SizedBox(
         height: 200,
         child: _buildLineChart(),
@@ -310,6 +349,7 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
     required String title,
     required String subtitle,
     required Widget child,
+    String? helpText,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -330,12 +370,27 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: context.tokens.textPrimary,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: context.tokens.textPrimary,
+                      ),
                 ),
+              ),
+              if (helpText != null)
+                Tooltip(
+                  message: helpText,
+                  child: Icon(
+                    Icons.help_outline,
+                    size: 20,
+                    color: context.tokens.textSecondary,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
@@ -872,5 +927,227 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
         );
       }
     }
+  }
+
+  Widget _buildInfoPanel() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            context.tokens.primary.withOpacity(0.1),
+            context.tokens.secondary.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.tokens.primary.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.psychology_outlined,
+                color: context.tokens.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'What is NeuroGraph?',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: context.tokens.textPrimary,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'NeuroGraph analyzes your learning patterns and study behavior to help you understand how your brain processes information. Each chart reveals different aspects of your cognitive performance.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: context.tokens.textSecondary,
+                  height: 1.5,
+                ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: context.tokens.secondary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Complete quizzes and flashcard sessions to see your data visualized below.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.tokens.secondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGraphExplanations() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.tokens.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.tokens.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.help_outline,
+                color: context.tokens.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Understanding Your Charts',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.tokens.textPrimary,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildExplanationItem(
+            icon: Icons.grid_on,
+            title: 'Study Heatmap',
+            description:
+                'Shows when you study most effectively. Darker colors indicate more study time. Use this to identify your peak learning hours.',
+            color: context.tokens.primary,
+          ),
+          const SizedBox(height: 16),
+          _buildExplanationItem(
+            icon: Icons.trending_up,
+            title: 'Streak Sparkline',
+            description:
+                'Tracks your daily study consistency. Higher peaks mean longer streaks. Consistency is key to long-term retention.',
+            color: context.tokens.secondary,
+          ),
+          const SizedBox(height: 16),
+          _buildExplanationItem(
+            icon: Icons.radar,
+            title: 'Recall Radar',
+            description:
+                'Measures how well you remember information across different subjects. Larger areas indicate stronger recall abilities.',
+            color: context.tokens.accent,
+          ),
+          const SizedBox(height: 16),
+          _buildExplanationItem(
+            icon: Icons.bar_chart,
+            title: 'Efficiency Bar Chart',
+            description:
+                'Compares your learning efficiency over time. Higher bars mean you\'re learning more in less time.',
+            color: Colors.green,
+          ),
+          const SizedBox(height: 16),
+          _buildExplanationItem(
+            icon: Icons.show_chart,
+            title: 'Forgetting Curve',
+            description:
+                'Based on Ebbinghaus\'s research, this shows how much information you retain over time. Review before the curve drops!',
+            color: Colors.orange,
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.tokens.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lightbulb_outline,
+                  color: context.tokens.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Tip: Use the refresh button above to update your charts after completing study sessions.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: context.tokens.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExplanationItem({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.tokens.textPrimary,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: context.tokens.textSecondary,
+                      height: 1.4,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

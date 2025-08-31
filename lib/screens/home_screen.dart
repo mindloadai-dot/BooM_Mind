@@ -6,6 +6,8 @@ import 'package:mindload/models/study_data.dart';
 
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
+import 'package:mindload/services/biometric_auth_service.dart';
+import 'package:mindload/widgets/biometric_setup_dialog.dart';
 
 import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/document_processor.dart';
@@ -89,19 +91,64 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     _checkAuthentication();
+    _checkBiometricSetup();
     _initializeData();
   }
 
   void _checkAuthentication() {
-    // Ensure user is properly authenticated before accessing HomeScreen
+    // 🔐 CRITICAL: Ensure user is properly authenticated before accessing HomeScreen - NO EXCEPTIONS!
     final authService = AuthService.instance;
-    if (!authService.isAuthenticated) {
-      // Redirect to authentication screen if not authenticated
+    if (!authService.isAuthenticated || authService.currentUser == null) {
+      debugPrint(
+          '🔐 HomeScreen: User not authenticated - redirecting to SocialAuthScreen');
+      // Redirect to authentication screen immediately if not authenticated
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacementNamed('/auth');
+        Navigator.of(context).pushReplacementNamed('/social-auth');
       });
       return;
     }
+
+    debugPrint(
+        '🔐 HomeScreen: User authenticated: ${authService.currentUser!.email}');
+  }
+
+  void _checkBiometricSetup() {
+    // 🔐 Check if user should be prompted for biometric authentication setup
+    // This runs AFTER authentication check to ensure user is logged in first
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final biometricService = BiometricAuthService.instance;
+        final shouldShow = await biometricService.shouldShowBiometricPrompt();
+
+        if (shouldShow && mounted) {
+          debugPrint(
+              '🔒 HomeScreen: Showing biometric setup prompt for first-time user');
+
+          // Small delay to ensure UI is fully loaded
+          await Future.delayed(const Duration(milliseconds: 1000));
+
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false, // User must make a choice
+              builder: (context) => BiometricSetupDialog(
+                onSetupComplete: () {
+                  debugPrint('✅ Biometric setup completed successfully');
+                },
+                onSkipped: () {
+                  debugPrint('⏭️ User skipped biometric setup');
+                },
+              ),
+            );
+          }
+        } else {
+          debugPrint(
+              '🔒 HomeScreen: Biometric prompt not needed (already shown or not available)');
+        }
+      } catch (e) {
+        debugPrint('⚠️ HomeScreen: Error checking biometric setup: $e');
+      }
+    });
   }
 
   @override
@@ -2441,6 +2488,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       }
                     }
                     break;
+                  case 'sign_out':
+                    // TEMPORARY: Test authentication flow by signing out
+                    try {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Signing out to test auth flow...'),
+                            backgroundColor: tokens.primary,
+                          ),
+                        );
+                      }
+
+                      await AuthService.instance.signOut();
+
+                      if (mounted) {
+                        Navigator.of(context)
+                            .pushReplacementNamed('/social-auth');
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Sign out error: $e'),
+                            backgroundColor: tokens.error,
+                          ),
+                        );
+                      }
+                    }
+                    break;
                   case 'test_ai':
                     // Test EnhancedAIService
                     if (mounted) {
@@ -2708,6 +2784,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Text(
                         'Profile & More Settings',
                         style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'sign_out',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: tokens.error, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Sign Out (Test Auth)',
+                        style: TextStyle(
+                          color: tokens.error,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),

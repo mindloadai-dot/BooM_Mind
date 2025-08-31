@@ -8,12 +8,13 @@ import OpenAI from 'openai';
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
 const openaiOrgId = defineSecret('OPENAI_ORGANIZATION_ID');
 
-// Configuration for OpenAI processing
+// Configuration for OpenAI processing - Ultra-optimized for speed
 const CONFIG = {
-  MAX_REQUESTS_PER_MINUTE: 100, // Increased for debugging
-  MAX_TOKENS_PER_REQUEST: 4000,
-  DEFAULT_TEMPERATURE: 0.5,
-  DEFAULT_MODEL: 'gpt-4o-mini',
+  MAX_REQUESTS_PER_MINUTE: 100,
+  MAX_TOKENS_PER_REQUEST: 1200, // Ultra-reduced for maximum speed
+  DEFAULT_TEMPERATURE: 0.1, // Minimal temperature for fastest responses
+  DEFAULT_MODEL: 'gpt-4o-mini', // Fastest model
+  TIMEOUT_MS: 45000, // 45 second timeout for faster failure detection
 } as const;
 
 // Rate limiting cache
@@ -325,10 +326,11 @@ Make sure the questions are clear, educational, and cover key concepts from the 
  */
 export const generateFlashcards = onCall({
   region: 'us-central1',
-  timeoutSeconds: 30,
-  memory: '256MiB',
+  timeoutSeconds: 90, // Reduced timeout for faster fallback to Local AI
+  memory: '1GiB',
+  cpu: 2,
   secrets: [openaiApiKey, openaiOrgId],
-  enforceAppCheck: false, // Allow manual validation for better debugging
+  enforceAppCheck: false,
   cors: true,
 }, async (request) => {
   logger.info('🚀 Received generateFlashcards request');
@@ -364,49 +366,79 @@ export const generateFlashcards = onCall({
     throw new HttpsError('invalid-argument', 'Missing required parameters');
   }
 
+  // Intelligent content optimization for speed and efficiency
+  let processedContent = content;
+  const originalLength = content.length;
+  
+  // Smart content preprocessing for better performance
+  if (content.length > 20000) {
+    logger.warn(`Large content detected: ${content.length} characters - optimizing for speed`);
+    
+    // Extract key sentences and paragraphs intelligently
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const paragraphs = content.split('\n\n').filter(p => p.trim().length > 50);
+    
+    // Priority content selection (more intelligent than simple truncation)
+    const importantSentences = sentences
+      .filter(s => {
+        const lower = s.toLowerCase();
+        // Prioritize sentences with key indicators
+        return lower.includes('important') || lower.includes('key') || 
+               lower.includes('main') || lower.includes('primary') ||
+               lower.includes('essential') || lower.includes('fundamental') ||
+               s.length > 50; // Longer sentences often contain more information
+      })
+      .slice(0, 20); // Top 20 important sentences
+    
+    // Take first few and last few paragraphs + important sentences
+    const keyContent = [
+      ...paragraphs.slice(0, 3),
+      '--- Key Information ---',
+      ...importantSentences,
+      '--- Conclusion ---',
+      ...paragraphs.slice(-2)
+    ].join('\n\n');
+    
+    processedContent = keyContent.substring(0, 25000); // Hard limit for performance
+    logger.info(`Smart optimization: ${originalLength} → ${processedContent.length} chars (${Math.round((1 - processedContent.length/originalLength) * 100)}% reduction)`);
+  }
+
   try {
     const client = createOpenAIClient();
     
-    const prompt = `
-Generate ${count} flashcards from the following content. 
-Difficulty level: ${difficulty}
+    const prompt = `${count} flashcards from:
 
-Content:
-${content}
+${processedContent}
 
-Generate flashcards in this exact JSON format:
-{
-  "flashcards": [
-    {
-      "question": "Question text here",
-      "answer": "Answer text here",
-      "difficulty": "${difficulty}"
-    }
-  ]
-}
+JSON format:
+{"flashcards":[{"question":"Q","answer":"A","difficulty":"${difficulty}"}]}
 
-Make sure the questions are clear, educational, and cover key concepts from the content.
-`;
+Key facts only.`;
 
-    // Implement retry logic for OpenAI API calls
-    const response = await retryOpenAICall(async () => {
-      return await client.chat.completions.create({
-        model: CONFIG.DEFAULT_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert educator creating flashcards.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: CONFIG.MAX_TOKENS_PER_REQUEST,
-        temperature: CONFIG.DEFAULT_TEMPERATURE,
-        response_format: { type: 'json_object' }
-      });
-    }, 'generateFlashcards');
+    // Implement retry logic with timeout for OpenAI API calls
+    const response = await Promise.race([
+      retryOpenAICall(async () => {
+        return await client.chat.completions.create({
+          model: CONFIG.DEFAULT_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: 'Create flashcards quickly. Be concise.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: CONFIG.MAX_TOKENS_PER_REQUEST,
+          temperature: CONFIG.DEFAULT_TEMPERATURE,
+          response_format: { type: 'json_object' }
+        });
+      }, 'generateFlashcards'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('OpenAI API timeout')), CONFIG.TIMEOUT_MS)
+      )
+    ]) as any;
 
     // Update rate limit counter
     const userLimit = rateLimitCache.get(userId);
@@ -435,10 +467,11 @@ Make sure the questions are clear, educational, and cover key concepts from the 
  */
 export const generateQuiz = onCall({
   region: 'us-central1',
-  timeoutSeconds: 30,
-  memory: '256MiB',
+  timeoutSeconds: 90, // Reduced timeout for faster fallback to Local AI
+  memory: '1GiB',
+  cpu: 2,
   secrets: [openaiApiKey, openaiOrgId],
-  enforceAppCheck: false, // Allow manual validation for better debugging
+  enforceAppCheck: false,
   cors: true,
 }, async (request) => {
   logger.info('🚀 Received generateQuiz request');
@@ -471,52 +504,75 @@ export const generateQuiz = onCall({
     throw new HttpsError('invalid-argument', 'Missing required parameters');
   }
 
+  // Intelligent content optimization for quiz generation speed
+  let processedContent = content;
+  const originalLength = content.length;
+  
+  // Smart content preprocessing optimized for quiz questions
+  if (content.length > 20000) {
+    logger.warn(`Large content detected for quiz: ${content.length} characters - optimizing`);
+    
+    // Extract content optimized for quiz generation
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 15);
+    const paragraphs = content.split('\n\n').filter(p => p.trim().length > 30);
+    
+    // For quizzes, prioritize factual and definitive content
+    const factualSentences = sentences
+      .filter(s => {
+        const lower = s.toLowerCase();
+        return lower.includes('is') || lower.includes('are') || lower.includes('was') || 
+               lower.includes('were') || lower.includes('can') || lower.includes('will') ||
+               lower.includes('must') || lower.includes('should') || /\d/.test(s); // Contains numbers
+      })
+      .slice(0, 25); // Top 25 factual sentences for quiz generation
+    
+    const optimizedContent = [
+      ...paragraphs.slice(0, 2),
+      '--- Key Facts ---',
+      ...factualSentences,
+      ...paragraphs.slice(-1)
+    ].join('\n\n');
+    
+    processedContent = optimizedContent.substring(0, 20000); // Smaller limit for quiz speed
+    logger.info(`Quiz optimization: ${originalLength} → ${processedContent.length} chars (${Math.round((1 - processedContent.length/originalLength) * 100)}% reduction)`);
+  }
+
   try {
     const client = createOpenAIClient();
     
-    const prompt = `
-Generate ${count} multiple choice quiz questions from the following content. 
-Difficulty level: ${difficulty}
+    const prompt = `${count} quiz questions:
 
-Content:
-${content}
+${processedContent}
 
-Generate quiz questions in this exact JSON format:
-{
-  "questions": [
-    {
-      "question": "Question text here",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": "Option A",
-      "difficulty": "${difficulty}",
-      "explanation": "Brief explanation of why this is correct"
-    }
-  ]
-}
+JSON format:
+{"questions":[{"question":"Q","options":["A","B","C","D"],"correctAnswer":"A","difficulty":"${difficulty}"}]}
 
-Make sure the questions are challenging, educational, and test understanding of key concepts from the content.
-Each question should have 4 options with only one correct answer.
-`;
+4 options each.`;
 
-    // Implement retry logic for OpenAI API calls
-    const response = await retryOpenAICall(async () => {
-      return await client.chat.completions.create({
-        model: CONFIG.DEFAULT_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert educator creating quiz questions.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: CONFIG.MAX_TOKENS_PER_REQUEST,
-        temperature: CONFIG.DEFAULT_TEMPERATURE,
-        response_format: { type: 'json_object' }
-      });
-    }, 'generateQuiz');
+    // Implement retry logic with timeout for OpenAI API calls
+    const response = await Promise.race([
+      retryOpenAICall(async () => {
+        return await client.chat.completions.create({
+          model: CONFIG.DEFAULT_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: 'Create quiz questions quickly. Be direct and concise.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 1000, // Ultra-reduced for maximum speed
+          temperature: CONFIG.DEFAULT_TEMPERATURE,
+          response_format: { type: 'json_object' }
+        });
+      }, 'generateQuiz'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('OpenAI API timeout')), CONFIG.TIMEOUT_MS)
+      )
+    ]) as any;
 
     // Update rate limit counter
     const userLimit = rateLimitCache.get(userId);

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/user_specific_storage_service.dart';
+import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'dart:developer' as developer;
 
@@ -186,10 +188,25 @@ class ThemeManager extends ChangeNotifier {
 
   Future<void> loadTheme() async {
     try {
-      final savedTheme =
-          await EnhancedStorageService.instance.getSelectedTheme();
+      String? savedTheme;
+
+      // Try user-specific storage first (for authenticated users)
+      if (AuthService.instance.isAuthenticated) {
+        savedTheme = await UserSpecificStorageService.instance
+            .getString('selected_theme');
+      }
+
+      // Fallback to global storage for backward compatibility
+      savedTheme ??= await EnhancedStorageService.instance.getSelectedTheme();
+
       if (savedTheme != null) {
         _currentTheme = _parseThemeFromString(savedTheme);
+
+        // If we loaded from global storage and user is authenticated, migrate to user-specific
+        if (AuthService.instance.isAuthenticated) {
+          await UserSpecificStorageService.instance
+              .setString('selected_theme', savedTheme);
+        }
       }
 
       // Theme validation removed - contrast feature no longer needed
@@ -205,12 +222,24 @@ class ThemeManager extends ChangeNotifier {
       // Theme validation removed - contrast feature no longer needed
       _currentTheme = theme;
       _isInFallbackMode = false;
-      await EnhancedStorageService.instance.saveSelectedTheme(theme.id);
+
+      // Save to user-specific storage if authenticated
+      if (AuthService.instance.isAuthenticated) {
+        await UserSpecificStorageService.instance
+            .setString('selected_theme', theme.id);
+      } else {
+        // Fallback to global storage for unauthenticated users
+        await EnhancedStorageService.instance.saveSelectedTheme(theme.id);
+      }
 
       // Emit telemetry
       TelemetryService.instance.logEvent(
         TelemetryEvent.themeApplied.name,
-        {'theme_id': theme.id, 'is_fallback': _isInFallbackMode},
+        {
+          'theme_id': theme.id,
+          'is_fallback': _isInFallbackMode,
+          'user_specific': AuthService.instance.isAuthenticated
+        },
       );
 
       notifyListeners();

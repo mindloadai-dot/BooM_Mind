@@ -16,6 +16,8 @@ import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
 import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/biometric_auth_service.dart';
+import 'package:mindload/services/user_specific_storage_service.dart';
 import 'package:mindload/firebase_options.dart';
 import 'package:mindload/config/environment_config.dart';
 
@@ -184,6 +186,12 @@ class MindLoadApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<EnhancedStorageService>.value(
           value: EnhancedStorageService.instance,
+        ),
+        ChangeNotifierProvider<BiometricAuthService>.value(
+          value: BiometricAuthService.instance,
+        ),
+        ChangeNotifierProvider<UserSpecificStorageService>.value(
+          value: UserSpecificStorageService.instance,
         ),
       ],
       child: Consumer<ThemeManager>(
@@ -355,6 +363,30 @@ class AppInitializerState extends State<AppInitializer>
     try {
       // Ensure video plays for exactly 4 seconds
       final startTime = DateTime.now();
+
+      // CRITICAL: Initialize AuthService FIRST - Authentication must be checked before anything else
+      setState(() => _statusMessage = 'Checking authentication...');
+
+      // Wait for AuthService to properly initialize and load user state
+      final authService = AuthService.instance;
+      await authService.initialize();
+
+      // Give Firebase auth state a moment to load if user is authenticated
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (authService.currentUser != null) {
+        setState(() => _statusMessage = 'Authentication verified');
+      } else {
+        setState(() => _statusMessage = 'Ready for authentication');
+      }
+
+      // Initialize BiometricAuthService
+      setState(() => _statusMessage = 'Setting up security features...');
+      await BiometricAuthService.instance.initialize();
+
+      // Initialize UserSpecificStorageService
+      setState(() => _statusMessage = 'Setting up user storage...');
+      await UserSpecificStorageService.instance.initialize();
 
       // Initialize App Check if not in debug mode
       if (!kDebugMode || !AppCheckConfig.shouldSkipAppCheck) {
@@ -601,20 +633,34 @@ class AppInitializerState extends State<AppInitializer>
       );
     }
 
-    // App is initialized - show main app logic
+    // App is initialized - show main app logic with STRICT authentication priority
     return Consumer3<AuthService, UnifiedOnboardingService, ThemeManager>(
       builder: (context, authService, onboardingService, themeManager, child) {
-        // Check authentication state
+        // 🔐 CRITICAL: Authentication is ALWAYS first priority - NO EXCEPTIONS!
         if (authService.currentUser == null) {
+          debugPrint(
+              '🔐 AppInitializer: User not authenticated - showing SocialAuthScreen');
           return const SocialAuthScreen();
         }
 
-        // Check if onboarding is needed (shows only once after first install)
+        debugPrint(
+            '🔐 AppInitializer: User authenticated: ${authService.currentUser!.email}');
+
+        // ✅ User is authenticated - now check onboarding (shows ONLY ONCE after first install)
+        // CRITICAL: Once onboarding is completed, it will NEVER show again - NO EXCEPTIONS!
         if (onboardingService.needsOnboarding) {
+          debugPrint(
+              '🎯 AppInitializer: Onboarding needed - showing ModernOnboardingScreen (FIRST TIME ONLY)');
+          debugPrint(
+              '   This will be the ONLY time the user sees the welcome screen');
           return const ModernOnboardingScreen();
         }
 
-        // Main app content
+        debugPrint(
+            '✅ AppInitializer: Onboarding already completed - skipping welcome screen forever');
+
+        debugPrint('🏠 AppInitializer: Showing main HomeScreen');
+        // ✅ User is authenticated and onboarding is complete - show main app
         return const HomeScreen();
       },
     );

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
+import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/theme.dart';
 
 import 'dart:math' as math;
@@ -61,6 +63,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   final TextEditingController _nicknameController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _nicknameValid = false;
+  AppTheme _selectedTheme = AppTheme.classic;
 
   // Transition direction tracking
   bool _isForwardTransition = true;
@@ -158,6 +161,13 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   @override
   void initState() {
     super.initState();
+
+    // 🔐 CRITICAL: Authentication check FIRST - onboarding requires authenticated user
+    _checkAuthentication();
+
+    // 🎯 CRITICAL: Check if onboarding was already completed (safety check)
+    _checkOnboardingStatus();
+
     _initializeControllers();
     _initializeAnimations();
     _initializeVideo();
@@ -166,6 +176,51 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _optimizeForPerformance();
+      }
+    });
+  }
+
+  void _checkAuthentication() {
+    // 🔐 CRITICAL: Ensure user is authenticated before showing onboarding - NO EXCEPTIONS!
+    final authService = AuthService.instance;
+    if (!authService.isAuthenticated || authService.currentUser == null) {
+      debugPrint(
+          '🔐 OnboardingScreen: User not authenticated - redirecting to SocialAuthScreen');
+      // Redirect to authentication screen immediately if not authenticated
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/social-auth');
+      });
+      return;
+    }
+
+    debugPrint(
+        '🔐 OnboardingScreen: User authenticated: ${authService.currentUser!.email}');
+  }
+
+  void _checkOnboardingStatus() {
+    // 🎯 SAFETY CHECK: If onboarding was already completed, redirect immediately
+    // This prevents any potential bypass or duplicate showing
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final onboardingService =
+            Provider.of<UnifiedOnboardingService>(context, listen: false);
+        await onboardingService.initialize();
+
+        if (!onboardingService.needsOnboarding) {
+          debugPrint(
+              '🎯 OnboardingScreen: SAFETY CHECK - Onboarding already completed!');
+          debugPrint(
+              '   Redirecting to home immediately to prevent duplicate showing');
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/home');
+          }
+          return;
+        }
+
+        debugPrint(
+            '🎯 OnboardingScreen: First time - showing onboarding as expected');
+      } catch (e) {
+        debugPrint('⚠️ OnboardingScreen: Error checking onboarding status: $e');
       }
     });
   }
@@ -574,27 +629,53 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   }
 
   Future<void> _completeOnboarding() async {
-    if (_isTransitioning) return;
+    if (_isTransitioning || !mounted) return;
 
     setState(() => _isTransitioning = true);
     HapticFeedbackService().success();
 
     try {
+      // Get service reference while widget is mounted
+      if (!mounted) return;
       final onboardingService =
           Provider.of<UnifiedOnboardingService>(context, listen: false);
+
       await onboardingService.markFeaturesExplained();
+
+      // Save the selected theme
+      await ThemeManager.instance.setTheme(_selectedTheme);
+
       await onboardingService.completeOnboarding();
 
       if (mounted) {
         // Add a small delay to ensure smooth transition
         await Future.delayed(const Duration(milliseconds: 300));
-        Navigator.of(context).pushReplacementNamed('/home');
+
+        // Final check before navigation
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
       }
     } catch (e) {
       debugPrint('Error completing onboarding: $e');
+      // Only update state if widget is still mounted
       if (mounted) {
         setState(() => _isTransitioning = false);
       }
+    }
+  }
+
+  void _selectTheme(AppTheme theme) {
+    setState(() {
+      _selectedTheme = theme;
+    });
+
+    // Apply theme immediately for preview
+    ThemeManager.instance.setTheme(theme);
+    HapticFeedbackService().lightImpact();
+
+    if (kDebugMode) {
+      debugPrint('🎨 Theme selected: ${theme.id}');
     }
   }
 
@@ -1023,39 +1104,50 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                             'Clean & Professional',
                             Icons.style,
                             const Color(0xFF6366F1),
-                            const Color(0xFF8B5CF6)),
-                        _buildThemeCard('Matrix', 'Cyberpunk Style', Icons.code,
-                            const Color(0xFF10B981), const Color(0xFF059669)),
+                            const Color(0xFF8B5CF6),
+                            AppTheme.classic),
+                        _buildThemeCard(
+                            'Matrix',
+                            'Cyberpunk Style',
+                            Icons.code,
+                            const Color(0xFF10B981),
+                            const Color(0xFF059669),
+                            AppTheme.matrix),
                         _buildThemeCard(
                             'Retro',
                             'Vintage Vibes',
                             Icons.music_note,
                             const Color(0xFFF59E0B),
-                            const Color(0xFFD97706)),
+                            const Color(0xFFD97706),
+                            AppTheme.retro),
                         _buildThemeCard(
                             'Cyber Neon',
                             'Futuristic Glow',
                             Icons.electric_bolt,
                             const Color(0xFFEC4899),
-                            const Color(0xFFBE185D)),
+                            const Color(0xFFBE185D),
+                            AppTheme.cyberNeon),
                         _buildThemeCard(
                             'Dark Mode',
                             'Easy on Eyes',
                             Icons.dark_mode,
                             const Color(0xFF374151),
-                            const Color(0xFF1F2937)),
+                            const Color(0xFF1F2937),
+                            AppTheme.darkMode),
                         _buildThemeCard(
                             'Minimal',
                             'Simple & Clean',
                             Icons.crop_square,
                             const Color(0xFF6B7280),
-                            const Color(0xFF4B5563)),
+                            const Color(0xFF4B5563),
+                            AppTheme.minimal),
                         _buildThemeCard(
                             'Purple Neon',
                             'Vibrant Purple',
                             Icons.star,
                             const Color(0xFF8B5CF6),
-                            const Color(0xFF7C3AED)),
+                            const Color(0xFF7C3AED),
+                            AppTheme.purpleNeon),
                       ],
                     ),
                   );
@@ -1104,85 +1196,122 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   }
 
   Widget _buildThemeCard(String title, String description, IconData icon,
-      Color primaryColor, Color secondaryColor) {
+      Color primaryColor, Color secondaryColor, AppTheme theme) {
+    final isSelected = _selectedTheme == theme;
+
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {
         return Transform.scale(
           scale: 0.95 + (_pulseAnimation.value * 0.05),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  primaryColor.withOpacity(0.1),
-                  secondaryColor.withOpacity(0.1),
+          child: GestureDetector(
+            onTap: () => _selectTheme(theme),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    primaryColor.withOpacity(isSelected ? 0.3 : 0.1),
+                    secondaryColor.withOpacity(isSelected ? 0.3 : 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      isSelected ? primaryColor : primaryColor.withOpacity(0.3),
+                  width: isSelected ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(isSelected ? 0.3 : 0.1),
+                    blurRadius: isSelected ? 12 : 6,
+                    spreadRadius: isSelected ? 2 : 1,
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: primaryColor.withOpacity(0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withOpacity(0.1),
-                  blurRadius: 6,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [primaryColor, secondaryColor],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withOpacity(0.3),
-                          blurRadius: 6,
-                          spreadRadius: 1,
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [primaryColor, secondaryColor],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withOpacity(0.3),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            icon,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                    child: Icon(
-                      icon,
-                      color: Colors.white,
-                      size: 20,
-                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  // Selection indicator
+                  if (isSelected)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: primaryColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                 ],
               ),
             ),

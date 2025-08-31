@@ -141,6 +141,27 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     }
   }
 
+  Future<void> _refreshAchievementsData() async {
+    debugPrint('🔄 Refreshing achievements...');
+    await _initializeAchievementService();
+
+    if (mounted) {
+      final catalog = AchievementService.instance.catalog;
+      final userAchievements = AchievementService.instance.userAchievements;
+      final unlockedCount = userAchievements.values
+          .where((a) => a.status == AchievementStatus.earned)
+          .length;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Achievements refreshed! $unlockedCount unlocked out of ${catalog.length}.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
@@ -152,7 +173,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
         title: 'Achievements',
         actions: [
           IconButton(
-            onPressed: _refreshAchievements,
+            onPressed: _refreshAchievementsData,
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh Achievements',
           ),
@@ -239,7 +260,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                             child: CircularProgressIndicator(
                               value: 1.0,
                               strokeWidth: 8,
-                              backgroundColor: tokens.textMuted.withOpacity(0.1),
+                              backgroundColor:
+                                  tokens.textMuted.withOpacity(0.1),
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 tokens.textMuted.withOpacity(0.1),
                               ),
@@ -253,7 +275,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                                 width: 140,
                                 height: 140,
                                 child: CircularProgressIndicator(
-                                  value: _progressFillAnimation.value * completionRate,
+                                  value: _progressFillAnimation.value *
+                                      completionRate,
                                   strokeWidth: 8,
                                   backgroundColor: Colors.transparent,
                                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -303,7 +326,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Quick stats row
                   _buildQuickStatsRow(tokens, theme),
                 ],
@@ -697,9 +720,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
 
   Widget _buildQuickStatsRow(SemanticTokens tokens, ThemeData theme) {
     final service = AchievementService.instance;
-    final inProgressAchievements = service
-        .getAchievementsByStatus(AchievementStatus.inProgress)
-        .length;
+    final inProgressAchievements =
+        service.getAchievementsByStatus(AchievementStatus.inProgress).length;
     final totalPoints = service.meta.bonusCounter;
 
     return Row(

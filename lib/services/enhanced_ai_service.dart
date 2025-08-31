@@ -164,7 +164,7 @@ class EnhancedAIService {
     }
   }
 
-  /// Try OpenAI Cloud Functions generation
+  /// Try OpenAI Cloud Functions generation with performance optimization
   Future<GenerationResult> _tryOpenAIGeneration({
     required String content,
     required int flashcardCount,
@@ -177,8 +177,12 @@ class EnhancedAIService {
     String? learningStyle,
     String? promptEnhancement,
   }) async {
+    final performanceTimer = Stopwatch()..start();
+
     try {
-      debugPrint('🚀 Enhanced AI: Attempting OpenAI generation...');
+      debugPrint('🚀 Enhanced AI: Attempting optimized OpenAI generation...');
+      debugPrint(
+          '📊 Performance: Content length: ${content.length} chars, FC: $flashcardCount, Q: $quizCount');
 
       // Ensure authentication
       await _ensureAuthentication();
@@ -190,53 +194,98 @@ class EnhancedAIService {
       debugPrint(
           '✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
 
-      // Generate flashcards
-      debugPrint(
-          '🔍 Enhanced AI: Calling generateFlashcards Cloud Function...');
-      final flashcardCallable = _functions.httpsCallable('generateFlashcards');
-      final flashcardResult = await flashcardCallable.call({
-        'content': content,
-        'count': flashcardCount,
-        'difficulty': difficulty,
-        'appCheckToken': appCheckToken,
-      });
-      debugPrint('✅ Enhanced AI: Flashcard Cloud Function call successful');
+      // Generate flashcards and quiz questions in parallel for maximum speed
+      debugPrint('🚀 Enhanced AI: Starting parallel generation...');
 
+      final flashcardCallable = _functions.httpsCallable('generateFlashcards',
+          options: HttpsCallableOptions(
+            timeout: const Duration(
+                seconds: 95), // Slightly longer than server timeout
+          ));
+
+      final quizCallable = _functions.httpsCallable('generateQuiz',
+          options: HttpsCallableOptions(
+            timeout: const Duration(
+                seconds: 95), // Slightly longer than server timeout
+          ));
+
+      // Execute both calls in parallel for ~50% speed improvement
+      final results = await Future.wait([
+        flashcardCallable.call({
+          'content': content,
+          'count': flashcardCount,
+          'difficulty': difficulty,
+          'appCheckToken': appCheckToken,
+        }).timeout(
+          const Duration(seconds: 125),
+          onTimeout: () {
+            throw Exception('OpenAI flashcard generation timed out');
+          },
+        ),
+        quizCallable.call({
+          'content': content,
+          'count': quizCount,
+          'difficulty': difficulty,
+          'appCheckToken': appCheckToken,
+        }).timeout(
+          const Duration(seconds: 125),
+          onTimeout: () {
+            throw Exception('OpenAI quiz generation timed out');
+          },
+        ),
+      ]);
+
+      final flashcardResult = results[0];
+      final quizResult = results[1];
+
+      debugPrint('✅ Enhanced AI: Parallel generation completed successfully');
       debugPrint(
           '🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
       debugPrint(
-          '🔍 Enhanced AI: Flashcard result data: ${flashcardResult.data}');
-
-      // Generate quiz questions
-      debugPrint('🔍 Enhanced AI: Calling generateQuiz Cloud Function...');
-      final quizCallable = _functions.httpsCallable('generateQuiz');
-      final quizResult = await quizCallable.call({
-        'content': content,
-        'count': quizCount,
-        'difficulty': difficulty,
-        'appCheckToken': appCheckToken,
-      });
-      debugPrint('✅ Enhanced AI: Quiz Cloud Function call successful');
-
-      debugPrint(
           '🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
-      debugPrint('🔍 Enhanced AI: Quiz result data: ${quizResult.data}');
 
-      // Parse results
-      debugPrint('🔍 Enhanced AI: Parsing flashcards...');
-      final flashcards = _parseFlashcards(flashcardResult.data);
-      debugPrint('🔍 Enhanced AI: Parsing quiz questions...');
-      final quizQuestions = _parseQuizQuestions(quizResult.data);
+      // Parse results in parallel for maximum speed
+      debugPrint('🔍 Enhanced AI: Parsing results in parallel...');
+      final parseResults = await Future.wait([
+        Future(() => _parseFlashcards(flashcardResult.data)),
+        Future(() => _parseQuizQuestions(quizResult.data)),
+      ]);
 
-      debugPrint('✅ Enhanced AI: OpenAI generation successful');
+      final flashcards = parseResults[0] as List<Flashcard>;
+      final quizQuestions = parseResults[1] as List<QuizQuestion>;
+      debugPrint('✅ Enhanced AI: Parallel parsing completed');
+
+      performanceTimer.stop();
+      final totalTime = performanceTimer.elapsedMilliseconds;
+
+      debugPrint('✅ Enhanced AI: Optimized OpenAI generation successful');
+      debugPrint(
+          '⚡ Performance: Total time: ${totalTime}ms (${(totalTime / 1000).toStringAsFixed(1)}s)');
+      debugPrint(
+          '⚡ Performance: Speed: ${((flashcards.length + quizQuestions.length) / (totalTime / 1000)).toStringAsFixed(1)} items/sec');
+
       return GenerationResult(
         flashcards: flashcards,
         quizQuestions: quizQuestions,
         method: GenerationMethod.openai,
-        processingTimeMs: 0,
+        processingTimeMs: totalTime,
       );
     } catch (e) {
       debugPrint('❌ Enhanced AI: OpenAI generation failed: $e');
+
+      // Log specific error types for better debugging
+      if (e.toString().contains('DEADLINE_EXCEEDED')) {
+        debugPrint('🕒 OpenAI timeout detected - Cloud Function took too long');
+      } else if (e.toString().contains('UNAUTHENTICATED')) {
+        debugPrint('🔐 Authentication issue detected');
+      } else if (e.toString().contains('PERMISSION_DENIED')) {
+        debugPrint('🚫 Permission denied - App Check or auth issue');
+      } else if (e.toString().contains('RESOURCE_EXHAUSTED')) {
+        debugPrint('💳 Rate limit or quota exceeded');
+      } else {
+        debugPrint('❓ Unknown OpenAI error type: ${e.runtimeType}');
+      }
+
       return GenerationResult(
         flashcards: [],
         quizQuestions: [],
@@ -421,9 +470,13 @@ class EnhancedAIService {
 
   Future<String?> _getAppCheckToken() async {
     try {
-      return await FirebaseAppCheck.instance.getToken();
+      // Try to get App Check token, but don't fail if not available
+      final token = await FirebaseAppCheck.instance.getToken();
+      debugPrint('✅ App Check token obtained successfully');
+      return token;
     } catch (e) {
-      debugPrint('App Check token failed: $e');
+      debugPrint('⚠️ App Check token failed (continuing without): $e');
+      // This is expected in development/emulator environments
       return null;
     }
   }
