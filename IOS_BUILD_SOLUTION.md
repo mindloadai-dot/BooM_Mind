@@ -24,11 +24,11 @@ The iOS build is failing due to CocoaPods dependency resolution conflicts, speci
 
 ### 3. ✅ Updated iOS Deployment Target
 - Updated iOS deployment target from 15.0 to 16.0 to meet Firebase Messaging requirements
-- Updated all Firebase pod versions to ~> 12.0 for compatibility
+- Let Flutter plugins manage Firebase pod versions automatically for better compatibility
 
 ### 4. ✅ Updated Podfile
 - Added `install! 'cocoapods', :deterministic_uuids => false` to resolve UUID conflicts
-- Added custom `firebase_pods` function to force compatible Firebase versions (~> 12.0)
+- Removed explicit Firebase pod version constraints to let Flutter plugins manage dependencies
 - Enhanced post_install script with comprehensive Firebase pod configurations
 - Updated all deployment target references to iOS 16.0
 
