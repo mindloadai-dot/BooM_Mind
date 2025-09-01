@@ -131,6 +131,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             const SizedBox(height: 24),
             _buildSupportSection(),
             const SizedBox(height: 24),
+            _buildDebugSection(),
+            const SizedBox(height: 24),
             _buildSignOutButton(),
             const SizedBox(height: 32),
           ],
@@ -636,6 +638,50 @@ class _SettingsScreenState extends State<SettingsScreen>
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Feedback feature coming soon')),
               );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDebugSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.tokens.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.tokens.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bug_report,
+                color: context.tokens.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Debug Tools',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.tokens.textPrimary,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildPreferenceTile(
+            'Notification Debug',
+            'Test and debug notification scheduling',
+            Icons.notifications,
+            () {
+              Navigator.pushNamed(context, '/notification-debug');
             },
           ),
         ],

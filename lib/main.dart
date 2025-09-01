@@ -32,6 +32,7 @@ import 'package:mindload/screens/settings_screen.dart';
 import 'package:mindload/screens/profile_screen.dart';
 import 'package:mindload/screens/app_icon_demo_screen.dart';
 import 'package:mindload/screens/neurograph_screen.dart';
+import 'package:mindload/screens/notification_debug_screen.dart';
 import 'package:mindload/theme.dart';
 import 'dart:async';
 import 'dart:math';
@@ -214,6 +215,7 @@ class MindLoadApp extends StatelessWidget {
               '/profile': (context) => const ProfileScreen(),
               '/app-icon-demo': (context) => const AppIconDemoScreen(),
               '/neurograph': (context) => const NeuroGraphScreen(),
+              '/notification-debug': (context) => const NotificationDebugScreen(),
               '/profile/insights/neurograph': (context) =>
                   const NeuroGraphScreen(),
             },
