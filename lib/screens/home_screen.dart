@@ -115,6 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _checkBiometricSetup() {
     // 🔐 Check if user should be prompted for biometric authentication setup
     // This runs AFTER authentication check to ensure user is logged in first
+    // NOTE: This should only run once during initial setup, not on every app launch
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         final biometricService = BiometricAuthService.instance;

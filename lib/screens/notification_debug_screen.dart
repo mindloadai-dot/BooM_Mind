@@ -1,0 +1,310 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:mindload/services/notification_test_service.dart';
+import 'package:mindload/services/mindload_notification_service.dart';
+import 'package:mindload/services/deadline_service.dart';
+
+/// Notification Debug Screen for testing automatic scheduling
+class NotificationDebugScreen extends StatefulWidget {
+  const NotificationDebugScreen({super.key});
+
+  @override
+  State<NotificationDebugScreen> createState() => _NotificationDebugScreenState();
+}
+
+class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
+  String _statusMessage = 'Ready to test notifications';
+  bool _isLoading = false;
+  List<String> _logMessages = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notification Debug'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Status Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Status',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(_statusMessage),
+                    if (_isLoading) ...[
+                      const SizedBox(height: 8),
+                      const LinearProgressIndicator(),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Test Buttons
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildTestButton(
+                      '🧪 Run All Tests',
+                      () => _runAllTests(),
+                      Colors.blue,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '📅 Test Deadline Service',
+                      () => _testDeadlineService(),
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '📱 Test Instant Notification',
+                      () => _testInstantNotification(),
+                      Colors.orange,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '⏰ Test Scheduled Notification',
+                      () => _testScheduledNotification(),
+                      Colors.purple,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '🔍 Get Debug Info',
+                      () => _getDebugInfo(),
+                      Colors.teal,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '🧹 Clear All Notifications',
+                      () => _clearAllNotifications(),
+                      Colors.red,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Log Messages
+            if (_logMessages.isNotEmpty) ...[
+              Text(
+                'Debug Log',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListView.builder(
+                  itemCount: _logMessages.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      child: Text(
+                        _logMessages[index],
+                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestButton(String title, VoidCallback onPressed, Color color) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: Text(title),
+      ),
+    );
+  }
+
+  Future<void> _runAllTests() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Running comprehensive notification tests...';
+      _logMessages.clear();
+    });
+
+    try {
+      await NotificationTestService.runComprehensiveTests();
+      setState(() {
+        _statusMessage = 'All tests completed successfully!';
+        _logMessages.add('✅ Comprehensive tests completed');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Tests failed: $e';
+        _logMessages.add('❌ Tests failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _testDeadlineService() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Testing deadline service...';
+      _logMessages.clear();
+    });
+
+    try {
+      await NotificationTestService.testDeadlineService();
+      setState(() {
+        _statusMessage = 'Deadline service test completed!';
+        _logMessages.add('✅ Deadline service test completed');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Deadline service test failed: $e';
+        _logMessages.add('❌ Deadline service test failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _testInstantNotification() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Testing instant notification...';
+      _logMessages.clear();
+    });
+
+    try {
+      await MindLoadNotificationService.scheduleInstant(
+        '🧪 Debug Test',
+        'This is a test instant notification from debug screen',
+      );
+      setState(() {
+        _statusMessage = 'Instant notification sent!';
+        _logMessages.add('✅ Instant notification sent');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Instant notification failed: $e';
+        _logMessages.add('❌ Instant notification failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _testScheduledNotification() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Testing scheduled notification...';
+      _logMessages.clear();
+    });
+
+    try {
+      final futureTime = DateTime.now().add(const Duration(seconds: 5));
+      await MindLoadNotificationService.scheduleAt(
+        futureTime,
+        '🧪 Scheduled Debug Test',
+        'This notification was scheduled 5 seconds from now',
+        payload: 'debug_scheduled',
+      );
+      setState(() {
+        _statusMessage = 'Scheduled notification set for 5 seconds from now!';
+        _logMessages.add('✅ Scheduled notification set for ${futureTime.toString()}');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Scheduled notification failed: $e';
+        _logMessages.add('❌ Scheduled notification failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _getDebugInfo() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Getting debug information...';
+      _logMessages.clear();
+    });
+
+    try {
+      await NotificationTestService.getDebugInfo();
+      setState(() {
+        _statusMessage = 'Debug information retrieved!';
+        _logMessages.add('✅ Debug information retrieved');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Debug info failed: $e';
+        _logMessages.add('❌ Debug info failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _clearAllNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Clearing all notifications...';
+      _logMessages.clear();
+    });
+
+    try {
+      await NotificationTestService.clearTestNotifications();
+      setState(() {
+        _statusMessage = 'All notifications cleared!';
+        _logMessages.add('✅ All notifications cleared');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Clear notifications failed: $e';
+        _logMessages.add('❌ Clear notifications failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+}

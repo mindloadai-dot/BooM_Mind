@@ -305,6 +305,46 @@ class MindLoadNotificationService {
     }
   }
 
+  /// Cancel a specific notification by ID
+  static Future<void> cancelById(int id) async {
+    if (!_initialized) return;
+
+    try {
+      await _plugin.cancel(id);
+      debugPrint('✅ Notification cancelled with ID: $id');
+    } catch (e) {
+      debugPrint('❌ Failed to cancel notification with ID $id: $e');
+    }
+  }
+
+  /// Cancel multiple notifications by IDs
+  static Future<void> cancelByIds(List<int> ids) async {
+    if (!_initialized) return;
+
+    try {
+      for (final id in ids) {
+        await _plugin.cancel(id);
+      }
+      debugPrint('✅ ${ids.length} notifications cancelled');
+    } catch (e) {
+      debugPrint('❌ Failed to cancel notifications: $e');
+    }
+  }
+
+  /// Get all pending notifications (for debugging)
+  static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    if (!_initialized) return [];
+
+    try {
+      final pendingNotifications = await _plugin.pendingNotificationRequests();
+      debugPrint('📋 Found ${pendingNotifications.length} pending notifications');
+      return pendingNotifications;
+    } catch (e) {
+      debugPrint('❌ Failed to get pending notifications: $e');
+      return [];
+    }
+  }
+
   /// Fire first-run notification for first study set creation
   static Future<void> fireFirstStudySetNotificationIfNeeded() async {
     if (!_initialized) {

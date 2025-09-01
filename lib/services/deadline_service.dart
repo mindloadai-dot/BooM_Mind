@@ -8,6 +8,9 @@ class DeadlineService {
   static DeadlineService get instance => _instance;
   DeadlineService._();
 
+  // Track scheduled notifications by study set ID
+  static final Map<String, List<int>> _scheduledNotificationIds = {};
+
   /// Schedule all deadline notifications for a study set
   Future<void> scheduleDeadlineNotifications(StudySet studySet) async {
     if (!studySet.hasDeadline) return;
@@ -16,6 +19,10 @@ class DeadlineService {
     final now = DateTime.now();
     final studySetId = studySet.id;
     final title = studySet.title;
+
+    debugPrint('📅 Scheduling deadline notifications for study set: $studySetId');
+    debugPrint('📅 Deadline: $deadline');
+    debugPrint('📅 Current time: $now');
 
     // Cancel any existing notifications for this study set
     await cancelDeadlineNotifications(studySetId);
@@ -32,17 +39,40 @@ class DeadlineService {
           '⚡ Last Call: "$title" deadline in 2 hours - Final review time!',
     };
 
+    final List<int> scheduledIds = [];
+
     for (final entry in notificationSchedule.entries) {
       final notificationTime = deadline.subtract(entry.key);
 
       // Only schedule if the notification time is in the future
       if (notificationTime.isAfter(now)) {
-        await MindLoadNotificationService.scheduleAt(
-          notificationTime,
-          'Study Deadline Approaching',
-          entry.value,
-        );
+        debugPrint('📅 Scheduling notification for: ${notificationTime.toString()}');
+        
+        try {
+          // Generate a unique ID for this notification
+          final notificationId = _generateNotificationId(studySetId, entry.key);
+          
+          await MindLoadNotificationService.scheduleAt(
+            notificationTime,
+            'Study Deadline Approaching',
+            entry.value,
+            payload: 'deadline_${studySetId}_${entry.key.inDays}',
+          );
+          
+          scheduledIds.add(notificationId);
+          debugPrint('✅ Deadline notification scheduled: ${entry.value}');
+        } catch (e) {
+          debugPrint('❌ Failed to schedule deadline notification: $e');
+        }
+      } else {
+        debugPrint('⚠️ Skipping notification in the past: ${notificationTime.toString()}');
       }
+    }
+
+    // Store the scheduled notification IDs for this study set
+    if (scheduledIds.isNotEmpty) {
+      _scheduledNotificationIds[studySetId] = scheduledIds;
+      debugPrint('📅 Stored ${scheduledIds.length} notification IDs for study set: $studySetId');
     }
 
     // Schedule motivational message right after creation/update
@@ -77,19 +107,55 @@ class DeadlineService {
           '"$title" deadline passed $daysPast days ago. Time for focused catch-up! 🔥';
     }
 
-    await MindLoadNotificationService.scheduleAt(
-      DateTime.now().add(const Duration(seconds: 3)),
-      '🎯 Study Plan Update',
-      motivationMessage,
-    );
+    try {
+      await MindLoadNotificationService.scheduleAt(
+        DateTime.now().add(const Duration(seconds: 3)),
+        '🎯 Study Plan Update',
+        motivationMessage,
+        payload: 'motivation_${studySet.id}',
+      );
+      debugPrint('✅ Motivational message scheduled for study set: ${studySet.id}');
+    } catch (e) {
+      debugPrint('❌ Failed to schedule motivational message: $e');
+    }
   }
 
   /// Cancel all deadline notifications for a specific study set
   Future<void> cancelDeadlineNotifications(String studySetId) async {
-    // In a real implementation, this would cancel specific notifications
-    // For now, we'll use a simple approach
-    debugPrint(
-        '📅 Canceling deadline notifications for study set: $studySetId');
+    debugPrint('📅 Canceling deadline notifications for study set: $studySetId');
+    
+    try {
+      // Get the scheduled notification IDs for this study set
+      final notificationIds = _scheduledNotificationIds[studySetId];
+      
+      if (notificationIds != null && notificationIds.isNotEmpty) {
+        debugPrint('📅 Found ${notificationIds.length} notifications to cancel for study set: $studySetId');
+        
+        // Cancel each specific notification
+        for (final id in notificationIds) {
+          try {
+            await MindLoadNotificationService.cancelById(id);
+            debugPrint('📅 Cancelled notification ID: $id');
+          } catch (e) {
+            debugPrint('❌ Failed to cancel notification ID $id: $e');
+          }
+        }
+        
+        // Remove the tracking for this study set
+        _scheduledNotificationIds.remove(studySetId);
+        debugPrint('📅 Removed notification tracking for study set: $studySetId');
+      } else {
+        debugPrint('📅 No scheduled notifications found for study set: $studySetId');
+      }
+    } catch (e) {
+      debugPrint('❌ Error canceling deadline notifications: $e');
+    }
+  }
+
+  /// Generate a unique notification ID for a study set and duration
+  int _generateNotificationId(String studySetId, Duration duration) {
+    final hash = '$studySetId${duration.inDays}${duration.inHours}'.hashCode;
+    return hash.abs() % 2147483647; // Ensure positive 32-bit int
   }
 
   /// Get study sets that have deadlines today
@@ -137,6 +203,9 @@ class DeadlineService {
 
   /// Update deadline for an existing study set
   Future<void> updateDeadline(StudySet studySet, DateTime? newDeadline) async {
+    debugPrint('📅 Updating deadline for study set: ${studySet.id}');
+    debugPrint('📅 New deadline: $newDeadline');
+    
     // Cancel existing notifications
     await cancelDeadlineNotifications(studySet.id);
 
@@ -146,6 +215,9 @@ class DeadlineService {
     // Schedule new notifications if deadline is set
     if (newDeadline != null) {
       await scheduleDeadlineNotifications(updatedSet);
+      debugPrint('✅ Deadline updated and notifications scheduled for study set: ${studySet.id}');
+    } else {
+      debugPrint('✅ Deadline removed for study set: ${studySet.id}');
     }
   }
 
@@ -153,30 +225,23 @@ class DeadlineService {
   String getDeadlineStatusMessage(StudySet studySet) {
     if (!studySet.hasDeadline) return 'No deadline set';
 
-    if (studySet.isOverdue) {
-      final daysPast = DateTime.now().difference(studySet.deadlineDate!).inDays;
-      return daysPast == 0
-          ? 'Deadline was today'
-          : daysPast == 1
-              ? 'Overdue by 1 day'
-              : 'Overdue by $daysPast days';
+    final now = DateTime.now();
+    final deadline = studySet.deadlineDate!;
+    final difference = deadline.difference(now);
+
+    if (difference.isNegative) {
+      final daysPast = difference.inDays.abs();
+      return 'Overdue by $daysPast day${daysPast == 1 ? '' : 's'}';
+    } else if (difference.inDays == 0) {
+      final hoursLeft = difference.inHours;
+      if (hoursLeft == 0) {
+        final minutesLeft = difference.inMinutes;
+        return 'Due in $minutesLeft minute${minutesLeft == 1 ? '' : 's'}';
+      }
+      return 'Due in $hoursLeft hour${hoursLeft == 1 ? '' : 's'}';
+    } else {
+      return 'Due in ${difference.inDays} day${difference.inDays == 1 ? '' : 's'}';
     }
-
-    if (studySet.isDeadlineToday) return 'Due today';
-    if (studySet.isDeadlineTomorrow) return 'Due tomorrow';
-
-    final daysUntil = studySet.daysUntilDeadline!;
-    if (daysUntil <= 7) {
-      return daysUntil == 1 ? 'Due in 1 day' : 'Due in $daysUntil days';
-    }
-
-    if (daysUntil <= 30) {
-      final weeks = (daysUntil / 7).ceil();
-      return weeks == 1 ? 'Due in 1 week' : 'Due in $weeks weeks';
-    }
-
-    final months = (daysUntil / 30).ceil();
-    return months == 1 ? 'Due in 1 month' : 'Due in $months months';
   }
 
   /// Check if any deadlines are approaching and send summary notification
@@ -208,11 +273,27 @@ class DeadlineService {
 
       message += 'Open Mindload to stay on track!';
 
-      await MindLoadNotificationService.scheduleAt(
-        DateTime.now().add(const Duration(seconds: 1)),
-        'Deadline Summary',
-        message.trim(),
-      );
+      try {
+        await MindLoadNotificationService.scheduleAt(
+          DateTime.now().add(const Duration(seconds: 1)),
+          'Deadline Summary',
+          message.trim(),
+          payload: 'deadline_summary',
+        );
+        debugPrint('✅ Deadline summary notification scheduled');
+      } catch (e) {
+        debugPrint('❌ Failed to schedule deadline summary notification: $e');
+      }
     }
+  }
+
+  /// Get the number of scheduled notifications for a study set
+  int getScheduledNotificationCount(String studySetId) {
+    return _scheduledNotificationIds[studySetId]?.length ?? 0;
+  }
+
+  /// Get all scheduled notification IDs for debugging
+  Map<String, List<int>> getAllScheduledNotifications() {
+    return Map.from(_scheduledNotificationIds);
   }
 }

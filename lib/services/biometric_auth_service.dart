@@ -18,17 +18,20 @@ class BiometricAuthService extends ChangeNotifier {
   static const String _biometricPromptShownKey = 'biometric_prompt_shown';
   static const String _biometricSetupCompletedKey = 'biometric_setup_completed';
   static const String _lastBiometricUserKey = 'last_biometric_user';
+  static const String _biometricLoginEnabledKey = 'biometric_login_enabled';
 
   bool _isBiometricEnabled = false;
   bool _hasPromptBeenShown = false;
   bool _isSetupCompleted = false;
   String? _lastBiometricUser;
+  bool _isBiometricLoginEnabled = false;
 
   // Getters
   bool get isBiometricEnabled => _isBiometricEnabled;
   bool get hasPromptBeenShown => _hasPromptBeenShown;
   bool get isSetupCompleted => _isSetupCompleted;
   String? get lastBiometricUser => _lastBiometricUser;
+  bool get isBiometricLoginEnabled => _isBiometricLoginEnabled;
 
   /// Initialize the biometric service
   Future<void> initialize() async {
@@ -55,10 +58,13 @@ class BiometricAuthService extends ChangeNotifier {
       _isSetupCompleted =
           (await userStorage.getBool(_biometricSetupCompletedKey)) ?? false;
       _lastBiometricUser = await userStorage.getString(_lastBiometricUserKey);
+      _isBiometricLoginEnabled =
+          (await userStorage.getBool(_biometricLoginEnabledKey)) ?? false;
 
       if (kDebugMode) {
         debugPrint('✅ BiometricAuthService initialized');
         debugPrint('   Biometric enabled: $_isBiometricEnabled');
+        debugPrint('   Biometric login enabled: $_isBiometricLoginEnabled');
         debugPrint('   Prompt shown: $_hasPromptBeenShown');
         debugPrint('   Setup completed: $_isSetupCompleted');
         debugPrint('   Last user: $_lastBiometricUser');
@@ -78,6 +84,7 @@ class BiometricAuthService extends ChangeNotifier {
     _hasPromptBeenShown = false;
     _isSetupCompleted = false;
     _lastBiometricUser = null;
+    _isBiometricLoginEnabled = false;
     notifyListeners();
   }
 
@@ -130,13 +137,81 @@ class BiometricAuthService extends ChangeNotifier {
   /// Check if the user should be prompted for biometric setup
   /// Returns true if:
   /// 1. Biometric is available
-  /// 2. User hasn't been prompted before
+  /// 2. User hasn't been prompted before OR is a different user
   /// 3. User is authenticated
-  /// 4. Setup hasn't been completed
+  /// 4. Biometric is not already enabled
   Future<bool> shouldShowBiometricPrompt() async {
     try {
       // Must be authenticated first
       if (!AuthService.instance.isAuthenticated) {
+        if (kDebugMode) {
+          debugPrint('🔒 Biometric prompt: User not authenticated');
+        }
+        return false;
+      }
+
+      // Check if biometric is available
+      if (!await isBiometricAvailable()) {
+        if (kDebugMode) {
+          debugPrint('🔒 Biometric prompt: Biometric not available');
+        }
+        return false;
+      }
+
+      // Check if we've already shown the prompt for this user
+      final currentUser = AuthService.instance.currentUser;
+      if (currentUser == null) {
+        if (kDebugMode) {
+          debugPrint('🔒 Biometric prompt: No current user');
+        }
+        return false;
+      }
+
+      // If biometric is already enabled for this user, don't show prompt
+      if (_isBiometricEnabled && _lastBiometricUser == currentUser.uid) {
+        if (kDebugMode) {
+          debugPrint('🔒 Biometric prompt: Already enabled for current user');
+        }
+        return false;
+      }
+
+      // If prompt was shown for a different user, show it again
+      if (_lastBiometricUser != null && _lastBiometricUser != currentUser.uid) {
+        if (kDebugMode) {
+          debugPrint('🔒 Biometric prompt: Different user, showing prompt');
+        }
+        return true;
+      }
+
+      // Show if prompt hasn't been shown and setup isn't completed
+      final shouldShow = !_hasPromptBeenShown && !_isSetupCompleted;
+      if (kDebugMode) {
+        debugPrint('🔒 Biometric prompt: Should show = $shouldShow (prompt shown: $_hasPromptBeenShown, setup completed: $_isSetupCompleted)');
+      }
+      return shouldShow;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error checking if should show biometric prompt: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Check if biometric login should be used for app startup
+  /// Returns true if:
+  /// 1. Biometric is enabled
+  /// 2. Biometric login is enabled
+  /// 3. User is authenticated
+  /// 4. Biometric is available
+  Future<bool> shouldUseBiometricLogin() async {
+    try {
+      // Must be authenticated first
+      if (!AuthService.instance.isAuthenticated) {
+        return false;
+      }
+
+      // Check if biometric is enabled and login is enabled
+      if (!_isBiometricEnabled || !_isBiometricLoginEnabled) {
         return false;
       }
 
@@ -145,22 +220,16 @@ class BiometricAuthService extends ChangeNotifier {
         return false;
       }
 
-      // Check if we've already shown the prompt for this user
+      // Check if this is the same user who enabled biometric
       final currentUser = AuthService.instance.currentUser;
-      if (currentUser == null) {
+      if (currentUser == null || _lastBiometricUser != currentUser.uid) {
         return false;
       }
 
-      // If prompt was shown for a different user, show it again
-      if (_lastBiometricUser != null && _lastBiometricUser != currentUser.uid) {
-        return true;
-      }
-
-      // Show if prompt hasn't been shown and setup isn't completed
-      return !_hasPromptBeenShown && !_isSetupCompleted;
+      return true;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error checking if should show biometric prompt: $e');
+        debugPrint('❌ Error checking if should use biometric login: $e');
       }
       return false;
     }
@@ -222,13 +291,15 @@ class BiometricAuthService extends ChangeNotifier {
       );
 
       if (didAuthenticate) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(_biometricEnabledKey, true);
-        await prefs.setBool(_biometricSetupCompletedKey, true);
-        await prefs.setString(_lastBiometricUserKey, currentUser.uid);
+        final userStorage = UserSpecificStorageService.instance;
+        await userStorage.setBool(_biometricEnabledKey, true);
+        await userStorage.setBool(_biometricSetupCompletedKey, true);
+        await userStorage.setBool(_biometricLoginEnabledKey, true);
+        await userStorage.setString(_lastBiometricUserKey, currentUser.uid);
 
         _isBiometricEnabled = true;
         _isSetupCompleted = true;
+        _isBiometricLoginEnabled = true;
         _lastBiometricUser = currentUser.uid;
 
         notifyListeners();
@@ -256,10 +327,12 @@ class BiometricAuthService extends ChangeNotifier {
   /// Disable biometric authentication
   Future<void> disableBiometric() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_biometricEnabledKey, false);
+      final userStorage = UserSpecificStorageService.instance;
+      await userStorage.setBool(_biometricEnabledKey, false);
+      await userStorage.setBool(_biometricLoginEnabledKey, false);
 
       _isBiometricEnabled = false;
+      _isBiometricLoginEnabled = false;
 
       notifyListeners();
 
@@ -276,13 +349,13 @@ class BiometricAuthService extends ChangeNotifier {
   /// Skip biometric setup (user chose not to enable it)
   Future<void> skipBiometricSetup() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
       final currentUser = AuthService.instance.currentUser;
 
       if (currentUser != null) {
-        await prefs.setBool(_biometricPromptShownKey, true);
-        await prefs.setBool(_biometricSetupCompletedKey, true);
-        await prefs.setString(_lastBiometricUserKey, currentUser.uid);
+        final userStorage = UserSpecificStorageService.instance;
+        await userStorage.setBool(_biometricPromptShownKey, true);
+        await userStorage.setBool(_biometricSetupCompletedKey, true);
+        await userStorage.setString(_lastBiometricUserKey, currentUser.uid);
 
         _hasPromptBeenShown = true;
         _isSetupCompleted = true;
@@ -301,7 +374,7 @@ class BiometricAuthService extends ChangeNotifier {
     }
   }
 
-  /// Authenticate using biometrics
+  /// Authenticate using biometrics for login
   Future<bool> authenticateWithBiometric({
     String reason = 'Please authenticate to access your account',
   }) async {
@@ -341,19 +414,41 @@ class BiometricAuthService extends ChangeNotifier {
     }
   }
 
+  /// Toggle biometric login (enable/disable for future app launches)
+  Future<void> toggleBiometricLogin(bool enabled) async {
+    try {
+      final userStorage = UserSpecificStorageService.instance;
+      await userStorage.setBool(_biometricLoginEnabledKey, enabled);
+
+      _isBiometricLoginEnabled = enabled;
+
+      notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('✅ Biometric login ${enabled ? 'enabled' : 'disabled'}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to toggle biometric login: $e');
+      }
+    }
+  }
+
   /// Reset biometric settings (useful for testing or user request)
   Future<void> resetBiometricSettings() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_biometricEnabledKey);
-      await prefs.remove(_biometricPromptShownKey);
-      await prefs.remove(_biometricSetupCompletedKey);
-      await prefs.remove(_lastBiometricUserKey);
+      final userStorage = UserSpecificStorageService.instance;
+      await userStorage.remove(_biometricEnabledKey);
+      await userStorage.remove(_biometricPromptShownKey);
+      await userStorage.remove(_biometricSetupCompletedKey);
+      await userStorage.remove(_lastBiometricUserKey);
+      await userStorage.remove(_biometricLoginEnabledKey);
 
       _isBiometricEnabled = false;
       _hasPromptBeenShown = false;
       _isSetupCompleted = false;
       _lastBiometricUser = null;
+      _isBiometricLoginEnabled = false;
 
       notifyListeners();
 

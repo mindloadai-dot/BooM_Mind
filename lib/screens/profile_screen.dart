@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
+import 'package:mindload/services/biometric_auth_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
@@ -143,10 +144,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _loadBiometricPreference() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+      final biometricService = BiometricAuthService.instance;
       setState(() {
-        _biometricEnabled = biometricEnabled;
+        _biometricEnabled = biometricService.isBiometricEnabled;
       });
     } catch (e) {
       if (kDebugMode) {
@@ -173,39 +173,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _toggleBiometric(bool value) async {
     try {
+      final biometricService = BiometricAuthService.instance;
+      
       if (value) {
         // Enable biometric authentication
-        // First check if biometrics are available
-        final isAvailable = await _localAuth.canCheckBiometrics;
-        final isDeviceSupported = await _localAuth.isDeviceSupported();
-
-        if (!isAvailable || !isDeviceSupported) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                    'Biometric authentication is not available on this device'),
-                backgroundColor: context.tokens.error,
-              ),
-            );
-          }
-          return;
-        }
-
-        // Test biometric authentication
-        final authenticated = await _localAuth.authenticate(
-          localizedReason: 'Authenticate to enable biometric login',
-          options: const AuthenticationOptions(
-            biometricOnly: true,
-            stickyAuth: true,
-          ),
-        );
-
-        if (authenticated) {
-          // Save preference to storage
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('biometric_enabled', true);
-
+        final success = await biometricService.enableBiometric();
+        
+        if (success) {
           setState(() {
             _biometricEnabled = true;
           });
@@ -222,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Biometric authentication failed'),
+                content: const Text('Failed to enable biometric authentication'),
                 backgroundColor: context.tokens.error,
               ),
             );
@@ -230,41 +204,19 @@ class _ProfileScreenState extends State<ProfileScreen>
         }
       } else {
         // Disable biometric authentication
-        // Require user to authenticate before disabling
-        final authenticated = await _localAuth.authenticate(
-          localizedReason: 'Authenticate to disable biometric login',
-          options: const AuthenticationOptions(
-            biometricOnly: true,
-            stickyAuth: true,
-          ),
-        );
+        await biometricService.disableBiometric();
 
-        if (authenticated) {
-          // Save preference to storage
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('biometric_enabled', false);
+        setState(() {
+          _biometricEnabled = false;
+        });
 
-          setState(() {
-            _biometricEnabled = false;
-          });
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Biometric authentication disabled'),
-                backgroundColor: context.tokens.success,
-              ),
-            );
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Authentication failed'),
-                backgroundColor: context.tokens.error,
-              ),
-            );
-          }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Biometric authentication disabled'),
+              backgroundColor: context.tokens.success,
+            ),
+          );
         }
       }
     } catch (e) {
@@ -1203,50 +1155,104 @@ class _ProfileScreenState extends State<ProfileScreen>
                   color: context.tokens.outline.withOpacity(0.2),
                 ),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.tokens.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.fingerprint,
-                      color: context.tokens.primary,
-                      size: 24,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.tokens.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.fingerprint,
+                          color: context.tokens.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Biometric Authentication',
+                              style:
+                                  Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: context.tokens.textPrimary,
+                                      ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Use fingerprint, face ID, or PIN for quick access',
+                              style:
+                                  Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: context.tokens.textSecondary,
+                                      ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _biometricEnabled,
+                        onChanged: _toggleBiometric,
+                        activeColor: context.tokens.primary,
+                        activeTrackColor: context.tokens.primary.withOpacity(0.3),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Biometric Authentication',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                  if (_biometricEnabled) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: context.tokens.surface.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.login,
+                            size: 20,
+                            color: context.tokens.textSecondary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Require biometric login at app startup',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
                                     color: context.tokens.textPrimary,
                                   ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Use fingerprint, face ID, or PIN for quick access',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Use biometric authentication every time you open the app',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: context.tokens.textSecondary,
                                   ),
-                        ),
-                      ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: BiometricAuthService.instance.isBiometricLoginEnabled,
+                            onChanged: (value) async {
+                              await BiometricAuthService.instance.toggleBiometricLogin(value);
+                              setState(() {}); // Refresh UI
+                            },
+                            activeColor: context.tokens.primary,
+                            activeTrackColor: context.tokens.primary.withOpacity(0.3),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Switch(
-                    value: _biometricEnabled,
-                    onChanged: _toggleBiometric,
-                    activeColor: context.tokens.primary,
-                    activeTrackColor: context.tokens.primary.withOpacity(0.3),
-                  ),
+                  ],
                 ],
               ),
             ),

@@ -23,6 +23,7 @@ import 'package:mindload/config/environment_config.dart';
 
 import 'package:mindload/screens/social_auth_screen.dart';
 import 'package:mindload/screens/home_screen.dart';
+import 'package:mindload/screens/biometric_login_screen.dart';
 import 'package:mindload/screens/modern_onboarding_screen.dart';
 import 'package:mindload/screens/logic_packs_screen.dart';
 import 'package:mindload/screens/my_plan_screen.dart';
@@ -204,6 +205,7 @@ class MindLoadApp extends StatelessWidget {
             routes: {
               '/social-auth': (context) => const SocialAuthScreen(),
               '/home': (context) => const HomeScreen(),
+              '/biometric-login': (context) => const BiometricLoginScreen(),
               '/onboarding': (context) => const ModernOnboardingScreen(),
               '/logic-packs': (context) => const LogicPacksScreen(),
               '/my-plan': (context) => const MyPlanScreen(),
@@ -634,8 +636,8 @@ class AppInitializerState extends State<AppInitializer>
     }
 
     // App is initialized - show main app logic with STRICT authentication priority
-    return Consumer3<AuthService, UnifiedOnboardingService, ThemeManager>(
-      builder: (context, authService, onboardingService, themeManager, child) {
+    return Consumer4<AuthService, UnifiedOnboardingService, BiometricAuthService, ThemeManager>(
+      builder: (context, authService, onboardingService, biometricService, themeManager, child) {
         // 🔐 CRITICAL: Authentication is ALWAYS first priority - NO EXCEPTIONS!
         if (authService.currentUser == null) {
           debugPrint(
@@ -645,6 +647,12 @@ class AppInitializerState extends State<AppInitializer>
 
         debugPrint(
             '🔐 AppInitializer: User authenticated: ${authService.currentUser!.email}');
+
+        // 🔒 Check if biometric login should be used
+        if (biometricService.isBiometricLoginEnabled) {
+          debugPrint('🔒 AppInitializer: Biometric login enabled - showing BiometricLoginScreen');
+          return const BiometricLoginScreen();
+        }
 
         // ✅ User is authenticated - now check onboarding (shows ONLY ONCE after first install)
         // CRITICAL: Once onboarding is completed, it will NEVER show again - NO EXCEPTIONS!
