@@ -126,6 +126,13 @@ class _CreateScreenState extends State<CreateScreen>
         _suggestTitleFromText(_contentController.text.trim());
       }
     });
+
+    // Auto-populate title when moving to Step 4 if title is empty
+    _pageController.addListener(() {
+      if (_currentStep == 3 && _titleController.text.trim().isEmpty && _hasContent()) {
+        _autoPopulateTitleFromContent();
+      }
+    });
   }
 
   void _initializeAnimations() {
@@ -213,6 +220,8 @@ class _CreateScreenState extends State<CreateScreen>
 
   /// Build step indicator
   Widget _buildStepIndicator(SemanticTokens tokens) {
+    final stepNames = ['Source', 'Content', 'Options', 'Review'];
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -267,6 +276,24 @@ class _CreateScreenState extends State<CreateScreen>
                   ),
                 ),
 
+                // Step name
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    stepNames[index],
+                    style: TextStyle(
+                      color: isActive
+                          ? tokens.primary
+                          : isCompleted
+                              ? tokens.textPrimary
+                              : tokens.textSecondary,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
                 // Connector line
                 if (index < _totalSteps - 1)
                   Expanded(
@@ -305,7 +332,7 @@ class _CreateScreenState extends State<CreateScreen>
     }
   }
 
-  /// Step 1: Basic Information
+  /// Step 1: Content Source Selection
   Widget _buildStep1Content(SemanticTokens tokens) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,67 +340,9 @@ class _CreateScreenState extends State<CreateScreen>
         // Header
         _buildStepHeader(
           tokens,
-          'Basic Information',
-          'Let\'s start with the basics for your study set',
-          Icons.info_outline,
-        ),
-
-        const SizedBox(height: 24),
-
-        // Title input card
-        _buildModernCard(
-          tokens,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCardHeader(tokens, 'Study Set Title', Icons.title),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _titleController,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: tokens.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Enter a descriptive title...',
-                  hintStyle: TextStyle(
-                    color: tokens.textTertiary,
-                    fontSize: 16,
-                  ),
-                  filled: true,
-                  fillColor: tokens.surfaceAlt,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                ),
-              ),
-              if (_isTitleAutoPopulated) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 16,
-                      color: tokens.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Auto-generated title',
-                      style: TextStyle(
-                        color: tokens.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
+          'Content Source',
+          'Choose how you want to add your study material',
+          Icons.input,
         ),
 
         const SizedBox(height: 24),
@@ -384,7 +353,7 @@ class _CreateScreenState extends State<CreateScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCardHeader(tokens, 'Content Source', Icons.input),
+              _buildCardHeader(tokens, 'Select Content Source', Icons.input),
               const SizedBox(height: 16),
               _buildContentTypeSelector(tokens),
             ],
@@ -513,6 +482,73 @@ class _CreateScreenState extends State<CreateScreen>
           'Review & Generate',
           'Review your settings and create your study set',
           Icons.preview,
+        ),
+
+        const SizedBox(height: 24),
+
+        // Title input card (moved to last step)
+        _buildModernCard(
+          tokens,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCardHeader(tokens, 'Study Set Title', Icons.title),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _titleController,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: tokens.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter a descriptive title...',
+                  hintStyle: TextStyle(
+                    color: tokens.textTertiary,
+                    fontSize: 16,
+                  ),
+                  filled: true,
+                  fillColor: tokens.surfaceAlt,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              if (_isTitleAutoPopulated) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: tokens.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Auto-generated title from content',
+                      style: TextStyle(
+                        color: tokens.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                'The title has been auto-generated from your content. Feel free to customize it!',
+                style: TextStyle(
+                  color: tokens.textSecondary,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
         ),
 
         const SizedBox(height: 24),
@@ -1014,7 +1050,8 @@ class _CreateScreenState extends State<CreateScreen>
             _titleController.text.isNotEmpty
                 ? _titleController.text
                 : 'Not set',
-            Icons.title),
+            Icons.title,
+            isAutoGenerated: _isTitleAutoPopulated),
         _buildSummaryItem(
             tokens, 'Content Source', _getContentSourceLabel(), Icons.input),
         _buildSummaryItem(
@@ -1033,8 +1070,9 @@ class _CreateScreenState extends State<CreateScreen>
     SemanticTokens tokens,
     String label,
     String value,
-    IconData icon,
-  ) {
+    IconData icon, {
+    bool isAutoGenerated = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -1049,13 +1087,34 @@ class _CreateScreenState extends State<CreateScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: tokens.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: tokens.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (isAutoGenerated) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 12,
+                        color: tokens.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Auto-generated',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: tokens.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 Text(
                   value,
@@ -1129,13 +1188,13 @@ class _CreateScreenState extends State<CreateScreen>
   bool _canProceedToNext() {
     switch (_currentStep) {
       case 0:
-        return _titleController.text.trim().isNotEmpty;
+        return _contentInputType.isNotEmpty; // Just need to select content type
       case 1:
         return _hasContent();
       case 2:
         return _generateFlashcards || _generateQuizzes;
       case 3:
-        return true;
+        return _titleController.text.trim().isNotEmpty; // Title required in final step
       default:
         return false;
     }
@@ -1161,6 +1220,12 @@ class _CreateScreenState extends State<CreateScreen>
       setState(() {
         _currentStep++;
       });
+      
+      // Auto-populate title when moving to Step 4
+      if (_currentStep == 3) {
+        _autoPopulateTitleFromContent();
+      }
+      
       _fadeController.reset();
       _fadeController.forward();
     } else {
@@ -2068,6 +2133,30 @@ class _CreateScreenState extends State<CreateScreen>
 
     // Add "Study Set:" prefix
     return 'Study Set: $title';
+  }
+
+  /// Auto-populate title from content when moving to final step
+  void _autoPopulateTitleFromContent() {
+    if (_titleController.text.trim().isNotEmpty) return; // Don't override if user already set title
+    
+    String suggestedTitle = '';
+    
+    if (_contentInputType == 'text' && _contentController.text.trim().isNotEmpty) {
+      suggestedTitle = _generateTextTitle(_contentController.text.trim());
+    } else if (_currentYouTubePreview != null) {
+      suggestedTitle = _generateYouTubeTitle(_currentYouTubePreview!);
+    } else if (_uploadedDocument != null) {
+      suggestedTitle = _generateDocumentTitle(_uploadedDocument!.name);
+    }
+    
+    if (suggestedTitle.isNotEmpty) {
+      _titleController.text = suggestedTitle;
+      _isTitleAutoPopulated = true;
+      
+      if (kDebugMode) {
+        print('📝 Auto-populated title in Step 4: $suggestedTitle');
+      }
+    }
   }
 
   /// Suggest title from text content
