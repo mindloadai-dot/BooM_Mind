@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mindload/services/notification_test_service.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
 import 'package:mindload/services/deadline_service.dart';
+import 'package:mindload/models/study_data.dart';
 
 /// Notification Debug Screen for testing automatic scheduling
 class NotificationDebugScreen extends StatefulWidget {
@@ -93,6 +94,12 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
                       '🧹 Clear All Notifications',
                       () => _clearAllNotifications(),
                       Colors.red,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '📚 Create Test Study Set with Deadline',
+                      () => _createTestStudySetWithDeadline(),
+                      Colors.indigo,
                     ),
                   ],
                 ),
@@ -300,6 +307,63 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
       setState(() {
         _statusMessage = 'Clear notifications failed: $e';
         _logMessages.add('❌ Clear notifications failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _createTestStudySetWithDeadline() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Creating test study set with deadline...';
+      _logMessages.clear();
+    });
+
+    try {
+      // Create a test study set with deadline in 2 days
+      final testStudySet = StudySet(
+        id: 'test_deadline_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Test Study Set - Deadline Notifications',
+        content: 'This is a test study set to verify automatic notification scheduling.',
+        flashcards: [],
+        createdDate: DateTime.now(),
+        lastStudied: DateTime.now(),
+        deadlineDate: DateTime.now().add(const Duration(days: 2)), // Deadline in 2 days
+        notificationsEnabled: true,
+      );
+      
+      _logMessages.add('📚 Created test study set: ${testStudySet.title}');
+      _logMessages.add('📅 Deadline: ${testStudySet.deadlineDate}');
+      
+      // Schedule notifications for this study set
+      final deadlineService = DeadlineService.instance;
+      await deadlineService.scheduleDeadlineNotifications(testStudySet);
+      
+      _logMessages.add('✅ Notifications scheduled for test study set');
+      
+      // Get pending notifications to verify
+      final pendingNotifications = await MindLoadNotificationService.getPendingNotifications();
+      _logMessages.add('📋 Pending notifications: ${pendingNotifications.length}');
+      
+      for (final notification in pendingNotifications) {
+        _logMessages.add('  - ID: ${notification.id}, Title: ${notification.title}');
+      }
+      
+      setState(() {
+        _statusMessage = 'Test study set created with deadline! Check notifications in 2 days.';
+        _logMessages.add('🎉 Test study set created successfully!');
+        _logMessages.add('📱 You will receive notifications at:');
+        _logMessages.add('   - 3 days before deadline');
+        _logMessages.add('   - 1 day before deadline');
+        _logMessages.add('   - On the deadline day');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Failed to create test study set: $e';
+        _logMessages.add('❌ Failed to create test study set: $e');
       });
     } finally {
       setState(() {
