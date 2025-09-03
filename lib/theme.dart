@@ -14,7 +14,10 @@ enum AppTheme {
   cyberNeon('cyber_neon'), // renamed to match requirement
   darkMode('dark_mode'), // renamed to match requirement
   minimal('minimal'),
-  purpleNeon('purple_neon'); // New Purple Neon theme
+  purpleNeon('purple_neon'), // New Purple Neon theme
+  oceanDepths('ocean_depths'), // New Ocean Depths theme
+  sunsetGlow('sunset_glow'), // New Sunset Glow theme
+  forestNight('forest_night'); // New Forest Night theme
 
   const AppTheme(this.id);
   final String id;
@@ -272,19 +275,25 @@ class ThemeManager extends ChangeNotifier {
   String getThemeDisplayName(AppTheme theme) {
     switch (theme) {
       case AppTheme.classic:
-        return 'Classic';
+        return 'Scholar\'s Haven';
       case AppTheme.purpleNeon:
-        return 'Purple Neon';
+        return 'Neon Dreams';
       case AppTheme.matrix:
-        return 'Matrix';
+        return 'Digital Rain';
       case AppTheme.retro:
-        return 'Retro';
+        return 'Synthwave Nights';
       case AppTheme.cyberNeon:
-        return 'Cyber Neon';
+        return 'Electric Pulse';
       case AppTheme.darkMode:
-        return 'Dark Mode';
+        return 'Midnight Focus';
       case AppTheme.minimal:
-        return 'Minimal';
+        return 'Pure Zen';
+      case AppTheme.oceanDepths:
+        return 'Abyssal Depths';
+      case AppTheme.sunsetGlow:
+        return 'Golden Hour';
+      case AppTheme.forestNight:
+        return 'Emerald Shadows';
     }
   }
 
@@ -304,6 +313,12 @@ class ThemeManager extends ChangeNotifier {
         return Icons.dark_mode;
       case AppTheme.minimal:
         return Icons.circle_outlined;
+      case AppTheme.oceanDepths:
+        return Icons.waves;
+      case AppTheme.sunsetGlow:
+        return Icons.wb_sunny;
+      case AppTheme.forestNight:
+        return Icons.forest;
     }
   }
 
@@ -323,6 +338,12 @@ class ThemeManager extends ChangeNotifier {
         return AppTheme.darkMode;
       case 'minimal':
         return AppTheme.minimal;
+      case 'ocean_depths':
+        return AppTheme.oceanDepths;
+      case 'sunset_glow':
+        return AppTheme.sunsetGlow;
+      case 'forest_night':
+        return AppTheme.forestNight;
       default:
         return AppTheme.classic; // Fallback to classic
     }
@@ -356,6 +377,12 @@ class ThemeManager extends ChangeNotifier {
         return _darkModeTokens;
       case AppTheme.minimal:
         return _minimalTokens;
+      case AppTheme.oceanDepths:
+        return _oceanDepthsTokens;
+      case AppTheme.sunsetGlow:
+        return _sunsetGlowTokens;
+      case AppTheme.forestNight:
+        return _forestNightTokens;
     }
   }
 }
@@ -939,6 +966,9 @@ class AccessibleTextTheme {
       AppTheme.cyberNeon => GoogleFonts.rajdhani(),
       AppTheme.darkMode => GoogleFonts.inter(),
       AppTheme.minimal => GoogleFonts.roboto(),
+      AppTheme.oceanDepths => GoogleFonts.nunito(),
+      AppTheme.sunsetGlow => GoogleFonts.poppins(),
+      AppTheme.forestNight => GoogleFonts.sourceSerif4(),
     };
   }
 }
@@ -1413,6 +1443,207 @@ extension SemanticTokensContext on BuildContext {
     }
   }
 }
+
+// Ocean Depths theme: deep blue underwater experience with aquatic vibes
+const SemanticTokens _oceanDepthsTokens = SemanticTokens(
+  // Brand/Hero tokens - Deep ocean blues with aquatic glow
+  brandTitle: Color(0xFF00E5FF), // Bright aqua for title glow
+  brandSubtitle: Color(0xFFFFFFFF), // Pure white for contrast against deep blue
+  heroBackground: Color(0xFF0D47A1), // Deep ocean blue
+  heroOverlay: Color(0x1A00E5FF), // Aqua overlay for depth
+  shadowBrandSubtitle: Color(0xFF4FC3F7), // Light blue shadow
+
+  // Navigation tokens - Aquatic elements with high contrast
+  navIcon: Color(0xFF00E5FF), // Bright aqua for maximum visibility
+  navIconPressed: Color(0xFF0288D1), // Deeper blue when pressed
+  navText: Color(0xFFFFFFFF), // Pure white for maximum readability
+  headerBg: Color(0xFF1565C0), // Ocean blue header
+
+  // Border tokens - Ocean-inspired borders
+  borderDefault: Color(0xFF4FC3F7), // Light blue for visibility
+  borderFocus: Color(0xFF00E5FF), // Bright aqua focus ring
+  borderMuted: Color(0xFF42A5F5), // Medium blue muted border
+
+  // Surface tokens - Deep water surfaces
+  surface: Color(0xFF0A1929), // Very deep blue surface
+  surfaceAlt: Color(0xFF1E3A8A), // Slightly lighter ocean blue
+
+  // Text tokens - High contrast text for underwater reading
+  textPrimary: Color(0xFFFFFFFF), // Pure white for maximum readability
+  textInverse: Color(0xFF0D47A1), // Deep blue for bright backgrounds
+  textSecondary: Color(0xFF81D4FA), // Light aqua for secondary text
+  textTertiary: Color(0xFFE1F5FE), // Very light blue for tertiary text
+  shadow: Color(0x1A00E5FF), // Aqua shadow
+
+  // Achievement System - Ocean Depths style
+  achieveBackground: Color(0xFF0A1929), // Deep ocean surface for achievements
+  achieveGrid: Color(0xFF1976D2), // Ocean blue grid lines
+  achieveNeon: Color(0xFF00E5FF), // Bright aqua neon accents
+  badgeBackground: Color(0xFF1565C0), // Ocean blue badge background
+  badgeRing: Color(0xFF4FC3F7), // Light blue ring
+  textEmphasis: Color(0xFFFFFFFF), // Pure white emphasis text
+  textMuted: Color(0xFF81D4FA), // Light aqua muted text
+  focusRing: Color(0xFF00E5FF), // Bright aqua focus ring
+  tierBronze: Color(0xFFCD7F32),
+  tierSilver: Color(0xFFC0C0C0),
+  tierGold: Color(0xFFFFD700),
+  tierPlatinum: Color(0xFFE5E4E2),
+  tierLegendary: Color(0xFF00E5FF),
+
+  // Legacy tokens - Ocean depths theme
+  bg: Color(0xFF0D47A1), // Deep ocean blue background
+  elevatedSurface: Color(0xFF1565C0),
+  primary: Color(0xFF00E5FF),
+  onPrimary: Color(0xFF0D47A1),
+  onPrimaryContainer: Color(0xFFFFFFFF),
+  secondary: Color(0xFF4FC3F7),
+  onSecondary: Color(0xFF0D47A1),
+  muted: Color(0xFF1976D2),
+  onMuted: Color(0xFFFFFFFF),
+  accent: Color(0xFF00E5FF),
+  onAccent: Color(0xFF0D47A1),
+  success: Color(0xFF00BCD4),
+  warning: Color(0xFFFFB74D),
+  error: Color(0xFFFF5252),
+  outline: Color(0xFF4FC3F7),
+  divider: Color(0xFF1976D2),
+  overlayDim: Color(0xE60D47A1),
+  overlayGlow: Color(0x8000E5FF),
+);
+
+// Sunset Glow theme: warm oranges and pinks with golden hour vibes
+const SemanticTokens _sunsetGlowTokens = SemanticTokens(
+  // Brand/Hero tokens - Warm sunset colors
+  brandTitle: Color(0xFFFF6F00), // Bright orange for title glow
+  brandSubtitle: Color(0xFFFFFFFF), // Pure white for contrast
+  heroBackground: Color(0xFFBF360C), // Deep sunset red
+  heroOverlay: Color(0x1AFF8A65), // Warm orange overlay
+  shadowBrandSubtitle: Color(0xFFFFAB91), // Light orange shadow
+
+  // Navigation tokens - Sunset elements
+  navIcon: Color(0xFFFF6F00), // Bright orange for visibility
+  navIconPressed: Color(0xFFE65100), // Deeper orange when pressed
+  navText: Color(0xFFFFFFFF), // Pure white for readability
+  headerBg: Color(0xFFD84315), // Sunset orange header
+
+  // Border tokens - Warm sunset borders
+  borderDefault: Color(0xFFFFAB91), // Light orange for visibility
+  borderFocus: Color(0xFFFF6F00), // Bright orange focus ring
+  borderMuted: Color(0xFFFF8A65), // Medium orange muted border
+
+  // Surface tokens - Warm sunset surfaces
+  surface: Color(0xFF3E2723), // Dark brown surface
+  surfaceAlt: Color(0xFF5D4037), // Lighter brown alternative
+
+  // Text tokens - High contrast text for sunset reading
+  textPrimary: Color(0xFFFFFFFF), // Pure white for maximum readability
+  textInverse: Color(0xFFBF360C), // Deep red for bright backgrounds
+  textSecondary: Color(0xFFFFCC02), // Golden yellow for secondary text
+  textTertiary: Color(0xFFFFF3E0), // Very light orange for tertiary text
+  shadow: Color(0x1AFF6F00), // Orange shadow
+
+  // Achievement System - Sunset Glow style
+  achieveBackground: Color(0xFF3E2723), // Dark brown surface for achievements
+  achieveGrid: Color(0xFFD84315), // Sunset orange grid lines
+  achieveNeon: Color(0xFFFF6F00), // Bright orange neon accents
+  badgeBackground: Color(0xFFBF360C), // Deep red badge background
+  badgeRing: Color(0xFFFFAB91), // Light orange ring
+  textEmphasis: Color(0xFFFFFFFF), // Pure white emphasis text
+  textMuted: Color(0xFFFFCC02), // Golden muted text
+  focusRing: Color(0xFFFF6F00), // Bright orange focus ring
+  tierBronze: Color(0xFFCD7F32),
+  tierSilver: Color(0xFFC0C0C0),
+  tierGold: Color(0xFFFFD700),
+  tierPlatinum: Color(0xFFE5E4E2),
+  tierLegendary: Color(0xFFFF6F00),
+
+  // Legacy tokens - Sunset glow theme
+  bg: Color(0xFFBF360C), // Deep sunset red background
+  elevatedSurface: Color(0xFFD84315),
+  primary: Color(0xFFFF6F00),
+  onPrimary: Color(0xFFFFFFFF),
+  onPrimaryContainer: Color(0xFFFFFFFF),
+  secondary: Color(0xFFFFAB91),
+  onSecondary: Color(0xFFBF360C),
+  muted: Color(0xFFFF8A65),
+  onMuted: Color(0xFFFFFFFF),
+  accent: Color(0xFFFFCC02),
+  onAccent: Color(0xFFBF360C),
+  success: Color(0xFF4CAF50),
+  warning: Color(0xFFFFEB3B),
+  error: Color(0xFFF44336),
+  outline: Color(0xFFFFAB91),
+  divider: Color(0xFFD84315),
+  overlayDim: Color(0xE6BF360C),
+  overlayGlow: Color(0x80FF6F00),
+);
+
+// Forest Night theme: deep greens with nature-inspired dark atmosphere
+const SemanticTokens _forestNightTokens = SemanticTokens(
+  // Brand/Hero tokens - Deep forest greens
+  brandTitle: Color(0xFF4CAF50), // Bright green for title glow
+  brandSubtitle: Color(0xFFFFFFFF), // Pure white for contrast
+  heroBackground: Color(0xFF1B5E20), // Deep forest green
+  heroOverlay: Color(0x1A66BB6A), // Green overlay for depth
+  shadowBrandSubtitle: Color(0xFF81C784), // Light green shadow
+
+  // Navigation tokens - Forest elements
+  navIcon: Color(0xFF4CAF50), // Bright green for visibility
+  navIconPressed: Color(0xFF388E3C), // Deeper green when pressed
+  navText: Color(0xFFFFFFFF), // Pure white for readability
+  headerBg: Color(0xFF2E7D32), // Forest green header
+
+  // Border tokens - Nature-inspired borders
+  borderDefault: Color(0xFF81C784), // Light green for visibility
+  borderFocus: Color(0xFF4CAF50), // Bright green focus ring
+  borderMuted: Color(0xFF66BB6A), // Medium green muted border
+
+  // Surface tokens - Forest floor surfaces
+  surface: Color(0xFF0D1B0F), // Very dark green surface
+  surfaceAlt: Color(0xFF1A2E1D), // Slightly lighter forest green
+
+  // Text tokens - High contrast text for forest reading
+  textPrimary: Color(0xFFFFFFFF), // Pure white for maximum readability
+  textInverse: Color(0xFF1B5E20), // Deep green for bright backgrounds
+  textSecondary: Color(0xFFA5D6A7), // Light green for secondary text
+  textTertiary: Color(0xFFE8F5E8), // Very light green for tertiary text
+  shadow: Color(0x1A4CAF50), // Green shadow
+
+  // Achievement System - Forest Night style
+  achieveBackground: Color(0xFF0D1B0F), // Dark forest surface for achievements
+  achieveGrid: Color(0xFF2E7D32), // Forest green grid lines
+  achieveNeon: Color(0xFF4CAF50), // Bright green neon accents
+  badgeBackground: Color(0xFF1B5E20), // Deep green badge background
+  badgeRing: Color(0xFF81C784), // Light green ring
+  textEmphasis: Color(0xFFFFFFFF), // Pure white emphasis text
+  textMuted: Color(0xFFA5D6A7), // Light green muted text
+  focusRing: Color(0xFF4CAF50), // Bright green focus ring
+  tierBronze: Color(0xFFCD7F32),
+  tierSilver: Color(0xFFC0C0C0),
+  tierGold: Color(0xFFFFD700),
+  tierPlatinum: Color(0xFFE5E4E2),
+  tierLegendary: Color(0xFF4CAF50),
+
+  // Legacy tokens - Forest night theme
+  bg: Color(0xFF1B5E20), // Deep forest green background
+  elevatedSurface: Color(0xFF2E7D32),
+  primary: Color(0xFF4CAF50),
+  onPrimary: Color(0xFFFFFFFF),
+  onPrimaryContainer: Color(0xFFFFFFFF),
+  secondary: Color(0xFF81C784),
+  onSecondary: Color(0xFF1B5E20),
+  muted: Color(0xFF66BB6A),
+  onMuted: Color(0xFFFFFFFF),
+  accent: Color(0xFF8BC34A),
+  onAccent: Color(0xFF1B5E20),
+  success: Color(0xFF4CAF50),
+  warning: Color(0xFFFF9800),
+  error: Color(0xFFF44336),
+  outline: Color(0xFF81C784),
+  divider: Color(0xFF2E7D32),
+  overlayDim: Color(0xE61B5E20),
+  overlayGlow: Color(0x804CAF50),
+);
 
 // Backwards compatibility
 ThemeData get lightTheme => ThemeManager.instance.lightTheme;
