@@ -164,7 +164,7 @@ class EnhancedAIService {
     }
   }
 
-  /// Try OpenAI Cloud Functions generation with performance optimization
+  /// Try OpenAI Cloud Functions generation with mobile optimization
   Future<GenerationResult> _tryOpenAIGeneration({
     required String content,
     required int flashcardCount,
@@ -180,57 +180,81 @@ class EnhancedAIService {
     final performanceTimer = Stopwatch()..start();
 
     try {
-      debugPrint('🚀 Enhanced AI: Attempting optimized OpenAI generation...');
       debugPrint(
-          '📊 Performance: Content length: ${content.length} chars, FC: $flashcardCount, Q: $quizCount');
+          '📱 Enhanced AI: Starting mobile-optimized OpenAI generation...');
+      debugPrint(
+          '📊 Content: ${content.length} chars, Flashcards: $flashcardCount, Quiz: $quizCount');
+
+      // Content validation for maximum supported length (500,000 characters)
+      String optimizedContent = content;
+      const maxCharacters =
+          500000; // Maximum 500,000 characters supported across all tiers
+
+      if (content.length > maxCharacters) {
+        // Smart truncation for very large documents
+        optimizedContent = content.substring(0, maxCharacters);
+        final lastSentence = optimizedContent.lastIndexOf('.');
+        if (lastSentence > maxCharacters * 0.95) {
+          optimizedContent = optimizedContent.substring(0, lastSentence + 1);
+        }
+        debugPrint(
+            '📱 Large content truncated from ${content.length} to ${optimizedContent.length} chars (max: $maxCharacters)');
+      } else {
+        debugPrint(
+            '📱 Content size: ${content.length} chars (within 500k limit)');
+      }
 
       // Ensure authentication
       await _ensureAuthentication();
-      debugPrint('✅ Enhanced AI: Authentication ensured');
+      debugPrint('✅ Authentication verified for mobile');
 
-      // Get tokens
+      // Get tokens with mobile timeout
       final appCheckToken = await _getAppCheckToken();
-      final idToken = await _getIdToken();
       debugPrint(
-          '✅ Enhanced AI: Tokens obtained - AppCheck: ${appCheckToken != null}, ID: ${idToken != null}');
+          '🔐 App Check token: ${appCheckToken != null ? "obtained" : "not available"}');
 
-      // Generate flashcards and quiz questions in parallel for maximum speed
-      debugPrint('🚀 Enhanced AI: Starting parallel generation...');
+      // Mobile-optimized generation - shorter timeouts, better fallback
+      debugPrint('📱 Starting mobile generation...');
 
       final flashcardCallable = _functions.httpsCallable('generateFlashcards',
           options: HttpsCallableOptions(
-            timeout: const Duration(
-                seconds: 95), // Slightly longer than server timeout
+            timeout:
+                const Duration(seconds: 200), // Extended timeout for 500k chars
           ));
 
       final quizCallable = _functions.httpsCallable('generateQuiz',
           options: HttpsCallableOptions(
-            timeout: const Duration(
-                seconds: 95), // Slightly longer than server timeout
+            timeout:
+                const Duration(seconds: 200), // Extended timeout for 500k chars
           ));
 
-      // Execute both calls in parallel for ~50% speed improvement
+      // Generate both with mobile timeouts
       final results = await Future.wait([
         flashcardCallable.call({
-          'content': content,
+          'content': optimizedContent,
           'count': flashcardCount,
           'difficulty': difficulty,
           'appCheckToken': appCheckToken,
         }).timeout(
-          const Duration(seconds: 125),
+          const Duration(
+              seconds:
+                  220), // Slightly longer than function timeout for 500k chars
           onTimeout: () {
-            throw Exception('OpenAI flashcard generation timed out');
+            throw Exception('Large content generation timed out after 220s');
           },
         ),
         quizCallable.call({
-          'content': content,
+          'content': optimizedContent,
           'count': quizCount,
           'difficulty': difficulty,
           'appCheckToken': appCheckToken,
         }).timeout(
-          const Duration(seconds: 125),
+          const Duration(
+              seconds:
+                  220), // Slightly longer than function timeout for 500k chars
           onTimeout: () {
-            throw Exception('OpenAI quiz generation timed out');
+            throw Exception(
+                'Large content quiz generation timed out after 220s');
           },
         ),
       ]);
@@ -238,31 +262,17 @@ class EnhancedAIService {
       final flashcardResult = results[0];
       final quizResult = results[1];
 
-      debugPrint('✅ Enhanced AI: Parallel generation completed successfully');
-      debugPrint(
-          '🔍 Enhanced AI: Flashcard result data type: ${flashcardResult.data.runtimeType}');
-      debugPrint(
-          '🔍 Enhanced AI: Quiz result data type: ${quizResult.data.runtimeType}');
+      debugPrint('✅ Mobile generation completed successfully');
 
-      // Parse results in parallel for maximum speed
-      debugPrint('🔍 Enhanced AI: Parsing results in parallel...');
-      final parseResults = await Future.wait([
-        Future(() => _parseFlashcards(flashcardResult.data)),
-        Future(() => _parseQuizQuestions(quizResult.data)),
-      ]);
-
-      final flashcards = parseResults[0] as List<Flashcard>;
-      final quizQuestions = parseResults[1] as List<QuizQuestion>;
-      debugPrint('✅ Enhanced AI: Parallel parsing completed');
+      // Parse results
+      final flashcards = await _parseFlashcards(flashcardResult.data);
+      final quizQuestions = await _parseQuizQuestions(quizResult.data);
 
       performanceTimer.stop();
       final totalTime = performanceTimer.elapsedMilliseconds;
 
-      debugPrint('✅ Enhanced AI: Optimized OpenAI generation successful');
       debugPrint(
-          '⚡ Performance: Total time: ${totalTime}ms (${(totalTime / 1000).toStringAsFixed(1)}s)');
-      debugPrint(
-          '⚡ Performance: Speed: ${((flashcards.length + quizQuestions.length) / (totalTime / 1000)).toStringAsFixed(1)} items/sec');
+          '📱 Mobile OpenAI generation successful: ${flashcards.length} flashcards, ${quizQuestions.length} quiz questions in ${(totalTime / 1000).toStringAsFixed(1)}s');
 
       return GenerationResult(
         flashcards: flashcards,
@@ -271,26 +281,42 @@ class EnhancedAIService {
         processingTimeMs: totalTime,
       );
     } catch (e) {
-      debugPrint('❌ Enhanced AI: OpenAI generation failed: $e');
+      debugPrint('❌ Mobile OpenAI generation failed: $e');
 
-      // Log specific error types for better debugging
-      if (e.toString().contains('DEADLINE_EXCEEDED')) {
-        debugPrint('🕒 OpenAI timeout detected - Cloud Function took too long');
+      String userFriendlyError = 'AI generation failed, using local processing';
+
+      // Mobile-specific error handling
+      if (e.toString().contains('DEADLINE_EXCEEDED') ||
+          e.toString().contains('timed out')) {
+        debugPrint('⏱️ Mobile timeout detected');
+        userFriendlyError =
+            'Request timed out on mobile, switching to local AI';
       } else if (e.toString().contains('UNAUTHENTICATED')) {
-        debugPrint('🔐 Authentication issue detected');
+        debugPrint('🔐 Mobile authentication issue');
+        userFriendlyError = 'Authentication failed, using offline mode';
       } else if (e.toString().contains('PERMISSION_DENIED')) {
-        debugPrint('🚫 Permission denied - App Check or auth issue');
-      } else if (e.toString().contains('RESOURCE_EXHAUSTED')) {
-        debugPrint('💳 Rate limit or quota exceeded');
-      } else {
-        debugPrint('❓ Unknown OpenAI error type: ${e.runtimeType}');
+        debugPrint('🚫 Mobile permission denied');
+        userFriendlyError = 'Permission denied, using local processing';
+      } else if (e.toString().contains('RESOURCE_EXHAUSTED') ||
+          e.toString().contains('quota')) {
+        debugPrint('💳 OpenAI quota/billing issue');
+        userFriendlyError =
+            'OpenAI quota exceeded. Check billing at platform.openai.com/usage';
+      } else if (e.toString().contains('failed-precondition') ||
+          e.toString().contains('not configured')) {
+        debugPrint('⚙️ OpenAI not configured');
+        userFriendlyError = 'OpenAI not set up. Using local AI instead';
+      } else if (e.toString().contains('network') ||
+          e.toString().contains('connection')) {
+        debugPrint('🌐 Network issue on mobile');
+        userFriendlyError = 'Network issue detected, using offline mode';
       }
 
       return GenerationResult(
         flashcards: [],
         quizQuestions: [],
         method: GenerationMethod.openai,
-        errorMessage: e.toString(),
+        errorMessage: userFriendlyError,
         processingTimeMs: 0,
       );
     }

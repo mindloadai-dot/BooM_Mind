@@ -18,6 +18,8 @@ import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/neurograph_service.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
+import 'package:mindload/widgets/edit_flashcard_dialog.dart';
+import 'package:mindload/widgets/edit_quiz_question_dialog.dart';
 
 class StudyScreen extends StatefulWidget {
   final StudySet studySet;
@@ -1620,8 +1622,7 @@ class _StudyScreenState extends State<StudyScreen>
         setState(() {
           _currentCardIndex = 0;
         });
-        return const Center(
-            child: CircularProgressIndicator());
+        return const Center(child: CircularProgressIndicator());
       }
 
       final Flashcard currentCard =
@@ -1757,6 +1758,45 @@ class _StudyScreenState extends State<StudyScreen>
                                             },
                                           ),
                                         ),
+
+                                      // Edit button
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            onTap: () =>
+                                                _editFlashcard(currentCard),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: tokens.surface
+                                                    .withValues(alpha: 0.9),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                border: Border.all(
+                                                  color: tokens.borderDefault,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: tokens.overlayDim,
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                Icons.edit,
+                                                size: 16,
+                                                color: tokens.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
 
                                       // Main content
                                       Transform(
@@ -2283,8 +2323,7 @@ class _StudyScreenState extends State<StudyScreen>
       setState(() {
         _currentQuestionIndex = 0;
       });
-      return const Center(
-          child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator());
     }
 
     final tokens = context.tokens;
@@ -3341,6 +3380,130 @@ class _StudyScreenState extends State<StudyScreen>
         ),
       ],
     );
+  }
+
+  /// Edit a flashcard
+  void _editFlashcard(Flashcard flashcard) {
+    showDialog(
+      context: context,
+      builder: (context) => EditFlashcardDialog(
+        flashcard: flashcard,
+        onSave: (updatedFlashcard) async {
+          await _updateFlashcard(updatedFlashcard);
+        },
+      ),
+    );
+  }
+
+  /// Update a flashcard in the study set
+  Future<void> _updateFlashcard(Flashcard updatedFlashcard) async {
+    try {
+      final updatedFlashcards = _currentStudySet.flashcards.map((card) {
+        return card.id == updatedFlashcard.id ? updatedFlashcard : card;
+      }).toList();
+
+      final updatedStudySet = _currentStudySet.copyWith(
+        flashcards: updatedFlashcards,
+        lastStudied: DateTime.now(),
+      );
+
+      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+
+      setState(() {
+        _currentStudySet = updatedStudySet;
+      });
+
+      final tokens = context.tokens;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: tokens.onPrimary),
+              const SizedBox(width: 8),
+              const Text('Flashcard updated successfully'),
+            ],
+          ),
+          backgroundColor: tokens.primary,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      _showErrorSnackBar('Failed to update flashcard: $e');
+    }
+  }
+
+  /// Edit a quiz question
+  void _editQuizQuestion(QuizQuestion quizQuestion) {
+    showDialog(
+      context: context,
+      builder: (context) => EditQuizQuestionDialog(
+        quizQuestion: quizQuestion,
+        onSave: (updatedQuestion) async {
+          await _updateQuizQuestion(updatedQuestion);
+        },
+      ),
+    );
+  }
+
+  /// Update a quiz question in the study set
+  Future<void> _updateQuizQuestion(QuizQuestion updatedQuestion) async {
+    try {
+      // Update in quiz questions list
+      final updatedQuizQuestions =
+          _currentStudySet.quizQuestions.map((question) {
+        return question.id == updatedQuestion.id ? updatedQuestion : question;
+      }).toList();
+
+      // Update in quizzes list
+      final updatedQuizzes = _currentStudySet.quizzes.map((quiz) {
+        final updatedQuestions = quiz.questions.map((question) {
+          return question.id == updatedQuestion.id ? updatedQuestion : question;
+        }).toList();
+
+        return quiz.copyWith(questions: updatedQuestions);
+      }).toList();
+
+      final updatedStudySet = _currentStudySet.copyWith(
+        quizQuestions: updatedQuizQuestions,
+        quizzes: updatedQuizzes,
+        lastStudied: DateTime.now(),
+      );
+
+      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+
+      setState(() {
+        _currentStudySet = updatedStudySet;
+        // Update current quiz if it's active
+        if (_currentQuiz != null) {
+          final updatedCurrentQuiz = updatedQuizzes.firstWhere(
+            (quiz) => quiz.id == _currentQuiz!.id,
+            orElse: () => _currentQuiz!,
+          );
+          _currentQuiz = updatedCurrentQuiz;
+        }
+      });
+
+      final tokens = context.tokens;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: tokens.onPrimary),
+              const SizedBox(width: 8),
+              const Text('Quiz question updated successfully'),
+            ],
+          ),
+          backgroundColor: tokens.primary,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      _showErrorSnackBar('Failed to update quiz question: $e');
+    }
   }
 
   // Add missing difficulty calculation method

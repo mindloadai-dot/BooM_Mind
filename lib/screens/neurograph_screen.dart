@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:mindload/constants/product_constants.dart';
+
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/mindload_button_system.dart';
@@ -70,12 +70,13 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
       vsync: this,
     );
     _chartAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _chartAnimationController, curve: Curves.easeOutBack),
+      CurvedAnimation(
+          parent: _chartAnimationController, curve: Curves.easeOutBack),
     );
 
     _fadeController.forward();
     _slideController.forward();
-    
+
     // Delay chart animation for better visual effect
     Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) {
@@ -216,10 +217,11 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                   children: [
                     Text(
                       'Your Learning Analytics',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: context.tokens.textPrimary,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: context.tokens.textPrimary,
+                              ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -434,7 +436,10 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                           children: [
                             Text(
                               title,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: context.tokens.textPrimary,
                                   ),
@@ -442,7 +447,10 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                             const SizedBox(height: 4),
                             Text(
                               subtitle,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
                                     color: context.tokens.textSecondary,
                                   ),
                             ),
@@ -559,7 +567,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                               child: Container(
                                 margin: const EdgeInsets.symmetric(vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: context.tokens.primary.withOpacity(intensity * 0.8),
+                                  color: context.tokens.primary
+                                      .withOpacity(intensity * 0.8),
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
@@ -620,7 +629,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                       return Container(
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          color: context.tokens.primary.withOpacity(height * _chartAnimation.value),
+                          color: context.tokens.primary
+                              .withOpacity(height * _chartAnimation.value),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       );
@@ -662,7 +672,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
               childAspectRatio: 1.5,
               children: [
                 _buildSimplifiedRadarItem('Math', 85, context.tokens.primary),
-                _buildSimplifiedRadarItem('Science', 72, context.tokens.secondary),
+                _buildSimplifiedRadarItem(
+                    'Science', 72, context.tokens.secondary),
                 _buildSimplifiedRadarItem('History', 90, context.tokens.accent),
                 _buildSimplifiedRadarItem('Language', 78, Colors.green),
               ],
@@ -743,7 +754,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                               width: double.infinity,
                               margin: const EdgeInsets.symmetric(horizontal: 4),
                               decoration: BoxDecoration(
-                                color: context.tokens.primary.withOpacity(height * _chartAnimation.value),
+                                color: context.tokens.primary.withOpacity(
+                                    height * _chartAnimation.value),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                             ),
@@ -751,9 +763,10 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                           const SizedBox(height: 8),
                           Text(
                             '${index + 1}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: context.tokens.textSecondary,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: context.tokens.textSecondary,
+                                    ),
                           ),
                         ],
                       );
@@ -837,7 +850,10 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                             child: Row(
                               children: [
                                 Expanded(
-                                  flex: (actualHeight * 100 * _chartAnimation.value).round(),
+                                  flex: (actualHeight *
+                                          100 *
+                                          _chartAnimation.value)
+                                      .round(),
                                   child: Container(
                                     margin: const EdgeInsets.only(right: 2),
                                     decoration: BoxDecoration(
@@ -847,7 +863,10 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                                   ),
                                 ),
                                 Expanded(
-                                  flex: (expectedHeight * 100 * _chartAnimation.value).round(),
+                                  flex: (expectedHeight *
+                                          100 *
+                                          _chartAnimation.value)
+                                      .round(),
                                   child: Container(
                                     margin: const EdgeInsets.only(left: 2),
                                     decoration: BoxDecoration(
@@ -862,9 +881,10 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
                           const SizedBox(height: 4),
                           Text(
                             'D${index + 1}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: context.tokens.textSecondary,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: context.tokens.textSecondary,
+                                    ),
                           ),
                         ],
                       );
@@ -925,7 +945,7 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            analysis.isNotEmpty 
+            analysis.isNotEmpty
                 ? analysis.join('\n\n')
                 : 'Complete more study sessions to get personalized insights about your learning patterns.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -980,7 +1000,7 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            tips.isNotEmpty 
+            tips.isNotEmpty
                 ? tips.join('\n\n')
                 : 'Study regularly and complete quizzes to receive personalized tips for improving your learning.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1117,7 +1137,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
             decoration: BoxDecoration(
               color: context.tokens.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.tokens.primary.withOpacity(0.3)),
+              border:
+                  Border.all(color: context.tokens.primary.withOpacity(0.3)),
             ),
             child: Row(
               children: [

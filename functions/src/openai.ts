@@ -8,13 +8,14 @@ import OpenAI from 'openai';
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
 const openaiOrgId = defineSecret('OPENAI_ORGANIZATION_ID');
 
-// Configuration for OpenAI processing - Ultra-optimized for speed
+// Configuration for OpenAI processing - Optimized for large content (500k chars)
 const CONFIG = {
   MAX_REQUESTS_PER_MINUTE: 100,
-  MAX_TOKENS_PER_REQUEST: 1200, // Ultra-reduced for maximum speed
+  MAX_TOKENS_PER_REQUEST: 4000, // Increased for larger content processing
   DEFAULT_TEMPERATURE: 0.1, // Minimal temperature for fastest responses
   DEFAULT_MODEL: 'gpt-4o-mini', // Fastest model
-  TIMEOUT_MS: 45000, // 45 second timeout for faster failure detection
+  TIMEOUT_MS: 120000, // 2 minute timeout for large content processing
+  MAX_CONTENT_LENGTH: 500000, // Maximum 500,000 characters supported
 } as const;
 
 // Rate limiting cache
@@ -326,8 +327,8 @@ Make sure the questions are clear, educational, and cover key concepts from the 
  */
 export const generateFlashcards = onCall({
   region: 'us-central1',
-  timeoutSeconds: 90, // Reduced timeout for faster fallback to Local AI
-  memory: '1GiB',
+  timeoutSeconds: 180, // 3 minutes for large content processing (500k chars)
+  memory: '2GiB', // Increased memory for large content
   cpu: 2,
   secrets: [openaiApiKey, openaiOrgId],
   enforceAppCheck: false,
@@ -467,8 +468,8 @@ Key facts only.`;
  */
 export const generateQuiz = onCall({
   region: 'us-central1',
-  timeoutSeconds: 90, // Reduced timeout for faster fallback to Local AI
-  memory: '1GiB',
+  timeoutSeconds: 180, // 3 minutes for large content processing (500k chars)
+  memory: '2GiB', // Increased memory for large content
   cpu: 2,
   secrets: [openaiApiKey, openaiOrgId],
   enforceAppCheck: false,

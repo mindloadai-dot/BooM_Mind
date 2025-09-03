@@ -366,6 +366,26 @@ class Quiz {
     return DifficultyLevel.expert;
   }
 
+  Quiz copyWith({
+    String? id,
+    String? title,
+    List<QuizQuestion>? questions,
+    QuestionType? type,
+    List<QuizResult>? results,
+    DateTime? createdDate,
+    DifficultyLevel? overallDifficulty,
+  }) {
+    return Quiz(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      questions: questions ?? this.questions,
+      type: type ?? this.type,
+      results: results ?? this.results,
+      createdDate: createdDate ?? this.createdDate,
+      overallDifficulty: overallDifficulty ?? this.overallDifficulty,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
@@ -398,6 +418,7 @@ class QuizQuestion {
   final List<String> options;
   final String correctAnswer;
   final QuestionType type;
+  final String? explanation;
   DifficultyLevel difficulty;
 
   QuizQuestion({
@@ -407,6 +428,7 @@ class QuizQuestion {
     required this.correctAnswer,
     this.type = QuestionType.multipleChoice,
     this.difficulty = DifficultyLevel.intermediate,
+    this.explanation,
   });
 
   void adjustDifficulty(bool wasCorrect) {
@@ -443,6 +465,26 @@ class QuizQuestion {
     }
   }
 
+  QuizQuestion copyWith({
+    String? id,
+    String? question,
+    List<String>? options,
+    String? correctAnswer,
+    QuestionType? type,
+    String? explanation,
+    DifficultyLevel? difficulty,
+  }) {
+    return QuizQuestion(
+      id: id ?? this.id,
+      question: question ?? this.question,
+      options: options ?? this.options,
+      correctAnswer: correctAnswer ?? this.correctAnswer,
+      type: type ?? this.type,
+      explanation: explanation ?? this.explanation,
+      difficulty: difficulty ?? this.difficulty,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'question': question,
@@ -450,6 +492,7 @@ class QuizQuestion {
         'correctAnswer': correctAnswer,
         'type': type.name,
         'difficulty': difficulty.name,
+        'explanation': explanation,
       };
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) => QuizQuestion(
@@ -460,6 +503,7 @@ class QuizQuestion {
         type: QuestionType.values.firstWhere((e) => e.name == json['type']),
         difficulty: DifficultyLevel.values
             .firstWhere((e) => e.name == json['difficulty']),
+        explanation: json['explanation'],
       );
 }
 

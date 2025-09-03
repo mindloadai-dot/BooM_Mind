@@ -961,6 +961,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         return 'Minimal';
       case AppTheme.purpleNeon:
         return 'Purple Neon';
+      case AppTheme.oceanDepths:
+        return 'Ocean Depths';
+      case AppTheme.sunsetGlow:
+        return 'Sunset Glow';
+      case AppTheme.forestNight:
+        return 'Forest Night';
     }
   }
 
@@ -980,6 +986,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         return [Colors.grey.shade400, Colors.grey.shade600];
       case AppTheme.purpleNeon:
         return [Colors.purple, Colors.purple.shade700];
+      case AppTheme.oceanDepths:
+        return [Colors.blue.shade600, Colors.blue.shade800];
+      case AppTheme.sunsetGlow:
+        return [Colors.orange.shade600, Colors.orange.shade800];
+      case AppTheme.forestNight:
+        return [Colors.green.shade600, Colors.green.shade800];
     }
   }
 

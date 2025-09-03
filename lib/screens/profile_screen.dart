@@ -15,7 +15,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/achievements_screen.dart';
@@ -174,11 +173,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _toggleBiometric(bool value) async {
     try {
       final biometricService = BiometricAuthService.instance;
-      
+
       if (value) {
         // Enable biometric authentication
         final success = await biometricService.enableBiometric();
-        
+
         if (success) {
           setState(() {
             _biometricEnabled = true;
@@ -196,7 +195,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Failed to enable biometric authentication'),
+                content:
+                    const Text('Failed to enable biometric authentication'),
                 backgroundColor: context.tokens.error,
               ),
             );
@@ -1178,19 +1178,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                           children: [
                             Text(
                               'Biometric Authentication',
-                              style:
-                                  Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: context.tokens.textPrimary,
-                                      ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: context.tokens.textPrimary,
+                                  ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Use fingerprint, face ID, or PIN for quick access',
-                              style:
-                                  Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: context.tokens.textSecondary,
-                                      ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: context.tokens.textSecondary,
+                                  ),
                             ),
                           ],
                         ),
@@ -1199,7 +1203,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         value: _biometricEnabled,
                         onChanged: _toggleBiometric,
                         activeColor: context.tokens.primary,
-                        activeTrackColor: context.tokens.primary.withOpacity(0.3),
+                        activeTrackColor:
+                            context.tokens.primary.withOpacity(0.3),
                       ),
                     ],
                   ),
@@ -1225,29 +1230,38 @@ class _ProfileScreenState extends State<ProfileScreen>
                               children: [
                                 Text(
                                   'Require biometric login at app startup',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: context.tokens.textPrimary,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        color: context.tokens.textPrimary,
+                                      ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   'Use biometric authentication every time you open the app',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: context.tokens.textSecondary,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: context.tokens.textSecondary,
+                                      ),
                                 ),
                               ],
                             ),
                           ),
                           Switch(
-                            value: BiometricAuthService.instance.isBiometricLoginEnabled,
+                            value: BiometricAuthService
+                                .instance.isBiometricLoginEnabled,
                             onChanged: (value) async {
-                              await BiometricAuthService.instance.toggleBiometricLogin(value);
+                              await BiometricAuthService.instance
+                                  .toggleBiometricLogin(value);
                               setState(() {}); // Refresh UI
                             },
                             activeColor: context.tokens.primary,
-                            activeTrackColor: context.tokens.primary.withOpacity(0.3),
+                            activeTrackColor:
+                                context.tokens.primary.withOpacity(0.3),
                           ),
                         ],
                       ),

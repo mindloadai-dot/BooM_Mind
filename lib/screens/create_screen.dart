@@ -129,7 +129,9 @@ class _CreateScreenState extends State<CreateScreen>
 
     // Auto-populate title when moving to Step 4 if title is empty
     _pageController.addListener(() {
-      if (_currentStep == 3 && _titleController.text.trim().isEmpty && _hasContent()) {
+      if (_currentStep == 3 &&
+          _titleController.text.trim().isEmpty &&
+          _hasContent()) {
         _autoPopulateTitleFromContent();
       }
     });
@@ -221,7 +223,7 @@ class _CreateScreenState extends State<CreateScreen>
   /// Build step indicator
   Widget _buildStepIndicator(SemanticTokens tokens) {
     final stepNames = ['Source', 'Content', 'Options', 'Review'];
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -1194,7 +1196,9 @@ class _CreateScreenState extends State<CreateScreen>
       case 2:
         return _generateFlashcards || _generateQuizzes;
       case 3:
-        return _titleController.text.trim().isNotEmpty; // Title required in final step
+        return _titleController.text
+            .trim()
+            .isNotEmpty; // Title required in final step
       default:
         return false;
     }
@@ -1220,12 +1224,12 @@ class _CreateScreenState extends State<CreateScreen>
       setState(() {
         _currentStep++;
       });
-      
+
       // Auto-populate title when moving to Step 4
       if (_currentStep == 3) {
         _autoPopulateTitleFromContent();
       }
-      
+
       _fadeController.reset();
       _fadeController.forward();
     } else {
@@ -2137,22 +2141,24 @@ class _CreateScreenState extends State<CreateScreen>
 
   /// Auto-populate title from content when moving to final step
   void _autoPopulateTitleFromContent() {
-    if (_titleController.text.trim().isNotEmpty) return; // Don't override if user already set title
-    
+    if (_titleController.text.trim().isNotEmpty)
+      return; // Don't override if user already set title
+
     String suggestedTitle = '';
-    
-    if (_contentInputType == 'text' && _contentController.text.trim().isNotEmpty) {
+
+    if (_contentInputType == 'text' &&
+        _contentController.text.trim().isNotEmpty) {
       suggestedTitle = _generateTextTitle(_contentController.text.trim());
     } else if (_currentYouTubePreview != null) {
       suggestedTitle = _generateYouTubeTitle(_currentYouTubePreview!);
     } else if (_uploadedDocument != null) {
       suggestedTitle = _generateDocumentTitle(_uploadedDocument!.name);
     }
-    
+
     if (suggestedTitle.isNotEmpty) {
       _titleController.text = suggestedTitle;
       _isTitleAutoPopulated = true;
-      
+
       if (kDebugMode) {
         print('📝 Auto-populated title in Step 4: $suggestedTitle');
       }
@@ -3504,12 +3510,12 @@ class _CreateScreenState extends State<CreateScreen>
       // Determine difficulty based on content complexity and user preference
       final difficulty = _calculateContentDifficulty(content);
 
-      // Use EnhancedAIService for robust AI generation
+      // Use EnhancedAIService for mobile-optimized AI generation
       final enhancedResult =
           await EnhancedAIService.instance.generateStudyMaterials(
         content: content,
-        flashcardCount: cardCount,
-        quizCount: 0, // Focus on flashcards for now
+        flashcardCount: _generateFlashcards ? _flashcardCount : 0,
+        quizCount: _generateQuizzes ? _quizCount : 0,
         difficulty: _mapDifficultyToString(difficulty),
         questionTypes: customInstructions != null ? 'comprehensive' : null,
         cognitiveLevel: _determineAudience(content),
@@ -3526,18 +3532,59 @@ class _CreateScreenState extends State<CreateScreen>
 
       if (kDebugMode) {
         print(
-            '✅ EnhancedAIService generation successful using ${enhancedResult.method.name}');
+            '✅ Mobile AI generation successful using ${enhancedResult.method.name}');
         if (enhancedResult.isFallback) {
-          print('⚠️ Using fallback method: ${enhancedResult.method.name}');
+          print('📱 Using mobile fallback: ${enhancedResult.method.name}');
         }
-        print('📊 Generated ${enhancedResult.flashcards.length} flashcards');
-        print('⏱️ Processing time: ${enhancedResult.processingTimeMs}ms');
+        print('🎴 Generated ${enhancedResult.flashcards.length} flashcards');
+        print(
+            '❓ Generated ${enhancedResult.quizQuestions.length} quiz questions');
+        print(
+            '⏱️ Mobile processing time: ${enhancedResult.processingTimeMs}ms');
+        if (enhancedResult.errorMessage != null) {
+          print('📱 Mobile info: ${enhancedResult.errorMessage}');
+        }
       }
 
-      // Convert EnhancedAIService flashcards to AdvancedFlashcard format
+      // Convert EnhancedAIService results to AdvancedFlashcard format
       final advancedCards = enhancedResult.flashcards
           .map((f) => AdvancedFlashcard.fromLegacyFlashcard(f))
           .toList();
+
+      // Create quiz from EnhancedAIService quiz questions
+      AdvancedQuiz? advancedQuiz;
+      if (enhancedResult.quizQuestions.isNotEmpty) {
+        // Convert quiz questions to flashcard format for AdvancedQuiz
+        final quizAsCards = enhancedResult.quizQuestions
+            .map((q) => AdvancedFlashcard(
+                  id: 'q_${DateTime.now().millisecondsSinceEpoch}_${q.hashCode}',
+                  type: 'mcq',
+                  bloom: 'Understand',
+                  difficulty: q.difficulty.toString().split('.').last,
+                  question: q.question,
+                  choices: q.options,
+                  correctIndex: q.options.indexOf(q.correctAnswer),
+                  answerExplanation: q.correctAnswer,
+                  hint: 'Think about the key concepts',
+                  anchors: ['quiz', 'ai-generated'],
+                  sourceSpan: 'AI Generated Content',
+                ))
+            .toList();
+
+        advancedQuiz = AdvancedQuiz(
+          id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
+          title: 'AI Quiz for $title',
+          questions: quizAsCards,
+          numQuestions: quizAsCards.length,
+          typeMix: {'mcq': 100.0},
+          timeLimitSeconds: quizAsCards.length * 30,
+          passThreshold: 0.7,
+          createdDate: DateTime.now(),
+          results: [],
+          bloomMix: {'understand': 60.0, 'apply': 40.0},
+          difficulty: 3, // Medium difficulty
+        );
+      }
 
       // Create advanced study set with enhanced metadata
       final advancedSet = AdvancedStudySet(
@@ -3900,6 +3947,32 @@ class _CreateScreenState extends State<CreateScreen>
                 ? DifficultyLevel.advanced
                 : DifficultyLevel.intermediate,
       );
+    }
+  }
+
+  /// Map string difficulty to CardDifficulty
+  CardDifficulty _mapStringToCardDifficulty(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return CardDifficulty.easy;
+      case 'hard':
+        return CardDifficulty.hard;
+      default:
+        return CardDifficulty.medium;
+    }
+  }
+
+  /// Map difficulty to integer scale
+  int _mapDifficultyToInt(DifficultyLevel difficulty) {
+    switch (difficulty) {
+      case DifficultyLevel.beginner:
+        return 1;
+      case DifficultyLevel.intermediate:
+        return 3;
+      case DifficultyLevel.advanced:
+        return 5;
+      case DifficultyLevel.expert:
+        return 7;
     }
   }
 

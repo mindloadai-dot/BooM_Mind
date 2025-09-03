@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/services/biometric_auth_service.dart';
-import 'package:mindload/services/auth_service.dart';
-import 'package:mindload/theme.dart';
 
 /// Biometric Login Screen - shown at app startup when biometric login is enabled
 class BiometricLoginScreen extends StatefulWidget {
@@ -60,7 +58,8 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
   Future<void> _initializeBiometric() async {
     try {
       // Get biometric description
-      final description = await BiometricAuthService.instance.getBiometricDescription();
+      final description =
+          await BiometricAuthService.instance.getBiometricDescription();
       setState(() {
         _biometricDescription = description;
       });
@@ -88,7 +87,8 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
     });
 
     try {
-      final success = await BiometricAuthService.instance.authenticateWithBiometric(
+      final success =
+          await BiometricAuthService.instance.authenticateWithBiometric(
         reason: 'Use $_biometricDescription to access MindLoad',
       );
 
@@ -155,7 +155,10 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(_glowAnimation.value * 0.3),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(_glowAnimation.value * 0.3),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),
@@ -177,9 +180,9 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
               Text(
                 'Welcome Back',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onBackground,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onBackground,
+                    ),
                 textAlign: TextAlign.center,
               ),
 
@@ -189,8 +192,11 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
               Text(
                 'Use $_biometricDescription to continue',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onBackground
+                          .withOpacity(0.7),
+                    ),
                 textAlign: TextAlign.center,
               ),
 
@@ -229,7 +235,8 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isAuthenticating ? null : _authenticateWithBiometric,
+                  onPressed:
+                      _isAuthenticating ? null : _authenticateWithBiometric,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -244,7 +251,8 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : Text(
@@ -270,7 +278,8 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                   TextButton(
                     onPressed: () async {
                       // Disable biometric login for future launches
-                      await BiometricAuthService.instance.toggleBiometricLogin(false);
+                      await BiometricAuthService.instance
+                          .toggleBiometricLogin(false);
                       _navigateToHome();
                     },
                     child: const Text('Skip biometric'),
@@ -284,8 +293,11 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
               Text(
                 'MindLoad - AI Study Companion',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onBackground
+                          .withOpacity(0.5),
+                    ),
               ),
             ],
           ),

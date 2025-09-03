@@ -41,7 +41,7 @@ import 'package:flutter/foundation.dart';
 // Lifecycle observer for notification rescheduling
 class _MlLifecycleRelay with WidgetsBindingObserver {
   void start() => WidgetsBinding.instance.addObserver(this);
-  
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -49,7 +49,7 @@ class _MlLifecycleRelay with WidgetsBindingObserver {
       MindLoadNotificationService.rescheduleDailyPlan();
     }
   }
-  
+
   void stop() => WidgetsBinding.instance.removeObserver(this);
 }
 
@@ -83,17 +83,17 @@ void main() async {
   }
 
   try {
-    // Initialize Firebase App Check (non-blocking)
-    if (kDebugMode && AppCheckConfig.shouldSkipAppCheck) {
+    // Initialize Firebase App Check for mobile (non-blocking)
+    if (kDebugMode) {
       await AppCheckConfig.disableAppCheck();
-      print('App Check disabled for debug mode');
+      print('📱 App Check disabled for mobile debug mode');
     } else {
       await AppCheckConfig.initialize();
-      print('App Check initialized successfully');
+      print('📱 App Check initialized for mobile production');
     }
   } catch (e) {
-    print('App Check initialization failed: $e');
-    // Continue without App Check - app can still run
+    print('📱 App Check initialization failed (non-critical): $e');
+    // Continue without App Check - app works perfectly without it
     await AppCheckConfig.disableAppCheck();
   }
 
@@ -103,11 +103,11 @@ void main() async {
   // Initialize the single unified notification service
   await MindLoadNotificationService.initialize();
   print('✅ MindLoad notification service initialized');
-  
+
   // Re-apply saved daily notification plan on cold start
   await MindLoadNotificationService.rescheduleDailyPlan();
   print('✅ Daily notification plan re-applied on startup');
-  
+
   // Keep plans fresh when returning to foreground
   _mlLifecycleRelay.start();
   print('✅ Lifecycle observer started for notification management');
@@ -240,7 +240,8 @@ class MindLoadApp extends StatelessWidget {
               '/profile': (context) => const ProfileScreen(),
               '/app-icon-demo': (context) => const AppIconDemoScreen(),
               '/neurograph': (context) => const NeuroGraphScreen(),
-              '/notification-debug': (context) => const NotificationDebugScreen(),
+              '/notification-debug': (context) =>
+                  const NotificationDebugScreen(),
               '/profile/insights/neurograph': (context) =>
                   const NeuroGraphScreen(),
             },
@@ -663,8 +664,10 @@ class AppInitializerState extends State<AppInitializer>
     }
 
     // App is initialized - show main app logic with STRICT authentication priority
-    return Consumer4<AuthService, UnifiedOnboardingService, BiometricAuthService, ThemeManager>(
-      builder: (context, authService, onboardingService, biometricService, themeManager, child) {
+    return Consumer4<AuthService, UnifiedOnboardingService,
+        BiometricAuthService, ThemeManager>(
+      builder: (context, authService, onboardingService, biometricService,
+          themeManager, child) {
         // 🔐 CRITICAL: Authentication is ALWAYS first priority - NO EXCEPTIONS!
         if (authService.currentUser == null) {
           debugPrint(
@@ -677,7 +680,8 @@ class AppInitializerState extends State<AppInitializer>
 
         // 🔒 Check if biometric login should be used
         if (biometricService.isBiometricLoginEnabled) {
-          debugPrint('🔒 AppInitializer: Biometric login enabled - showing BiometricLoginScreen');
+          debugPrint(
+              '🔒 AppInitializer: Biometric login enabled - showing BiometricLoginScreen');
           return const BiometricLoginScreen();
         }
 

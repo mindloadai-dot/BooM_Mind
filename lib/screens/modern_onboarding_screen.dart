@@ -137,10 +137,10 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
       primaryColor: const Color(0xFF8B5CF6),
       secondaryColor: const Color(0xFFEC4899),
       features: [
-        '7 unique themes available',
-        'Classic, Matrix, Retro styles',
-        'Cyber Neon & Purple Neon',
-        'Dark Mode & Minimal options',
+        '10 unique themes available',
+        'Scholar\'s Haven, Digital Rain, Synthwave',
+        'Electric Pulse, Neon Dreams, Abyssal Depths',
+        'Golden Hour, Emerald Shadows & more',
       ],
       isThemeShowcase: true,
       transitionType: TransitionType.morph,
@@ -1093,62 +1093,14 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                     height: availableHeight,
                     child: GridView.count(
                       shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.9, // Slightly taller cards
-                      children: [
-                        _buildThemeCard(
-                            'Classic',
-                            'Clean & Professional',
-                            Icons.style,
-                            const Color(0xFF6366F1),
-                            const Color(0xFF8B5CF6),
-                            AppTheme.classic),
-                        _buildThemeCard(
-                            'Matrix',
-                            'Cyberpunk Style',
-                            Icons.code,
-                            const Color(0xFF10B981),
-                            const Color(0xFF059669),
-                            AppTheme.matrix),
-                        _buildThemeCard(
-                            'Retro',
-                            'Vintage Vibes',
-                            Icons.music_note,
-                            const Color(0xFFF59E0B),
-                            const Color(0xFFD97706),
-                            AppTheme.retro),
-                        _buildThemeCard(
-                            'Cyber Neon',
-                            'Futuristic Glow',
-                            Icons.electric_bolt,
-                            const Color(0xFFEC4899),
-                            const Color(0xFFBE185D),
-                            AppTheme.cyberNeon),
-                        _buildThemeCard(
-                            'Dark Mode',
-                            'Easy on Eyes',
-                            Icons.dark_mode,
-                            const Color(0xFF374151),
-                            const Color(0xFF1F2937),
-                            AppTheme.darkMode),
-                        _buildThemeCard(
-                            'Minimal',
-                            'Simple & Clean',
-                            Icons.crop_square,
-                            const Color(0xFF6B7280),
-                            const Color(0xFF4B5563),
-                            AppTheme.minimal),
-                        _buildThemeCard(
-                            'Purple Neon',
-                            'Vibrant Purple',
-                            Icons.star,
-                            const Color(0xFF8B5CF6),
-                            const Color(0xFF7C3AED),
-                            AppTheme.purpleNeon),
-                      ],
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.85, // Optimized for 10 themes
+                      children: AppTheme.values.map((theme) {
+                        return _buildDynamicThemeCard(theme);
+                      }).toList(),
                     ),
                   );
                 },
@@ -1195,9 +1147,15 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
     );
   }
 
-  Widget _buildThemeCard(String title, String description, IconData icon,
-      Color primaryColor, Color secondaryColor, AppTheme theme) {
+  Widget _buildDynamicThemeCard(AppTheme theme) {
+    final themeManager = ThemeManager.instance;
+    final title = themeManager.getThemeDisplayName(theme);
+    final icon = themeManager.getThemeIcon(theme);
     final isSelected = _selectedTheme == theme;
+
+    // Get theme-specific colors
+    final primaryColor = _getThemePrimaryColor(theme);
+    final secondaryColor = _getThemeSecondaryColor(theme);
 
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -1213,19 +1171,21 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    primaryColor.withOpacity(isSelected ? 0.3 : 0.1),
-                    secondaryColor.withOpacity(isSelected ? 0.3 : 0.1),
+                    primaryColor.withValues(alpha: isSelected ? 0.3 : 0.1),
+                    secondaryColor.withValues(alpha: isSelected ? 0.3 : 0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color:
-                      isSelected ? primaryColor : primaryColor.withOpacity(0.3),
+                  color: isSelected
+                      ? primaryColor
+                      : primaryColor.withValues(alpha: 0.3),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(isSelected ? 0.3 : 0.1),
+                    color:
+                        primaryColor.withValues(alpha: isSelected ? 0.3 : 0.1),
                     blurRadius: isSelected ? 12 : 6,
                     spreadRadius: isSelected ? 2 : 1,
                   ),
@@ -1266,18 +1226,20 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                         Text(
                           title,
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                           textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          description,
+                          _getThemeDescription(theme),
                           style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 9,
+                            color: Colors.white.withValues(alpha: 0.8),
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 2,
@@ -1741,6 +1703,84 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
         );
       },
     );
+  }
+
+  /// Get theme primary color
+  Color _getThemePrimaryColor(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.classic:
+        return const Color(0xFF6366F1);
+      case AppTheme.matrix:
+        return const Color(0xFF10B981);
+      case AppTheme.retro:
+        return const Color(0xFFF59E0B);
+      case AppTheme.cyberNeon:
+        return const Color(0xFFEC4899);
+      case AppTheme.darkMode:
+        return const Color(0xFF374151);
+      case AppTheme.minimal:
+        return const Color(0xFF6B7280);
+      case AppTheme.purpleNeon:
+        return const Color(0xFF8B5CF6);
+      case AppTheme.oceanDepths:
+        return const Color(0xFF0EA5E9);
+      case AppTheme.sunsetGlow:
+        return const Color(0xFFF97316);
+      case AppTheme.forestNight:
+        return const Color(0xFF059669);
+    }
+  }
+
+  /// Get theme secondary color
+  Color _getThemeSecondaryColor(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.classic:
+        return const Color(0xFF8B5CF6);
+      case AppTheme.matrix:
+        return const Color(0xFF059669);
+      case AppTheme.retro:
+        return const Color(0xFFD97706);
+      case AppTheme.cyberNeon:
+        return const Color(0xFFBE185D);
+      case AppTheme.darkMode:
+        return const Color(0xFF1F2937);
+      case AppTheme.minimal:
+        return const Color(0xFF4B5563);
+      case AppTheme.purpleNeon:
+        return const Color(0xFF7C3AED);
+      case AppTheme.oceanDepths:
+        return const Color(0xFF0284C7);
+      case AppTheme.sunsetGlow:
+        return const Color(0xFFEA580C);
+      case AppTheme.forestNight:
+        return const Color(0xFF047857);
+    }
+  }
+
+  /// Get theme description
+  String _getThemeDescription(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.classic:
+        return 'Clean & Professional';
+      case AppTheme.matrix:
+        return 'Cyberpunk Style';
+      case AppTheme.retro:
+        return 'Vintage Vibes';
+      case AppTheme.cyberNeon:
+        return 'Futuristic Glow';
+      case AppTheme.darkMode:
+        return 'Easy on Eyes';
+      case AppTheme.minimal:
+        return 'Simple & Clean';
+      case AppTheme.purpleNeon:
+        return 'Vibrant Purple';
+      case AppTheme.oceanDepths:
+        return 'Deep Blue Ocean';
+      case AppTheme.sunsetGlow:
+        return 'Warm Golden';
+      case AppTheme.forestNight:
+        return 'Nature Green';
+    }
   }
 }
 

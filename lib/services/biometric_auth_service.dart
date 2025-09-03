@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'auth_service.dart';
 import 'user_specific_storage_service.dart';
 
@@ -186,7 +186,8 @@ class BiometricAuthService extends ChangeNotifier {
       // Show if prompt hasn't been shown and setup isn't completed
       final shouldShow = !_hasPromptBeenShown && !_isSetupCompleted;
       if (kDebugMode) {
-        debugPrint('🔒 Biometric prompt: Should show = $shouldShow (prompt shown: $_hasPromptBeenShown, setup completed: $_isSetupCompleted)');
+        debugPrint(
+            '🔒 Biometric prompt: Should show = $shouldShow (prompt shown: $_hasPromptBeenShown, setup completed: $_isSetupCompleted)');
       }
       return shouldShow;
     } catch (e) {
