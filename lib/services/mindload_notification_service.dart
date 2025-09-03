@@ -57,6 +57,7 @@ class MindLoadNotificationService {
   static const String _channelName = 'MindLoad Local Notifications';
   static const String _channelDesc = 'Study reminders and notifications';
   static const String _firstRunFlag = 'hasFiredFirstStudySetNotification';
+  static const String _dailyPlanKey = 'ml_daily_plan_hhmm'; // e.g., ["09:00","13:00","19:00"]
 
   /// Initialize the notification service (idempotent)
   static Future<void> initialize() async {
@@ -780,6 +781,177 @@ class MindLoadNotificationService {
     }
   }
 
+  // --- Daily Notification Scheduling System ---
+
+  /// Next instance of HH:mm in local tz
+  static tz.TZDateTime _nextInstanceOf(int hour, int minute) {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
+  /// Stable ID for a daily slot
+  static int _stableIdForDaily(int hour, int minute) => 20000 + (hour * 100) + minute;
+
+  /// PUBLIC: single daily repeating slot
+  static Future<void> scheduleDaily({
+    required int hour,
+    required int minute,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!_initialized) await initialize();
+    
+    // Skip notification on unsupported platforms
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      debugPrint('⚠️ Skipping daily notification on unsupported platform: ${Platform.operatingSystem}');
+      return;
+    }
+
+    try {
+      // Check permissions first
+      final hasPermission = await _hasPermissions();
+      if (!hasPermission) {
+        debugPrint('⚠️ No notification permissions for daily schedule');
+        return;
+      }
+
+      final id = _stableIdForDaily(hour, minute);
+      final scheduledTime = _nextInstanceOf(hour, minute);
+      
+      debugPrint('📅 Scheduling daily notification: $title at ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} (ID: $id)');
+      
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledTime,
+        _createNotificationDetails(),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time, // <-- repeat daily
+        payload: payload,
+      );
+      
+      debugPrint('✅ Daily notification scheduled successfully for ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
+    } catch (e) {
+      debugPrint('❌ Failed to schedule daily notification: $e');
+    }
+  }
+
+  /// PUBLIC: schedule multiple daily times + persist plan
+  static Future<void> scheduleDailyTimes(
+    List<String> hhmmList, {
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!_initialized) await initialize();
+
+    // Skip notification on unsupported platforms
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      debugPrint('⚠️ Skipping daily times on unsupported platform: ${Platform.operatingSystem}');
+      return;
+    }
+
+    try {
+      // normalize + dedupe (e.g., "9:0" -> "09:00")
+      final norm = hhmmList.map((s) {
+        final p = s.split(':');
+        final h = int.parse(p[0]);
+        final m = int.parse(p[1]);
+        return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+      }).toSet().toList()..sort();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_dailyPlanKey, norm);
+
+      debugPrint('📅 Scheduling ${norm.length} daily notifications: ${norm.join(', ')}');
+
+      for (final s in norm) {
+        final h = int.parse(s.substring(0, 2));
+        final m = int.parse(s.substring(3, 5));
+        await scheduleDaily(hour: h, minute: m, title: title, body: body, payload: payload);
+      }
+      
+      debugPrint('✅ Daily notification plan saved and scheduled');
+    } catch (e) {
+      debugPrint('❌ Failed to schedule daily times: $e');
+    }
+  }
+
+  /// PUBLIC: re-apply saved plan (call on app start + foreground)
+  static Future<void> rescheduleDailyPlan({
+    String defaultTitle = 'MindLoad',
+    String defaultBody = '15 min today keeps your streak alive.',
+  }) async {
+    if (!_initialized) await initialize();
+    
+    // Skip notification on unsupported platforms
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      return;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final plan = prefs.getStringList(_dailyPlanKey) ?? [];
+      if (plan.isEmpty) {
+        debugPrint('📅 No daily notification plan found');
+        return;
+      }
+      
+      debugPrint('📅 Re-applying daily notification plan: ${plan.join(', ')}');
+      
+      for (final s in plan) {
+        final h = int.parse(s.substring(0, 2));
+        final m = int.parse(s.substring(3, 5));
+        await scheduleDaily(hour: h, minute: m, title: defaultTitle, body: defaultBody);
+      }
+      
+      debugPrint('✅ Daily notification plan re-applied successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to reschedule daily plan: $e');
+    }
+  }
+
+  /// PUBLIC: clear & update helpers
+  static Future<void> clearDailyPlan() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final plan = prefs.getStringList(_dailyPlanKey) ?? [];
+      
+      debugPrint('📅 Clearing ${plan.length} daily notifications');
+      
+      for (final s in plan) {
+        final h = int.parse(s.substring(0, 2));
+        final m = int.parse(s.substring(3, 5));
+        final id = _stableIdForDaily(h, m);
+        await _plugin.cancel(id);
+        debugPrint('❌ Cancelled daily notification ID: $id (${s})');
+      }
+      await prefs.remove(_dailyPlanKey);
+      
+      debugPrint('✅ Daily notification plan cleared');
+    } catch (e) {
+      debugPrint('❌ Failed to clear daily plan: $e');
+    }
+  }
+
+  static Future<void> updateDailyPlan(
+    List<String> hhmmList, {
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    debugPrint('📅 Updating daily notification plan...');
+    await clearDailyPlan();
+    await scheduleDailyTimes(hhmmList, title: title, body: body, payload: payload);
+    debugPrint('✅ Daily notification plan updated successfully');
+  }
+
   /// Test iOS notification permissions and functionality
   static Future<void> testIOSPermissions() async {
     if (!Platform.isIOS) {
@@ -910,10 +1082,54 @@ class MindLoadNotificationService {
       debugPrint('🎉 Testing first-run notification...');
       await fireFirstStudySetNotificationIfNeeded();
 
+      // Test daily notification system
+      debugPrint('📅 Testing daily notification system...');
+      await testDailyNotificationSystem();
+
       debugPrint('✅ Comprehensive notification test completed successfully');
     } catch (e, stackTrace) {
       debugPrint('❌ Comprehensive notification test failed: $e');
       debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  /// Test daily notification system
+  static Future<void> testDailyNotificationSystem() async {
+    debugPrint('📅 Testing daily notification system...');
+    
+    try {
+      // Test setting up a 3x daily cadence
+      await updateDailyPlan(
+        ['09:00', '13:00', '19:00'],
+        title: 'MindLoad Study Reminder',
+        body: '15 min today keeps your streak alive! 🧠',
+      );
+
+      // Check pending notifications
+      final pending = await getPendingNotifications();
+      final dailyNotifications = pending.where((n) => n.id >= 20000).toList();
+      
+      debugPrint('📋 Found ${dailyNotifications.length} daily notifications scheduled');
+      for (final notification in dailyNotifications) {
+        debugPrint('   - ID: ${notification.id}, Title: ${notification.title}, Body: ${notification.body}');
+      }
+
+      if (dailyNotifications.length == 3) {
+        debugPrint('✅ Daily notification system test passed - 3 notifications scheduled');
+      } else {
+        debugPrint('⚠️ Expected 3 daily notifications, found ${dailyNotifications.length}');
+      }
+      
+      // Test rescheduling
+      debugPrint('🔄 Testing notification rescheduling...');
+      await rescheduleDailyPlan(
+        defaultTitle: 'MindLoad Reminder',
+        defaultBody: 'Time for your daily learning session!',
+      );
+      
+      debugPrint('✅ Daily notification system test completed');
+    } catch (e) {
+      debugPrint('❌ Daily notification system test failed: $e');
     }
   }
 }

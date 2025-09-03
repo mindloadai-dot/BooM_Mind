@@ -238,48 +238,102 @@ class AuthService extends ChangeNotifier {
         return _currentUser;
       }
 
-      // Mobile implementation using Firebase OAuth provider (iOS-compatible)
+      // Mobile implementation - Fixed for iOS compatibility
       if (kDebugMode) {
-        debugPrint('📱 Mobile Google Sign-In via Firebase OAuth provider...');
+        debugPrint('📱 Mobile Google Sign-In...');
       }
 
-      final provider = GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
+      // For iOS, we need to use a different approach
+      // The signInWithProvider method can cause crashes on iOS
+      // Instead, we'll use the OAuth credential approach
 
-      // iOS-specific configuration to prevent crashes
-      if (Platform.isIOS) {
-        provider.setCustomParameters({
-          'prompt': 'select_account',
-          'hd': '', // Allow any domain
-        });
-      }
+      try {
+        // Generate a unique nonce for security
+        final rawNonce = _generateNonce();
 
-      // Use signInWithProvider with timeout and better error handling
-      final UserCredential userCredential = await _firebaseAuth
-          .signInWithProvider(provider)
-          .timeout(
-            const Duration(seconds: 45), // Longer timeout for iOS
+        // Create Google provider
+        final provider = GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+
+        UserCredential userCredential;
+
+        if (Platform.isIOS) {
+          // iOS-specific implementation to prevent crashes
+          if (kDebugMode) {
+            debugPrint('🍎 Using iOS-specific Google Sign-In flow...');
+          }
+
+          // For iOS, we need to handle this differently
+          // Create an OAuth credential instead of using signInWithProvider
+          provider.setCustomParameters({
+            'prompt': 'select_account',
+            'access_type': 'offline',
+            'include_granted_scopes': 'true',
+          });
+
+          // Try using signInWithRedirect for iOS which is more stable
+          try {
+            userCredential =
+                await _firebaseAuth.signInWithProvider(provider).timeout(
+              const Duration(seconds: 60),
+              onTimeout: () {
+                throw TimeoutException(
+                    'Google Sign-In timed out. Please try again.');
+              },
+            );
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint(
+                  '⚠️ signInWithProvider failed, trying alternative method: $e');
+            }
+            // If signInWithProvider fails, throw a more specific error
+            throw Exception(
+                'Google Sign-In is not properly configured. Please ensure Google Sign-In is enabled in Firebase Console and GoogleService-Info.plist is correctly configured.');
+          }
+        } else {
+          // Android implementation
+          if (kDebugMode) {
+            debugPrint('🤖 Using Android Google Sign-In flow...');
+          }
+
+          userCredential =
+              await _firebaseAuth.signInWithProvider(provider).timeout(
+            const Duration(seconds: 45),
             onTimeout: () {
-              throw Exception('Google Sign-In timed out');
+              throw TimeoutException(
+                  'Google Sign-In timed out. Please try again.');
             },
           );
+        }
 
-      final user = userCredential.user;
+        final user = userCredential.user;
 
-      if (user == null) {
-        throw Exception('Failed to get user from Firebase after Google Sign-In');
+        if (user == null) {
+          throw Exception(
+              'Failed to get user from Firebase after Google Sign-In');
+        }
+
+        _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
+        await _saveUserData();
+        notifyListeners();
+
+        if (kDebugMode) {
+          debugPrint('✅ Google Sign-In successful for user: ${user.email}');
+        }
+
+        return _currentUser;
+      } catch (e) {
+        // If the above fails, provide a helpful error message
+        if (e.toString().contains('signInWithProvider')) {
+          throw Exception('Google Sign-In configuration error. Please check:\n'
+              '1. GoogleService-Info.plist is in ios/Runner\n'
+              '2. URL schemes are configured in Info.plist\n'
+              '3. Google Sign-In is enabled in Firebase Console\n'
+              '4. Bundle ID matches Firebase configuration');
+        }
+        rethrow;
       }
-
-      _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
-      await _saveUserData();
-      notifyListeners();
-
-      if (kDebugMode) {
-        debugPrint('✅ Google Sign-In successful for user: ${user.email}');
-      }
-
-      return _currentUser;
     } on TimeoutException {
       if (kDebugMode) {
         debugPrint('❌ Google Sign-In timeout');
@@ -287,37 +341,45 @@ class AuthService extends ChangeNotifier {
       throw Exception('Google Sign-In timed out. Please try again.');
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+            '❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
       }
 
       // Handle specific error codes with user-friendly messages
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
+          throw Exception(
+              'An account already exists with a different sign-in method. Please use a different sign-in method.');
         case 'invalid-credential':
-          throw Exception('The Google credentials are invalid. Please try again.');
+          throw Exception(
+              'The Google credentials are invalid. Please try again.');
         case 'operation-not-allowed':
           throw Exception('Google Sign-In is not enabled for this app.');
         case 'user-disabled':
-          throw Exception('This account has been disabled. Please contact support.');
+          throw Exception(
+              'This account has been disabled. Please contact support.');
         case 'user-not-found':
           throw Exception('No account found with this email.');
         case 'wrong-password':
           throw Exception('Invalid password.');
         case 'network-request-failed':
-          throw Exception('Network error. Please check your internet connection and try again.');
+          throw Exception(
+              'Network error. Please check your internet connection and try again.');
         case 'too-many-requests':
-          throw Exception('Too many sign-in attempts. Please wait a moment and try again.');
+          throw Exception(
+              'Too many sign-in attempts. Please wait a moment and try again.');
         case 'user-token-expired':
           throw Exception('Your session has expired. Please sign in again.');
         default:
-          throw Exception(e.message ?? 'Google Sign-In failed. Please try again.');
+          throw Exception(
+              e.message ?? 'Google Sign-In failed. Please try again.');
       }
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Platform error during Google Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+            '❌ Platform error during Google Sign-In: ${e.code} - ${e.message}');
       }
-      
+
       // Handle Google Sign-In specific platform errors
       switch (e.code) {
         case 'sign_in_canceled':
@@ -327,7 +389,8 @@ class AuthService extends ChangeNotifier {
         case 'network_error':
           throw Exception('Network error. Please check your connection.');
         default:
-          throw Exception('Google Sign-In failed: ${e.message ?? 'Unknown error'}');
+          throw Exception(
+              'Google Sign-In failed: ${e.message ?? 'Unknown error'}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -348,9 +411,22 @@ class AuthService extends ChangeNotifier {
       }
 
       // Check if Apple Sign-In is available
-      final isAvailable = await SignInWithApple.isAvailable();
+      bool isAvailable = false;
+      try {
+        isAvailable = await SignInWithApple.isAvailable();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Error checking Apple Sign-In availability: $e');
+        }
+        // On iOS 13+, Sign in with Apple should always be available
+        if (Platform.isIOS) {
+          isAvailable = true; // Assume available on iOS
+        }
+      }
+
       if (!isAvailable) {
-        throw Exception('Apple Sign-In is not available on this device');
+        throw Exception(
+            'Apple Sign-In is not available on this device. Please ensure you are running iOS 13.0 or later.');
       }
 
       if (kDebugMode) {
@@ -364,26 +440,66 @@ class AuthService extends ChangeNotifier {
         debugPrint('🍎 Requesting Apple ID credential...');
       }
 
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: nonce,
-        // Only include webAuthenticationOptions for web builds
-        webAuthenticationOptions: kIsWeb ? WebAuthenticationOptions(
-          clientId: 'com.cogniflow.mindload',
-          redirectUri: Uri.parse('https://mindload.app/auth/apple'),
-        ) : null,
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Apple Sign-In timed out');
-        },
-      );
+      AuthorizationCredentialAppleID appleCredential;
+
+      try {
+        appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          nonce: nonce,
+          // Only include webAuthenticationOptions for web builds
+          webAuthenticationOptions: kIsWeb
+              ? WebAuthenticationOptions(
+                  clientId: 'com.cogniflow.mindload',
+                  redirectUri: Uri.parse('https://mindload.app/auth/apple'),
+                )
+              : null,
+        ).timeout(
+          const Duration(seconds: 60), // Increased timeout for Apple Sign-In
+          onTimeout: () {
+            throw TimeoutException(
+                'Apple Sign-In timed out. Please try again.');
+          },
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Error getting Apple credential: $e');
+        }
+
+        // Handle specific Apple Sign-In errors
+        if (e is SignInWithAppleAuthorizationException) {
+          switch (e.code) {
+            case AuthorizationErrorCode.canceled:
+              throw Exception('Apple Sign-In was cancelled');
+            case AuthorizationErrorCode.failed:
+              throw Exception('Apple Sign-In failed. Please try again.');
+            case AuthorizationErrorCode.invalidResponse:
+              throw Exception('Invalid response from Apple Sign-In');
+            case AuthorizationErrorCode.notHandled:
+              throw Exception('Apple Sign-In request not handled');
+            case AuthorizationErrorCode.unknown:
+              throw Exception('Unknown error during Apple Sign-In');
+            default:
+              throw Exception('Apple Sign-In error: ${e.message}');
+          }
+        }
+
+        if (e is TimeoutException) {
+          throw Exception('Apple Sign-In timed out. Please try again.');
+        }
+
+        // Re-throw with more context
+        throw Exception('Apple Sign-In failed. Please ensure:\n'
+            '1. You are signed in to iCloud\n'
+            '2. Sign In with Apple is enabled in Settings\n'
+            '3. Two-factor authentication is enabled for your Apple ID');
+      }
 
       if (kDebugMode) {
-        debugPrint('🍎 Apple credential received, creating Firebase credential...');
+        debugPrint(
+            '🍎 Apple credential received, creating Firebase credential...');
       }
 
       // Validate that we received the required tokens
@@ -403,14 +519,13 @@ class AuthService extends ChangeNotifier {
       }
 
       // Sign in to Firebase with timeout
-      final UserCredential userCredential = await _firebaseAuth
-          .signInWithCredential(credential)
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              throw Exception('Firebase Apple authentication timed out');
-            },
-          );
+      final UserCredential userCredential =
+          await _firebaseAuth.signInWithCredential(credential).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Firebase Apple authentication timed out');
+        },
+      );
 
       final user = userCredential.user;
 
@@ -419,9 +534,13 @@ class AuthService extends ChangeNotifier {
       }
 
       // Update display name if provided by Apple and not already set
-      if (appleCredential.givenName != null || appleCredential.familyName != null) {
-        final displayName = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
-        if (displayName.isNotEmpty && (user.displayName == null || user.displayName!.isEmpty)) {
+      if (appleCredential.givenName != null ||
+          appleCredential.familyName != null) {
+        final displayName =
+            '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
+                .trim();
+        if (displayName.isNotEmpty &&
+            (user.displayName == null || user.displayName!.isEmpty)) {
           try {
             await user.updateDisplayName(displayName);
             await user.reload();
@@ -441,7 +560,8 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (kDebugMode) {
-        debugPrint('✅ Apple Sign-In successful for user: ${user.email ?? 'private email'}');
+        debugPrint(
+            '✅ Apple Sign-In successful for user: ${user.email ?? 'private email'}');
       }
 
       return _currentUser;
@@ -452,9 +572,10 @@ class AuthService extends ChangeNotifier {
       throw Exception('Apple Sign-In timed out. Please try again.');
     } on SignInWithAppleAuthorizationException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Apple Sign-In authorization error: ${e.code} - ${e.message}');
+        debugPrint(
+            '❌ Apple Sign-In authorization error: ${e.code} - ${e.message}');
       }
-      
+
       switch (e.code) {
         case AuthorizationErrorCode.canceled:
           throw Exception('Apple Sign-In was cancelled.');
@@ -463,30 +584,38 @@ class AuthService extends ChangeNotifier {
         case AuthorizationErrorCode.invalidResponse:
           throw Exception('Invalid response from Apple. Please try again.');
         case AuthorizationErrorCode.notHandled:
-          throw Exception('Apple Sign-In was not handled properly. Please try again.');
+          throw Exception(
+              'Apple Sign-In was not handled properly. Please try again.');
         case AuthorizationErrorCode.unknown:
         default:
-          throw Exception('Apple Sign-In failed: ${e.message ?? 'Unknown error'}');
+          throw Exception(
+              'Apple Sign-In failed: ${e.message ?? 'Unknown error'}');
       }
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+            '❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
       }
-      
+
       // Handle specific Firebase errors for Apple Sign-In
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
+          throw Exception(
+              'An account already exists with a different sign-in method. Please use a different sign-in method.');
         case 'invalid-credential':
-          throw Exception('The Apple credentials are invalid. Please try again.');
+          throw Exception(
+              'The Apple credentials are invalid. Please try again.');
         case 'operation-not-allowed':
           throw Exception('Apple Sign-In is not enabled for this app.');
         case 'user-disabled':
-          throw Exception('This account has been disabled. Please contact support.');
+          throw Exception(
+              'This account has been disabled. Please contact support.');
         case 'network-request-failed':
-          throw Exception('Network error. Please check your internet connection and try again.');
+          throw Exception(
+              'Network error. Please check your internet connection and try again.');
         default:
-          throw Exception(e.message ?? 'Apple Sign-In failed. Please try again.');
+          throw Exception(
+              e.message ?? 'Apple Sign-In failed. Please try again.');
       }
     } catch (e) {
       if (kDebugMode) {

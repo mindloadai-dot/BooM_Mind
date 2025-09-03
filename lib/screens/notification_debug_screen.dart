@@ -101,6 +101,29 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
                       () => _createTestStudySetWithDeadline(),
                       Colors.indigo,
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Daily Notification System',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '📅 Setup 3x Daily Notifications',
+                      () => _setupDailyNotifications(),
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '🔄 Test Daily System',
+                      () => _testDailySystem(),
+                      Colors.blue,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTestButton(
+                      '❌ Clear Daily Notifications',
+                      () => _clearDailyNotifications(),
+                      Colors.red,
+                    ),
                   ],
                 ),
               ),
@@ -364,6 +387,119 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
       setState(() {
         _statusMessage = 'Failed to create test study set: $e';
         _logMessages.add('❌ Failed to create test study set: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _setupDailyNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Setting up daily notifications...';
+      _logMessages.clear();
+    });
+
+    try {
+      // Set up 3x daily notifications
+      await MindLoadNotificationService.updateDailyPlan(
+        ['09:00', '13:00', '19:00'],
+        title: 'MindLoad Study Reminder',
+        body: '15 min today keeps your streak alive! 🧠',
+      );
+
+      // Get pending notifications to verify
+      final pendingNotifications = await MindLoadNotificationService.getPendingNotifications();
+      final dailyNotifications = pendingNotifications.where((n) => n.id >= 20000).toList();
+
+      setState(() {
+        _statusMessage = 'Daily notifications set up successfully!';
+        _logMessages.add('✅ Set up 3x daily notifications:');
+        _logMessages.add('   - 09:00 AM');
+        _logMessages.add('   - 01:00 PM');
+        _logMessages.add('   - 07:00 PM');
+        _logMessages.add('📋 Found ${dailyNotifications.length} daily notifications scheduled');
+        
+        for (final notification in dailyNotifications) {
+          _logMessages.add('  - ID: ${notification.id}, Title: ${notification.title}');
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Failed to setup daily notifications: $e';
+        _logMessages.add('❌ Failed to setup daily notifications: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _testDailySystem() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Testing daily notification system...';
+      _logMessages.clear();
+    });
+
+    try {
+      // Run the comprehensive daily system test
+      await MindLoadNotificationService.testDailyNotificationSystem();
+      
+      // Also test rescheduling
+      await MindLoadNotificationService.rescheduleDailyPlan();
+
+      setState(() {
+        _statusMessage = 'Daily notification system test completed!';
+        _logMessages.add('✅ Daily notification system test passed');
+        _logMessages.add('🔄 Rescheduling test completed');
+        _logMessages.add('📱 Check console for detailed test results');
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Daily system test failed: $e';
+        _logMessages.add('❌ Daily system test failed: $e');
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _clearDailyNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'Clearing daily notifications...';
+      _logMessages.clear();
+    });
+
+    try {
+      // Clear all daily notifications
+      await MindLoadNotificationService.clearDailyPlan();
+
+      // Verify they're cleared
+      final pendingNotifications = await MindLoadNotificationService.getPendingNotifications();
+      final dailyNotifications = pendingNotifications.where((n) => n.id >= 20000).toList();
+
+      setState(() {
+        _statusMessage = 'Daily notifications cleared!';
+        _logMessages.add('✅ Daily notifications cleared');
+        _logMessages.add('📋 Remaining daily notifications: ${dailyNotifications.length}');
+        
+        if (dailyNotifications.isEmpty) {
+          _logMessages.add('🎉 All daily notifications successfully removed');
+        } else {
+          _logMessages.add('⚠️ Some daily notifications may still be pending');
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Failed to clear daily notifications: $e';
+        _logMessages.add('❌ Failed to clear daily notifications: $e');
       });
     } finally {
       setState(() {

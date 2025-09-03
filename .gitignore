@@ -1,3 +1,26 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -8,8 +31,6 @@
 .pub-cache/
 .pub/
 /build/
-
-# Web related
 
 # Symbolication related
 app.*.symbols
@@ -22,75 +43,38 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Gradle cache and build files
-android/.gradle/
-android/gradle/
-android/local.properties
+# Firebase
+firebase_options.dart
+google-services.json
+GoogleService-Info.plist
 
-# iOS/macOS
-**/ios/**/*.mode1v3
-**/ios/**/*.mode2v3
-**/ios/**/*.moved-aside
-**/ios/**/*.pbxuser
-**/ios/**/*.perspectivev3
-**/ios/**/*sync/
-**/ios/**/.sconsign.dblite
-**/ios/**/.tags*
-**/ios/**/.vagrant/
-**/ios/**/DerivedData/
-**/ios/**/Icon?
-**/ios/**/Pods/
-**/ios/**/.symlinks/
-**/ios/**/profile
-**/ios/**/xcuserdata
-**/ios/.generated/
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/ephemeral/
-**/ios/Flutter/app.flx
-**/ios/Flutter/app.zip
-**/ios/Flutter/flutter_assets/
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/ServiceDefinitions.json
-**/ios/Runner/GeneratedPluginRegistrant.*
+# Environment files
+.env
+.env.local
+.env.production
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
 
 # Coverage
 coverage/
 
-# Exceptions to above rules.
-!**/ios/**/default.mode1v3
-!**/ios/**/default.mode2v3
-!**/ios/**/default.pbxuser
-!**/ios/**/default.perspectivev3
+# Temporary files
+*.tmp
+*.temp
 
-# Firebase
-.firebase/
-.firebaserc
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
+# OS generated files
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Node modules (if any)
+node_modules/
 
 # Logs
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -101,15 +85,6 @@ pids
 *.pid
 *.seed
 *.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-node_modules/
 
 # Optional npm cache directory
 .npm
@@ -126,18 +101,21 @@ node_modules/
 # dotenv environment variables file
 .env
 
-# Build artifacts
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
 build/
 dist/
 out/
 
-# Test files
-test_*.js
-test_*.dart
+# Test outputs
+test-results/
+coverage/
 
-# Temporary files
-*.tmp
-*.temp
-
-# Development configuration files with actual API keys
-lib/config/development_config_local.dart
+# Local configuration
+local.properties

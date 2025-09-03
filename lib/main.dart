@@ -38,6 +38,23 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 
+// Lifecycle observer for notification rescheduling
+class _MlLifecycleRelay with WidgetsBindingObserver {
+  void start() => WidgetsBinding.instance.addObserver(this);
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('🔄 App resumed - rescheduling daily notifications');
+      MindLoadNotificationService.rescheduleDailyPlan();
+    }
+  }
+  
+  void stop() => WidgetsBinding.instance.removeObserver(this);
+}
+
+final _mlLifecycleRelay = _MlLifecycleRelay();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -86,6 +103,14 @@ void main() async {
   // Initialize the single unified notification service
   await MindLoadNotificationService.initialize();
   print('✅ MindLoad notification service initialized');
+  
+  // Re-apply saved daily notification plan on cold start
+  await MindLoadNotificationService.rescheduleDailyPlan();
+  print('✅ Daily notification plan re-applied on startup');
+  
+  // Keep plans fresh when returning to foreground
+  _mlLifecycleRelay.start();
+  print('✅ Lifecycle observer started for notification management');
 
   // Initialize the economy service
   await MindloadEconomyService.instance.initialize();
