@@ -1,4 +1,4 @@
-# Version 18 - Enhanced Learning Experience
+# Version 19 - Enhanced Learning Experience
 
 ## 🎉 Release Overview
 
@@ -155,4 +155,4 @@ Special thanks to:
 
 ---
 
-**Version 18** represents a significant milestone in MindLoad's development, bringing stability, reliability, and enhanced user experience to our AI-powered learning platform. We're excited to continue improving and expanding the app based on user feedback and emerging technologies.
+**Version 19** represents a significant milestone in MindLoad's development, bringing stability, reliability, and enhanced user experience to our AI-powered learning platform. We're excited to continue improving and expanding the app based on user feedback and emerging technologies.

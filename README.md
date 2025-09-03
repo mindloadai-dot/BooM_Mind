@@ -5,7 +5,7 @@
   
   ### 🧠 AI-Powered Learning Platform
   
-  **Version 18** - Enhanced with daily notifications, improved authentication, and comprehensive study tools
+  **Version 19** - Enhanced with daily notifications, improved authentication, and comprehensive study tools
   
   [![Flutter](https://img.shields.io/badge/Flutter-3.6.0+-blue.svg)](https://flutter.dev)
   [![Dart](https://img.shields.io/badge/Dart-3.6.0+-blue.svg)](https://dart.dev)
@@ -262,5 +262,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
   <p>Made with ❤️ by the MindLoad Team</p>
-  <p>Version 18 - Enhanced Learning Experience</p>
+  <p>Version 19 - Enhanced Learning Experience</p>
 </div>
