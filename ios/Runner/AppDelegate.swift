@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import Firebase
+import GoogleSignIn
 import UserNotifications
 
 @main
@@ -497,5 +498,23 @@ import UserNotifications
   override func applicationWillTerminate(_ application: UIApplication) {
     super.applicationWillTerminate(application)
     print("📱 App will terminate")
+  }
+  
+  // CRITICAL: Handle URL opening for Google Sign-In
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+  ) -> Bool {
+    print("🔗 Handling URL: \(url.absoluteString)")
+    
+    // Handle Google Sign-In URL
+    if GIDSignIn.sharedInstance.handle(url) {
+      print("✅ Google Sign-In handled URL successfully")
+      return true
+    }
+    
+    // Fallback to super implementation
+    return super.application(app, open: url, options: options)
   }
 }
