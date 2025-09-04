@@ -3,7 +3,6 @@ import 'dart:math';
 import 'dart:async';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -80,7 +79,6 @@ class AuthService extends ChangeNotifier {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseFunctions _functions =
       FirebaseFunctions.instanceFor(region: 'us-central1');
 
@@ -240,18 +238,18 @@ class AuthService extends ChangeNotifier {
         return _currentUser;
       }
 
-      // Mobile implementation - Stable iOS/Android compatible approach
+      // Mobile implementation - Following Firebase documentation best practices
       if (kDebugMode) {
         debugPrint('📱 Mobile Google Sign-In using Firebase Auth provider...');
       }
 
       try {
-        // Use Firebase Auth provider with iOS-specific optimizations
+        // Use Firebase Auth provider approach (recommended by Firebase docs)
         if (kDebugMode) {
           debugPrint('🔐 Starting Firebase Auth Google Sign-In...');
         }
 
-        // Create Google provider with iOS-specific parameters
+        // Create Google provider with proper scopes
         final provider = GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
@@ -284,7 +282,7 @@ class AuthService extends ChangeNotifier {
         notifyListeners();
 
         if (kDebugMode) {
-          debugPrint('✅ Stable Google Sign-In successful for user: ${user.email}');
+          debugPrint('✅ Google Sign-In successful for user: ${user.email}');
         }
 
         return _currentUser;
@@ -885,18 +883,6 @@ class AuthService extends ChangeNotifier {
       await _firebaseAuth.signOut();
       if (kDebugMode) {
         print('✅ Firebase sign out completed');
-      }
-
-      // Step 1.5: Sign out from Google Sign-In to clear cached credentials
-      try {
-        await _googleSignIn.signOut();
-        if (kDebugMode) {
-          print('✅ Google Sign-In sign out completed');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('⚠️ Google Sign-In sign out failed (non-critical): $e');
-        }
       }
 
       // Step 2: Clear current user state

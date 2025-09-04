@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -51,7 +50,6 @@ class FirebaseClientService extends ChangeNotifier {
 
   // Service instances
   late FirestoreRepository _repository;
-  late GoogleSignIn _googleSignIn;
   late LocalAuthentication _localAuth;
 
   // State management
@@ -293,11 +291,11 @@ class FirebaseClientService extends ChangeNotifier {
         return AuthResult(success: true, user: cred.user);
       }
 
-      // Stable mobile implementation using Firebase Auth provider
+      // Firebase documentation-compliant Google Sign-In implementation
       try {
-        debugPrint('🔐 Starting stable Firebase Auth Google Sign-In...');
+        debugPrint('🔐 Starting Firebase Auth Google Sign-In...');
 
-        // Create Google provider with iOS-specific parameters
+        // Create Google provider with proper scopes
         final provider = GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
@@ -312,7 +310,8 @@ class FirebaseClientService extends ChangeNotifier {
         }
 
         // Sign in with provider using timeout
-        final UserCredential userCredential = await _auth.signInWithProvider(provider).timeout(
+        final UserCredential userCredential =
+            await _auth.signInWithProvider(provider).timeout(
           const Duration(seconds: 60),
           onTimeout: () {
             throw TimeoutException('Google Sign-In timed out');
@@ -327,7 +326,7 @@ class FirebaseClientService extends ChangeNotifier {
         await _createOrUpdateUserProfile(userCredential.user!, 'google');
         return AuthResult(success: true, user: userCredential.user);
       } catch (e) {
-        debugPrint('Stable Google sign-in error: $e');
+        debugPrint('Firebase Auth Google sign-in error: $e');
 
         if (e is TimeoutException) {
           return AuthResult(

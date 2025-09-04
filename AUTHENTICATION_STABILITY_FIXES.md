@@ -1,7 +1,7 @@
 # Authentication Stability Fixes - MindLoad
 
 ## Overview
-This document outlines the comprehensive fixes implemented to resolve Google and Apple Sign-In stability issues on iOS and Android platforms.
+This document outlines the comprehensive fixes implemented to resolve Google and Apple Sign-In stability issues on iOS and Android platforms, following [Firebase documentation](https://firebase.google.com/docs) best practices.
 
 ## Issues Addressed
 
@@ -9,7 +9,7 @@ This document outlines the comprehensive fixes implemented to resolve Google and
 **Problem**: The original implementation used `signInWithProvider` which was prone to crashing on iOS due to URL handling and configuration issues.
 
 **Solution**: 
-- Implemented stable Firebase Auth provider approach with iOS-specific optimizations
+- Implemented Firebase Auth provider approach following [Firebase documentation](https://firebase.google.com/docs/auth/flutter/google-signin)
 - Added proper timeout handling (60 seconds)
 - Enhanced error handling with specific error messages
 - Added iOS-specific custom parameters to prevent crashes
@@ -24,10 +24,15 @@ This document outlines the comprehensive fixes implemented to resolve Google and
 
 ## Implementation Details
 
-### Google Sign-In Fixes
+### Google Sign-In Fixes (Firebase Documentation Compliant)
 
 #### AuthService (`lib/services/auth_service.dart`)
 ```dart
+// Create Google provider with proper scopes
+final provider = GoogleAuthProvider();
+provider.addScope('email');
+provider.addScope('profile');
+
 // iOS-specific configuration to prevent crashes
 if (Platform.isIOS) {
   provider.setCustomParameters({
@@ -47,7 +52,7 @@ final UserCredential userCredential = await _firebaseAuth.signInWithProvider(pro
 ```
 
 #### FirebaseClientService (`lib/services/firebase_client_service.dart`)
-- Applied same stable approach with enhanced error handling
+- Applied same Firebase documentation-compliant approach
 - Added network error detection
 - Improved timeout management
 
@@ -107,6 +112,12 @@ String _getAppleWebClientId() {
 - Proper cleanup in sign-out process
 - Enhanced debugging information
 
+### 5. Firebase Documentation Compliance
+- Follows [Firebase Auth documentation](https://firebase.google.com/docs/auth/flutter/google-signin) patterns
+- Uses recommended `signInWithProvider` approach
+- Proper scope configuration
+- iOS-specific custom parameters
+
 ## Testing Recommendations
 
 ### Google Sign-In Testing
@@ -114,6 +125,7 @@ String _getAppleWebClientId() {
 2. Verify timeout handling (60 seconds)
 3. Test cancellation flow
 4. Verify error messages for configuration issues
+5. Test with and without cached credentials
 
 ### Apple Sign-In Testing
 1. Test with and without environment variables
@@ -134,16 +146,16 @@ APPLE_REDIRECT_URI=https://yourdomain.com/auth/apple
 ## Files Modified
 
 1. `lib/services/auth_service.dart`
-   - Fixed Google Sign-In implementation
+   - Fixed Google Sign-In implementation to follow Firebase documentation
    - Added Apple Sign-In configuration helpers
    - Enhanced error handling
 
 2. `lib/services/firebase_client_service.dart`
-   - Applied same Google Sign-In fixes
+   - Applied same Firebase documentation-compliant approach
    - Enhanced error handling and timeout management
 
 ## Status
-✅ **Completed**: Google Sign-In iOS stability fixes
+✅ **Completed**: Google Sign-In iOS stability fixes (Firebase documentation compliant)
 ✅ **Completed**: Apple Sign-In configuration fixes
 🔄 **In Progress**: Testing and validation
 📋 **Pending**: Production deployment verification
@@ -153,3 +165,8 @@ APPLE_REDIRECT_URI=https://yourdomain.com/auth/apple
 2. Verify error handling in various network conditions
 3. Deploy to production and monitor for any remaining issues
 4. Update user documentation with new authentication flow
+
+## Firebase Documentation References
+- [Firebase Auth Flutter Documentation](https://firebase.google.com/docs/auth/flutter)
+- [Google Sign-In Flutter Guide](https://firebase.google.com/docs/auth/flutter/google-signin)
+- [Apple Sign-In Flutter Guide](https://firebase.google.com/docs/auth/flutter/apple)
