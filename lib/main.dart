@@ -15,12 +15,11 @@ import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
 import 'package:mindload/services/unified_onboarding_service.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/services/biometric_auth_service.dart';
 import 'package:mindload/services/user_specific_storage_service.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/notification_preferences.dart';
-import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/firebase_options.dart';
 import 'package:mindload/config/environment_config.dart';
 
@@ -141,10 +140,10 @@ Future<void> _initializeCoreServices() async {
         print('Auth Service initialization failed: $e');
       }),
 
-      // Enhanced Storage Service (critical for data)
-      EnhancedStorageService.instance.initialize().catchError((e) {
-        print('Enhanced Storage Service initialization failed: $e');
-      }),
+             // Enhanced Storage Service (critical for data)
+       UnifiedStorageService.instance.initialize().catchError((e) {
+         print('Unified Storage Service initialization failed: $e');
+       }),
     ]);
 
     // Initialize non-critical services in parallel (lazy loading)
@@ -251,9 +250,9 @@ class MindLoadApp extends StatelessWidget {
         ChangeNotifierProvider<NotificationPreferencesService>.value(
           value: NotificationPreferencesService.instance,
         ),
-        ChangeNotifierProvider<EnhancedStorageService>.value(
-          value: EnhancedStorageService.instance,
-        ),
+                 ChangeNotifierProvider<UnifiedStorageService>.value(
+           value: UnifiedStorageService.instance,
+         ),
         ChangeNotifierProvider<BiometricAuthService>.value(
           value: BiometricAuthService.instance,
         ),

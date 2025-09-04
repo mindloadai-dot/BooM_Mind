@@ -25,7 +25,7 @@ import 'package:mindload/widgets/youtube_preview_card.dart';
 
 import 'package:flutter/foundation.dart';
 
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
@@ -4175,7 +4175,7 @@ class _CreateScreenState extends State<CreateScreen>
     try {
       // Save to local storage using StorageService
       final success =
-          await EnhancedStorageService.instance.addStudySet(studySet);
+          await UnifiedStorageService.instance.addStudySet(studySet);
 
       if (kDebugMode) {
         print('💾 Study set saved: ${success ? 'SUCCESS' : 'FAILED'}');

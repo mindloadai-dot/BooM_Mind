@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/models/study_data.dart';
 
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/biometric_auth_service.dart';
 import 'package:mindload/widgets/biometric_setup_dialog.dart';
@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       // Use enhanced storage service for better offline support
       final fullStudySets =
-          await EnhancedStorageService.instance.getAllStudySets();
+          await UnifiedStorageService.instance.getAllStudySets();
 
       // Sort by last studied date
       fullStudySets.sort((a, b) => b.lastStudied.compareTo(a.lastStudied));
@@ -290,65 +290,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildConnectivityStatus(SemanticTokens tokens) {
-    return Consumer<EnhancedStorageService>(
-      builder: (context, storageService, child) {
-        if (storageService.isOnline && storageService.pendingSyncCount == 0) {
-          return const SizedBox.shrink();
-        }
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: storageService.isOnline
-                  ? tokens.success.withValues(alpha: 0.1)
-                  : tokens.warning.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: storageService.isOnline
-                    ? tokens.success.withValues(alpha: 0.3)
-                    : tokens.warning.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  storageService.isOnline ? Icons.cloud_done : Icons.cloud_off,
-                  size: 16,
-                  color:
-                      storageService.isOnline ? tokens.success : tokens.warning,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  storageService.isOnline
-                      ? 'Syncing ${storageService.pendingSyncCount} items...'
-                      : 'Offline mode - changes will sync when online',
-                  style: TextStyle(
-                    color: storageService.isOnline
-                        ? tokens.success
-                        : tokens.warning,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (storageService.isSyncing) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    // UnifiedStorageService is offline-first, so we don't need connectivity status
+    return const SizedBox.shrink();
   }
 
   Widget _buildEmptyStateAction({
@@ -1258,7 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       // If AI generation failed or returned empty content, create a working study set
       if (!aiGenerationSucceeded && (flashcardCount > 0 || quizCount > 0)) {
-        await EnhancedStorageService.instance.addStudySet(StudySet(
+        await UnifiedStorageService.instance.addStudySet(StudySet(
           id: 'temp_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecondsSinceEpoch}',
           title: title,
           content: content,
@@ -1313,7 +1256,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         lastStudied: DateTime.now(),
       );
 
-      await EnhancedStorageService.instance.addStudySet(studySet);
+      await UnifiedStorageService.instance.addStudySet(studySet);
       await _loadStudySets();
 
       // Track achievement progress
@@ -1758,7 +1701,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final tokens = context.tokens;
     try {
       // Update the full study set to preserve all data including notificationsEnabled
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
 
       // Reload study sets to reflect changes
       await _loadStudySets();
@@ -2067,7 +2010,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await MindLoadNotificationService.cancelAll();
 
       // Delete from storage
-      await EnhancedStorageService.instance.deleteStudySet(studySet.id);
+      await UnifiedStorageService.instance.deleteStudySet(studySet.id);
 
       // Reload study sets
       await _loadStudySets();
@@ -2194,7 +2137,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     try {
       final updatedStudySet = studySet.copyWith(title: newTitle.trim());
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
       await _loadStudySets();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2321,7 +2264,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         lastStudied: DateTime.now(),
       );
 
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
       await _loadStudySets();
 
       // Hide loading and show success

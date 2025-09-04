@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/models/study_data.dart';
 
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/widgets/notification_settings_dialog.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/pdf_export_models.dart';
@@ -489,7 +489,7 @@ class _StudyScreenState extends State<StudyScreen>
   Future<void> _updateStudySet(StudySet updatedStudySet) async {
     try {
       // Update the full study set to preserve all data including notificationsEnabled
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
 
       setState(() {
         _currentStudySet = updatedStudySet;
@@ -718,7 +718,7 @@ class _StudyScreenState extends State<StudyScreen>
       await MindLoadNotificationService.cancelAll();
 
       // Delete from storage
-      await EnhancedStorageService.instance.deleteStudySet(_currentStudySet.id);
+      await UnifiedStorageService.instance.deleteStudySet(_currentStudySet.id);
 
       // Navigate back to home
       Navigator.pop(context);
@@ -801,7 +801,7 @@ class _StudyScreenState extends State<StudyScreen>
 
     try {
       final updatedStudySet = _currentStudySet.copyWith(title: newTitle.trim());
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
 
       setState(() {
         _currentStudySet = updatedStudySet;
@@ -893,7 +893,7 @@ class _StudyScreenState extends State<StudyScreen>
         lastStudied: DateTime.now(),
       );
 
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
 
       if (mounted) {
         setState(() {
@@ -1251,7 +1251,7 @@ class _StudyScreenState extends State<StudyScreen>
         lastStudied: DateTime.now(),
       );
 
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
 
       if (mounted) {
         setState(() {
@@ -3409,7 +3409,7 @@ class _StudyScreenState extends State<StudyScreen>
     );
 
     // Save updated study set
-    EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+    UnifiedStorageService.instance.updateStudySet(updatedStudySet);
   }
 
   // Enhanced answer submission with adaptive tracking
@@ -3499,7 +3499,7 @@ class _StudyScreenState extends State<StudyScreen>
         lastStudied: DateTime.now(),
       );
 
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
 
       setState(() {
         _currentStudySet = updatedStudySet;
@@ -3563,7 +3563,7 @@ class _StudyScreenState extends State<StudyScreen>
         lastStudied: DateTime.now(),
       );
 
-      await EnhancedStorageService.instance.updateStudySet(updatedStudySet);
+      await UnifiedStorageService.instance.updateStudySet(updatedStudySet);
 
       setState(() {
         _currentStudySet = updatedStudySet;
