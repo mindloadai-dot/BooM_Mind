@@ -17,6 +17,7 @@ import 'package:mindload/services/local_image_storage_service.dart';
 
 import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
+import 'package:mindload/services/preference_migration_service.dart';
 import 'package:mindload/services/user_specific_storage_service.dart';
 
 enum AuthProvider {
@@ -156,6 +157,15 @@ class AuthService extends ChangeNotifier {
                   .catchError((e) {
                 if (kDebugMode) {
                   print('⚠️ Entitlement bootstrap failed: $e');
+                }
+              });
+
+              // Migrate preferences to user-specific storage (non-blocking)
+              PreferenceMigrationService.instance
+                  .migratePreferences()
+                  .catchError((e) {
+                if (kDebugMode) {
+                  print('⚠️ Preference migration failed: $e');
                 }
               });
             } else {
@@ -926,7 +936,7 @@ class AuthService extends ChangeNotifier {
 
       // Step 5: Clear user profile service data
       try {
-        await UserProfileService.instance.clearProfile();
+        await UserProfileService.instance.clearProfileData();
         if (kDebugMode) {
           print('✅ User profile data cleared');
         }
@@ -1032,7 +1042,7 @@ class AuthService extends ChangeNotifier {
 
         // Step 6: Clear user profile service data
         try {
-          await UserProfileService.instance.clearProfile();
+          await UserProfileService.instance.clearProfileData();
           if (kDebugMode) {
             print('🗑️ User profile data cleared');
           }
@@ -1066,8 +1076,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _saveUserData() async {
     if (_currentUser != null) {
-      await UnifiedStorageService.instance
-          .saveUserData(_currentUser!.toJson());
+      await UnifiedStorageService.instance.saveUserData(_currentUser!.toJson());
       await UnifiedStorageService.instance.setAuthenticated(true);
     }
   }

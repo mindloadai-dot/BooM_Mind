@@ -142,16 +142,16 @@ Future<void> _initializeCoreServices() async {
         print('Auth Service initialization failed: $e');
       }),
 
-             // Enhanced Storage Service (critical for data)
-       UnifiedStorageService.instance.initialize().catchError((e) {
-         print('Unified Storage Service initialization failed: $e');
-       }),
+      // Enhanced Storage Service (critical for data)
+      UnifiedStorageService.instance.initialize().catchError((e) {
+        print('Unified Storage Service initialization failed: $e');
+      }),
     ]);
 
     // Initialize non-critical services in parallel (lazy loading)
     Future.wait([
       // User Profile Service
-      UserProfileService.instance.initialize().catchError((e) {
+      UserProfileService.instance.loadProfileData().catchError((e) {
         print('User Profile Service initialization failed: $e');
       }),
 
@@ -272,9 +272,9 @@ class MindLoadApp extends StatelessWidget {
         ChangeNotifierProvider<NotificationPreferencesService>.value(
           value: NotificationPreferencesService.instance,
         ),
-                 ChangeNotifierProvider<UnifiedStorageService>.value(
-           value: UnifiedStorageService.instance,
-         ),
+        ChangeNotifierProvider<UnifiedStorageService>.value(
+          value: UnifiedStorageService.instance,
+        ),
         ChangeNotifierProvider<BiometricAuthService>.value(
           value: BiometricAuthService.instance,
         ),

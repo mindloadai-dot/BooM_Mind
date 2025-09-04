@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mindload/services/user_specific_storage_service.dart';
+import 'package:mindload/services/auth_service.dart';
 
 /// Service to manage user profile data including nicknames, timezones, and notification preferences
 /// This is the central service for all user personalization features
@@ -98,14 +100,12 @@ class UserProfileService extends ChangeNotifier {
         final endTime =
             DateTime(now.year, now.month, now.day, endHour, endMinute);
 
-        // Handle overnight quiet hours (e.g., 10 PM to 7 AM)
-        if (startHour > endHour) {
-          // Quiet hours span midnight
+        // Handle overnight quiet hours
+        if (endTime.isBefore(startTime)) {
           if (now.isAfter(startTime) || now.isBefore(endTime)) {
             return true;
           }
         } else {
-          // Quiet hours within same day
           if (now.isAfter(startTime) && now.isBefore(endTime)) {
             return true;
           }
@@ -120,11 +120,66 @@ class UserProfileService extends ChangeNotifier {
     return false;
   }
 
-  /// Initialize the service and load saved data
-  Future<void> initialize() async {
+  /// Load all profile data from storage
+  Future<void> loadProfileData() async {
+    try {
+      // Try user-specific storage first (for authenticated users)
+      if (AuthService.instance.isAuthenticated) {
+        await _loadFromUserSpecificStorage();
+      } else {
+        // Fallback to global storage for unauthenticated users
+        await _loadFromGlobalStorage();
+      }
+
+      notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('✅ Profile data loaded');
+        debugPrint('   Nickname: $_nickname');
+        debugPrint('   Timezone: $_timezone');
+        debugPrint(
+            '   Quiet hours: $_quietHoursEnabled ($_quietHoursStart - $_quietHoursEnd)');
+        debugPrint('   Notification style: $_notificationStyle');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to load profile data: $e');
+      }
+    }
+  }
+
+  /// Load from user-specific storage
+  Future<void> _loadFromUserSpecificStorage() async {
+    try {
+      _nickname =
+          await UserSpecificStorageService.instance.getString(_nicknameKey);
+      _timezone =
+          await UserSpecificStorageService.instance.getString(_timezoneKey);
+      _quietHoursEnabled = await UserSpecificStorageService.instance
+              .getBool(_quietHoursEnabledKey) ??
+          false;
+      _quietHoursStart = await UserSpecificStorageService.instance
+              .getString(_quietHoursStartKey) ??
+          '22:00';
+      _quietHoursEnd = await UserSpecificStorageService.instance
+              .getString(_quietHoursEndKey) ??
+          '07:00';
+      _notificationStyle = await UserSpecificStorageService.instance
+              .getString(_notificationStyleKey) ??
+          _defaultNotificationStyle;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to load from user-specific storage: $e');
+      }
+      // Fallback to global storage
+      await _loadFromGlobalStorage();
+    }
+  }
+
+  /// Load from global storage
+  Future<void> _loadFromGlobalStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-
       _nickname = prefs.getString(_nicknameKey);
       _timezone = prefs.getString(_timezoneKey);
       _quietHoursEnabled = prefs.getBool(_quietHoursEnabledKey) ?? false;
@@ -132,23 +187,9 @@ class UserProfileService extends ChangeNotifier {
       _quietHoursEnd = prefs.getString(_quietHoursEndKey) ?? '07:00';
       _notificationStyle =
           prefs.getString(_notificationStyleKey) ?? _defaultNotificationStyle;
-
-      // Validate notification style
-      if (!_availableStyles.contains(_notificationStyle)) {
-        _notificationStyle = _defaultNotificationStyle;
-      }
-
-      if (kDebugMode) {
-        debugPrint('✅ UserProfileService initialized');
-        debugPrint('   Nickname: $_nickname');
-        debugPrint('   Timezone: $_timezone');
-        debugPrint(
-            '   Quiet Hours: $_quietHoursEnabled ($_quietHoursStart - $_quietHoursEnd)');
-        debugPrint('   Notification Style: $_notificationStyle');
-      }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Failed to initialize UserProfileService: $e');
+        debugPrint('❌ Failed to load from global storage: $e');
       }
     }
   }
@@ -163,11 +204,23 @@ class UserProfileService extends ChangeNotifier {
         _nickname = trimmedNickname;
       }
 
-      final prefs = await SharedPreferences.getInstance();
-      if (_nickname != null) {
-        await prefs.setString(_nicknameKey, _nickname!);
+      // Save to user-specific storage if authenticated
+      if (AuthService.instance.isAuthenticated) {
+        if (_nickname != null) {
+          await UserSpecificStorageService.instance
+              .setString(_nicknameKey, _nickname!);
+        } else {
+          // Note: UserSpecificStorageService doesn't have remove method, so we'll set to empty string
+          await UserSpecificStorageService.instance.setString(_nicknameKey, '');
+        }
       } else {
-        await prefs.remove(_nicknameKey);
+        // Fallback to global storage for unauthenticated users
+        final prefs = await SharedPreferences.getInstance();
+        if (_nickname != null) {
+          await prefs.setString(_nicknameKey, _nickname!);
+        } else {
+          await prefs.remove(_nicknameKey);
+        }
       }
 
       notifyListeners();
@@ -187,8 +240,15 @@ class UserProfileService extends ChangeNotifier {
     try {
       _timezone = newTimezone;
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_timezoneKey, _timezone!);
+      // Save to user-specific storage if authenticated
+      if (AuthService.instance.isAuthenticated) {
+        await UserSpecificStorageService.instance
+            .setString(_timezoneKey, _timezone!);
+      } else {
+        // Fallback to global storage for unauthenticated users
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_timezoneKey, _timezone!);
+      }
 
       notifyListeners();
 
@@ -213,16 +273,26 @@ class UserProfileService extends ChangeNotifier {
       _quietHoursStart = start;
       _quietHoursEnd = end;
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_quietHoursEnabledKey, _quietHoursEnabled);
-      await prefs.setString(_quietHoursStartKey, _quietHoursStart);
-      await prefs.setString(_quietHoursEndKey, _quietHoursEnd);
+      // Save to user-specific storage if authenticated
+      if (AuthService.instance.isAuthenticated) {
+        await UserSpecificStorageService.instance
+            .setBool(_quietHoursEnabledKey, _quietHoursEnabled);
+        await UserSpecificStorageService.instance
+            .setString(_quietHoursStartKey, _quietHoursStart);
+        await UserSpecificStorageService.instance
+            .setString(_quietHoursEndKey, _quietHoursEnd);
+      } else {
+        // Fallback to global storage for unauthenticated users
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_quietHoursEnabledKey, _quietHoursEnabled);
+        await prefs.setString(_quietHoursStartKey, _quietHoursStart);
+        await prefs.setString(_quietHoursEndKey, _quietHoursEnd);
+      }
 
       notifyListeners();
 
       if (kDebugMode) {
-        debugPrint(
-            '✅ Quiet hours updated: $_quietHoursEnabled ($_quietHoursStart - $_quietHoursEnd)');
+        debugPrint('✅ Quiet hours updated: $enabled ($start - $end)');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -235,13 +305,20 @@ class UserProfileService extends ChangeNotifier {
   Future<void> updateNotificationStyle(String newStyle) async {
     try {
       if (!_availableStyles.contains(newStyle)) {
-        throw ArgumentError('Invalid notification style: $newStyle');
+        throw Exception('Invalid notification style: $newStyle');
       }
 
       _notificationStyle = newStyle;
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_notificationStyleKey, _notificationStyle);
+      // Save to user-specific storage if authenticated
+      if (AuthService.instance.isAuthenticated) {
+        await UserSpecificStorageService.instance
+            .setString(_notificationStyleKey, _notificationStyle);
+      } else {
+        // Fallback to global storage for unauthenticated users
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_notificationStyleKey, _notificationStyle);
+      }
 
       notifyListeners();
 
@@ -251,6 +328,111 @@ class UserProfileService extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Failed to update notification style: $e');
+      }
+    }
+  }
+
+  /// Clear all profile data
+  Future<void> clearProfileData() async {
+    try {
+      _nickname = null;
+      _timezone = null;
+      _quietHoursEnabled = false;
+      _quietHoursStart = '22:00';
+      _quietHoursEnd = '07:00';
+      _notificationStyle = _defaultNotificationStyle;
+
+      // Clear from user-specific storage if authenticated
+      if (AuthService.instance.isAuthenticated) {
+        await UserSpecificStorageService.instance.setString(_nicknameKey, '');
+        await UserSpecificStorageService.instance.setString(_timezoneKey, '');
+        await UserSpecificStorageService.instance
+            .setBool(_quietHoursEnabledKey, false);
+        await UserSpecificStorageService.instance
+            .setString(_quietHoursStartKey, '22:00');
+        await UserSpecificStorageService.instance
+            .setString(_quietHoursEndKey, '07:00');
+        await UserSpecificStorageService.instance
+            .setString(_notificationStyleKey, _defaultNotificationStyle);
+      } else {
+        // Clear from global storage for unauthenticated users
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_nicknameKey);
+        await prefs.remove(_timezoneKey);
+        await prefs.remove(_quietHoursEnabledKey);
+        await prefs.remove(_quietHoursStartKey);
+        await prefs.remove(_quietHoursEndKey);
+        await prefs.remove(_notificationStyleKey);
+      }
+
+      notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('✅ Profile data cleared');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to clear profile data: $e');
+      }
+    }
+  }
+
+  /// Migrate data from global storage to user-specific storage
+  Future<void> migrateToUserSpecificStorage() async {
+    if (!AuthService.instance.isAuthenticated) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Cannot migrate: user not authenticated');
+      }
+      return;
+    }
+
+    try {
+      // Load from global storage
+      final prefs = await SharedPreferences.getInstance();
+      final globalNickname = prefs.getString(_nicknameKey);
+      final globalTimezone = prefs.getString(_timezoneKey);
+      final globalQuietHoursEnabled =
+          prefs.getBool(_quietHoursEnabledKey) ?? false;
+      final globalQuietHoursStart =
+          prefs.getString(_quietHoursStartKey) ?? '22:00';
+      final globalQuietHoursEnd = prefs.getString(_quietHoursEndKey) ?? '07:00';
+      final globalNotificationStyle =
+          prefs.getString(_notificationStyleKey) ?? _defaultNotificationStyle;
+
+      // Save to user-specific storage
+      if (globalNickname != null && globalNickname.isNotEmpty) {
+        await UserSpecificStorageService.instance
+            .setString(_nicknameKey, globalNickname);
+      }
+      if (globalTimezone != null && globalTimezone.isNotEmpty) {
+        await UserSpecificStorageService.instance
+            .setString(_timezoneKey, globalTimezone);
+      }
+      await UserSpecificStorageService.instance
+          .setBool(_quietHoursEnabledKey, globalQuietHoursEnabled);
+      await UserSpecificStorageService.instance
+          .setString(_quietHoursStartKey, globalQuietHoursStart);
+      await UserSpecificStorageService.instance
+          .setString(_quietHoursEndKey, globalQuietHoursEnd);
+      await UserSpecificStorageService.instance
+          .setString(_notificationStyleKey, globalNotificationStyle);
+
+      // Update local state
+      _nickname = globalNickname;
+      _timezone = globalTimezone;
+      _quietHoursEnabled = globalQuietHoursEnabled;
+      _quietHoursStart = globalQuietHoursStart;
+      _quietHoursEnd = globalQuietHoursEnd;
+      _notificationStyle = globalNotificationStyle;
+
+      notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('✅ Profile data migrated to user-specific storage');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to migrate profile data: $e');
       }
     }
   }
@@ -345,52 +527,6 @@ class UserProfileService extends ChangeNotifier {
     }
   }
 
-  /// Clear all profile data
-  Future<void> clearProfile() async {
-    try {
-      _nickname = null;
-      _timezone = null;
-      _quietHoursEnabled = false;
-      _quietHoursStart = '22:00';
-      _quietHoursEnd = '07:00';
-      _notificationStyle = _defaultNotificationStyle;
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_nicknameKey);
-      await prefs.remove(_timezoneKey);
-      await prefs.remove(_quietHoursEnabledKey);
-      await prefs.remove(_quietHoursStartKey);
-      await prefs.remove(_quietHoursEndKey);
-      await prefs.remove(_notificationStyleKey);
-
-      notifyListeners();
-
-      if (kDebugMode) {
-        debugPrint('✅ Profile cleared');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Failed to clear profile: $e');
-      }
-    }
-  }
-
-  /// Get profile summary
-  Map<String, dynamic> getProfileSummary() {
-    return {
-      'nickname': _nickname,
-      'display_name': displayName,
-      'timezone': _timezone,
-      'quiet_hours_enabled': _quietHoursEnabled,
-      'quiet_hours_start': _quietHoursStart,
-      'quiet_hours_end': _quietHoursEnd,
-      'notification_style': _notificationStyle,
-      'is_in_quiet_hours': isInQuietHours,
-      'personalized_greeting': personalizedGreeting,
-      'available_styles': _availableStyles,
-    };
-  }
-
   /// Debug method to check nickname status
   void debugNicknameStatus() {
     if (kDebugMode) {
@@ -407,14 +543,14 @@ class UserProfileService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _nickname = prefs.getString(_nicknameKey);
-      
+
       // Ensure nickname is properly loaded
       if (_nickname != null && _nickname!.trim().isEmpty) {
         _nickname = null;
       }
-      
+
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('🔄 Nickname refreshed: $_nickname');
         debugPrint('   Display name: $displayName');

@@ -4,6 +4,8 @@ import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/services/local_image_storage_service.dart';
 import 'package:mindload/services/unified_storage_service.dart';
+import 'package:mindload/services/user_specific_storage_service.dart';
+import 'package:mindload/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindload/screens/privacy_policy_screen.dart';
 
@@ -27,20 +29,84 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   }
 
   Future<void> _loadSettings() async {
-    // Load current settings from storage
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
+    try {
+      // Try user-specific storage first (for authenticated users)
+      if (AuthService.instance.isAuthenticated) {
+        await _loadFromUserSpecificStorage();
+      } else {
+        // Fallback to global storage for unauthenticated users
+        await _loadFromGlobalStorage();
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to load privacy settings: $e');
+      }
+    }
+  }
+
+  Future<void> _loadFromUserSpecificStorage() async {
+    try {
+      _hapticFeedbackEnabled = await UserSpecificStorageService.instance
+              .getBool('haptic_feedback') ??
+          true;
+      _analyticsEnabled = await UserSpecificStorageService.instance
+              .getBool('analytics_enabled') ??
+          true;
+      _crashReportingEnabled = await UserSpecificStorageService.instance
+              .getBool('crash_reporting') ??
+          true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to load from user-specific storage: $e');
+      }
+      // Fallback to global storage
+      await _loadFromGlobalStorage();
+    }
+  }
+
+  Future<void> _loadFromGlobalStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
       _hapticFeedbackEnabled = prefs.getBool('haptic_feedback') ?? true;
       _analyticsEnabled = prefs.getBool('analytics_enabled') ?? true;
       _crashReportingEnabled = prefs.getBool('crash_reporting') ?? true;
-    });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to load from global storage: $e');
+      }
+    }
   }
 
   Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('haptic_feedback', _hapticFeedbackEnabled);
-    await prefs.setBool('analytics_enabled', _analyticsEnabled);
-    await prefs.setBool('crash_reporting', _crashReportingEnabled);
+    try {
+      // Save to user-specific storage if authenticated
+      if (AuthService.instance.isAuthenticated) {
+        await UserSpecificStorageService.instance
+            .setBool('haptic_feedback', _hapticFeedbackEnabled);
+        await UserSpecificStorageService.instance
+            .setBool('analytics_enabled', _analyticsEnabled);
+        await UserSpecificStorageService.instance
+            .setBool('crash_reporting', _crashReportingEnabled);
+      } else {
+        // Fallback to global storage for unauthenticated users
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('haptic_feedback', _hapticFeedbackEnabled);
+        await prefs.setBool('analytics_enabled', _analyticsEnabled);
+        await prefs.setBool('crash_reporting', _crashReportingEnabled);
+      }
+
+      if (kDebugMode) {
+        debugPrint('✅ Privacy settings saved');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to save privacy settings: $e');
+      }
+    }
   }
 
   @override
