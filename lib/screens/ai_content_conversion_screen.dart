@@ -154,7 +154,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
             // Quiz count
             Row(
               children: [
-                const UnifiedText('Quiz Questions: '),
+                UnifiedText('Quiz Questions: '),
                 Expanded(
                   child: Slider(
                     value: _quizCount.toDouble(),
@@ -176,7 +176,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
             // Difficulty
             Row(
               children: [
-                const UnifiedText('Difficulty: '),
+                UnifiedText('Difficulty: '),
                 Expanded(
                   child: DropdownButton<String>(
                     value: _difficulty,
@@ -228,7 +228,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
           
           UnifiedButton(
             onPressed: _textController.text.trim().isEmpty ? null : _convertText,
-            child: const UnifiedText('Convert to Study Set'),
+            child: UnifiedText('Convert to Study Set'),
           ),
         ],
       ),
@@ -284,7 +284,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
       padding: EdgeInsets.all(UnifiedSpacing.md),
       child: Column(
         children: [
-          const UnifiedText(
+          UnifiedText(
             'Enter a YouTube URL',
             style: UnifiedTypography.bodyLarge,
           ),
@@ -313,7 +313,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
           
           UnifiedButton(
             onPressed: _youtubeController.text.trim().isEmpty ? null : _convertYouTube,
-            child: const UnifiedText('Convert to Study Set'),
+            child: UnifiedText('Convert to Study Set'),
           ),
           
           if (_errorMessage != null)
@@ -341,7 +341,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
       padding: EdgeInsets.all(UnifiedSpacing.md),
       child: Column(
         children: [
-          const UnifiedText(
+          UnifiedText(
             'Enter a website URL',
             style: UnifiedTypography.bodyLarge,
           ),
@@ -365,7 +365,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
           
           UnifiedButton(
             onPressed: _urlController.text.trim().isEmpty ? null : _convertWebsite,
-            child: const UnifiedText('Convert to Study Set'),
+            child: UnifiedText('Convert to Study Set'),
           ),
           
           if (_errorMessage != null)
@@ -397,7 +397,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
           color: Colors.orange.shade100,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const UnifiedText(
+        child: UnifiedText(
           'Invalid YouTube URL',
           style: UnifiedTypography.bodyMedium,
         ),
@@ -431,7 +431,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const UnifiedText(
+                UnifiedText(
                   'YouTube Video Detected',
                   style: UnifiedTypography.titleSmall,
                 ),
@@ -458,7 +458,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
       ),
       child: Column(
         children: [
-          const UnifiedText(
+          UnifiedText(
             'Processing Content...',
             style: UnifiedTypography.titleSmall,
           ),
@@ -500,7 +500,7 @@ class _AIContentConversionScreenState extends State<AIContentConversionScreen>
             children: [
               const Icon(Icons.check_circle, color: Colors.green),
               SizedBox(width: UnifiedSpacing.sm),
-              const UnifiedText(
+              UnifiedText(
                 'Study Set Generated Successfully!',
                 style: UnifiedTypography.titleMedium,
               ),
