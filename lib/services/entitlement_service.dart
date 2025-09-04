@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:mindload/constants/product_constants.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 
@@ -202,7 +202,7 @@ class EntitlementService extends ChangeNotifier {
     try {
       // Try to load from local storage first
       final localData =
-          await EnhancedStorageService.instance.getUserEntitlements(userId);
+          await UnifiedStorageService.instance.getUserEntitlements(userId);
       if (localData != null) {
         _currentEntitlements = UserEntitlements.fromJson(localData);
         return;
@@ -215,7 +215,7 @@ class EntitlementService extends ChangeNotifier {
         if (firestoreData != null) {
           _currentEntitlements = UserEntitlements.fromJson(firestoreData);
           // Save to local storage
-          await EnhancedStorageService.instance
+          await UnifiedStorageService.instance
               .saveUserEntitlements(userId, firestoreData);
           return;
         }
@@ -237,7 +237,7 @@ class EntitlementService extends ChangeNotifier {
       final data = _currentEntitlements.toJson();
 
       // Save to local storage
-      await EnhancedStorageService.instance
+      await UnifiedStorageService.instance
           .saveUserEntitlements(_currentEntitlements.userId, data);
 
       // Save to Firestore if online

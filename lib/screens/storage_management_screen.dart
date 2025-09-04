@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/models/storage_models.dart';
 import 'package:mindload/theme.dart';
 
@@ -20,7 +20,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: MindloadAppBarFactory.secondary(title: 'Storage Management'),
-      body: Consumer<EnhancedStorageService>(
+      body: Consumer<UnifiedStorageService>(
         builder: (context, storageService, child) {
           final totals = storageService.totals;
           final metadata = storageService.metadata;
@@ -238,7 +238,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
   }
 
   // Storage actions
-  Widget _buildStorageActions(EnhancedStorageService storageService) {
+  Widget _buildStorageActions(UnifiedStorageService storageService) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -290,7 +290,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   // Study sets list
   Widget _buildStudySetsList(Map<String, StudySetMetadata> metadata,
-      EnhancedStorageService storageService) {
+      UnifiedStorageService storageService) {
     final sets = metadata.values.toList()
       ..sort((a, b) => b.lastOpenedAt.compareTo(a.lastOpenedAt));
 
@@ -367,7 +367,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   // Study set tile
   Widget _buildStudySetTile(
-      StudySetMetadata set, EnhancedStorageService storageService) {
+      StudySetMetadata set, UnifiedStorageService storageService) {
     final isPinned = set.isPinned;
     final isArchived = set.isArchived;
 
@@ -520,12 +520,12 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
   }
 
   // Action methods
-  void _togglePin(String setId, EnhancedStorageService storageService) {
+  void _togglePin(String setId, UnifiedStorageService storageService) {
     storageService.togglePin(setId);
   }
 
   void _showSetDetails(
-      StudySetMetadata set, EnhancedStorageService storageService) {
+      StudySetMetadata set, UnifiedStorageService storageService) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -552,7 +552,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     );
   }
 
-  void _showArchiveDialog(EnhancedStorageService storageService) {
+  void _showArchiveDialog(UnifiedStorageService storageService) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -582,7 +582,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     );
   }
 
-  void _showCleanupDialog(EnhancedStorageService storageService) {
+  void _showCleanupDialog(UnifiedStorageService storageService) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

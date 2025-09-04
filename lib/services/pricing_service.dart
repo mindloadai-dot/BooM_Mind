@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/models/pricing_models.dart';
 
 /// PricingService centralizes all MindLoad pricing and token quotas.
@@ -53,7 +53,7 @@ class PricingService extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       // Load persisted overrides first (if any)
-      final saved = await EnhancedStorageService.instance
+      final saved = await UnifiedStorageService.instance
           .getJsonData('pricing_overrides');
       if (saved != null) {
         applyOverrides(saved, persist: false);
@@ -127,7 +127,7 @@ class PricingService extends ChangeNotifier {
     }
 
     if (persist) {
-      await EnhancedStorageService.instance
+      await UnifiedStorageService.instance
           .saveJsonData('pricing_overrides', overrides);
     }
     notifyListeners();

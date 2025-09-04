@@ -3,7 +3,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:mindload/services/youtube_service.dart';
 import 'package:mindload/services/enhanced_ai_service.dart';
 import 'package:mindload/services/local_ai_fallback_service.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:flutter/foundation.dart';
@@ -20,8 +20,8 @@ class YouTubeTranscriptProcessor {
   final EnhancedAIService _enhancedAIService = EnhancedAIService.instance;
   final LocalAIFallbackService _fallbackService =
       LocalAIFallbackService.instance;
-  final EnhancedStorageService _storageService =
-      EnhancedStorageService.instance;
+  final UnifiedStorageService _storageService =
+      UnifiedStorageService.instance;
 
   /// Process YouTube video and create study materials with subtitle-based questions
   Future<StudySet?> processYouTubeVideo({

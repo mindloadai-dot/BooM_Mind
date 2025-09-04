@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/services/local_image_storage_service.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindload/screens/privacy_policy_screen.dart';
 
@@ -636,7 +636,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       );
 
       // Clear local data
-      await EnhancedStorageService.instance.clearAllData();
+      await UnifiedStorageService.instance.clearAllData();
       await LocalImageStorageService.instance.deleteProfileImage();
 
       if (mounted) {

@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'dart:io' show Platform; // Guarded usage
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 import 'package:mindload/firestore/firestore_data_schema.dart';
 import 'package:mindload/services/entitlement_service.dart';
@@ -1010,7 +1010,7 @@ class AuthService extends ChangeNotifier {
           print('🗑️ Clearing local data...');
         }
         await _clearUserData();
-        await EnhancedStorageService.instance.clearAllData();
+        await UnifiedStorageService.instance.clearAllData();
 
         // Step 4: Clear promotional consent data
         try {
@@ -1072,14 +1072,14 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _saveUserData() async {
     if (_currentUser != null) {
-      await EnhancedStorageService.instance
+      await UnifiedStorageService.instance
           .saveUserData(_currentUser!.toJson());
-      await EnhancedStorageService.instance.setAuthenticated(true);
+      await UnifiedStorageService.instance.setAuthenticated(true);
     }
   }
 
   Future<void> _loadUserData() async {
-    final userData = await EnhancedStorageService.instance.getUserData();
+    final userData = await UnifiedStorageService.instance.getUserData();
     if (userData != null) {
       try {
         _currentUser = AuthUser.fromJson(userData);
@@ -1094,8 +1094,8 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _clearUserData() async {
-    await EnhancedStorageService.instance.clearUserData();
-    await EnhancedStorageService.instance.setAuthenticated(false);
+    await UnifiedStorageService.instance.clearUserData();
+    await UnifiedStorageService.instance.setAuthenticated(false);
   }
 
   String _generateNonce([int length = 32]) {

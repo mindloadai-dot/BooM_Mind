@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/widgets/customize_study_set_dialog.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:mindload/widgets/brain_logo.dart';
@@ -106,7 +106,7 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen>
 
   Future<void> _loadStudySets() async {
     try {
-      final sets = await EnhancedStorageService.instance.getAllStudySets();
+      final sets = await UnifiedStorageService.instance.getAllStudySets();
       // Note: getLastCustomStudySet method needs to be implemented in EnhancedStorageService
       // For now, we'll get the most recent study set
       final lastCustom = sets.isNotEmpty ? sets.first : null;
@@ -589,7 +589,7 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen>
       );
 
       // Save the study set
-      await EnhancedStorageService.instance.addStudySet(studySet);
+      await UnifiedStorageService.instance.addStudySet(studySet);
 
       // Reload study sets
       await _loadStudySets();

@@ -770,7 +770,7 @@ class _CustomizeStudySetDialogState extends State<CustomizeStudySetDialog>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '${_totalCreditsNeeded} Credit${_totalCreditsNeeded != 1 ? 's' : ''}',
+                    '$_totalCreditsNeeded Credit${_totalCreditsNeeded != 1 ? 's' : ''}',
                     style: TextStyle(
                       color: tokens.textInverse,
                       fontWeight: FontWeight.bold,

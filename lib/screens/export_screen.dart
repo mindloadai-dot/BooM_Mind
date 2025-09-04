@@ -7,7 +7,7 @@ import 'package:mindload/models/mindload_economy_models.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/pdf_export_models.dart';
 
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
 import 'package:mindload/screens/subscription_settings_screen.dart';
 import 'package:mindload/screens/tiers_benefits_screen.dart';
@@ -582,7 +582,7 @@ class _ExportScreenState extends State<ExportScreen> {
       final appVersion = await _getAppVersion();
 
       final studySet =
-          await EnhancedStorageService.instance.getStudySet(widget.studySetId);
+          await UnifiedStorageService.instance.getStudySet(widget.studySetId);
 
       await pdfService.exportAndShareStudySet(
         uid: uid,

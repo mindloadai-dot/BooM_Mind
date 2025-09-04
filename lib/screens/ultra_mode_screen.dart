@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
 import 'package:mindload/services/credit_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
@@ -725,7 +725,7 @@ class _UltraModeScreenState extends State<UltraModeScreen>
 
   Future<void> _loadRecentStudySets() async {
     try {
-      final studySets = await EnhancedStorageService.instance.getAllStudySets();
+      final studySets = await UnifiedStorageService.instance.getAllStudySets();
       final sortedSets = studySets
         ..sort((a, b) => (b.lastStudied ?? DateTime(1970))
             .compareTo(a.lastStudied ?? DateTime(1970)));

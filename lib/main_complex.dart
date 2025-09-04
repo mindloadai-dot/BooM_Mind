@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
@@ -29,7 +29,7 @@ void main() async {
   // Initialize core services
   try {
     // Initialize storage service
-    await EnhancedStorageService.instance.initialize();
+    await UnifiedStorageService.instance.initialize();
 
     // Initialize theme manager
     await ThemeManager.instance.loadTheme();
@@ -68,8 +68,8 @@ class MindLoadApp extends StatelessWidget {
         ChangeNotifierProvider<AuthService>.value(
           value: AuthService.instance,
         ),
-        ChangeNotifierProvider<EnhancedStorageService>.value(
-          value: EnhancedStorageService.instance,
+        ChangeNotifierProvider<UnifiedStorageService>.value(
+          value: UnifiedStorageService.instance,
         ),
         ChangeNotifierProvider<UltraAudioController>.value(
           value: UltraAudioController.instance,

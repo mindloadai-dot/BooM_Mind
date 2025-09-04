@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:mindload/services/enhanced_storage_service.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/screens/storage_management_screen.dart';
 import 'package:mindload/theme.dart';
 
@@ -16,7 +16,7 @@ class StorageWarningBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<EnhancedStorageService>(
+    return Consumer<UnifiedStorageService>(
       builder: (context, storageService, child) {
         if (!storageService.isStorageWarning) {
           return const SizedBox.shrink();
@@ -256,7 +256,7 @@ class CompactStorageWarningBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<EnhancedStorageService>(
+    return Consumer<UnifiedStorageService>(
       builder: (context, storageService, child) {
         if (!storageService.isStorageWarning) {
           return const SizedBox.shrink();

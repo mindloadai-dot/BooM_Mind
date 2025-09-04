@@ -403,6 +403,21 @@ class UnifiedStorageService extends ChangeNotifier {
   }
 
   /// Pin/unpin study set
+  /// Toggle pin status of a study set
+  Future<bool> togglePin(String setId) async {
+    try {
+      if (_metadata.containsKey(setId)) {
+        final currentMetadata = _metadata[setId]!;
+        final newPinStatus = !currentMetadata.isPinned;
+        return await pinStudySet(setId, newPinStatus);
+      }
+      return false;
+    } catch (e) {
+      debugPrint('❌ Failed to toggle pin for set $setId: $e');
+      return false;
+    }
+  }
+
   Future<bool> pinStudySet(String setId, bool isPinned) async {
     try {
       final studySet = await getStudySet(setId);
@@ -812,6 +827,190 @@ class UnifiedStorageService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('❌ Failed to load totals (web): $e');
+    }
+  }
+
+  /// Auth-related methods for compatibility with AuthService
+  Future<void> saveUserData(Map<String, dynamic> userData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_user_data', jsonEncode(userData));
+      debugPrint('✅ User data saved');
+    } catch (e) {
+      debugPrint('❌ Failed to save user data: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('auth_user_data');
+      if (data != null) {
+        return jsonDecode(data) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get user data: $e');
+      return null;
+    }
+  }
+
+  Future<void> setAuthenticated(bool isAuthenticated) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('auth_is_authenticated', isAuthenticated);
+      debugPrint('✅ Authentication status set: $isAuthenticated');
+    } catch (e) {
+      debugPrint('❌ Failed to set authentication status: $e');
+    }
+  }
+
+  Future<void> clearUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_user_data');
+      await prefs.remove('auth_is_authenticated');
+      debugPrint('✅ User data cleared');
+    } catch (e) {
+      debugPrint('❌ Failed to clear user data: $e');
+    }
+  }
+
+  /// Generic JSON data storage methods for compatibility with other services
+  Future<Map<String, dynamic>?> getJsonData(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString(key);
+      if (data != null) {
+        return jsonDecode(data) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get JSON data for key $key: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveJsonData(String key, Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, jsonEncode(data));
+      debugPrint('✅ JSON data saved for key: $key');
+    } catch (e) {
+      debugPrint('❌ Failed to save JSON data for key $key: $e');
+    }
+  }
+
+  /// Credit service compatibility methods
+  Future<void> saveCreditData(Map<String, dynamic> creditData) async {
+    await saveJsonData('credit_data', creditData);
+  }
+
+  Future<Map<String, dynamic>?> getCreditData() async {
+    return await getJsonData('credit_data');
+  }
+
+  /// Entitlement service compatibility methods
+  Future<Map<String, dynamic>?> getUserEntitlements([String? userId]) async {
+    final key = userId != null ? 'user_entitlements_$userId' : 'user_entitlements';
+    return await getJsonData(key);
+  }
+
+  Future<void> saveUserEntitlements(dynamic userIdOrEntitlements, [Map<String, dynamic>? entitlements]) async {
+    if (entitlements != null) {
+      // Called with userId and entitlements
+      final userId = userIdOrEntitlements as String;
+      await saveJsonData('user_entitlements_$userId', entitlements);
+    } else {
+      // Called with just entitlements
+      final data = userIdOrEntitlements as Map<String, dynamic>;
+      await saveJsonData('user_entitlements', data);
+    }
+  }
+
+  /// YouTube service compatibility - use addStudySet instead
+  Future<void> saveStudySet(StudySet studySet) async {
+    await addStudySet(studySet);
+  }
+
+  /// Theme management methods for compatibility
+  Future<String?> getSelectedTheme() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('selected_theme');
+    } catch (e) {
+      debugPrint('❌ Failed to get selected theme: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveSelectedTheme(String themeId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_theme', themeId);
+      debugPrint('✅ Selected theme saved: $themeId');
+    } catch (e) {
+      debugPrint('❌ Failed to save selected theme: $e');
+    }
+  }
+
+  Future<void> clearAllData() async {
+    try {
+      // Clear all study sets
+      final setIds = _metadata.keys.toList();
+      for (final setId in setIds) {
+        await deleteStudySet(setId);
+      }
+      
+      // Clear user data
+      await clearUserData();
+      
+      // Clear metadata and totals
+      _metadata.clear();
+      _fullStudySets.clear();
+      _totals = StorageTotals(
+        totalBytes: 0,
+        totalSets: 0,
+        totalItems: 0,
+        lastUpdated: DateTime.now(),
+      );
+      
+      // Save cleared state
+      await _saveMetadata();
+      await _saveTotals();
+      
+      debugPrint('✅ All data cleared');
+    } catch (e) {
+      debugPrint('❌ Failed to clear all data: $e');
+    }
+  }
+
+  /// Get storage statistics for management screen
+  Future<Map<String, dynamic>> getStorageStats() async {
+    try {
+      final studySets = await getAllStudySets();
+      final totalSets = studySets.length;
+      final totalFlashcards = studySets.fold<int>(0, (sum, set) => sum + set.flashcards.length);
+      final totalQuizzes = studySets.fold<int>(0, (sum, set) => sum + set.quizzes.length);
+      
+      return {
+        'totalSets': totalSets,
+        'totalFlashcards': totalFlashcards,
+        'totalQuizzes': totalQuizzes,
+        'storageUsed': _totals.totalBytes,
+        'storageLimit': StorageConfig.storageBudgetMB * 1024 * 1024,
+        'usagePercentage': _totals.getUsagePercentage(StorageConfig.storageBudgetMB),
+      };
+    } catch (e) {
+      debugPrint('❌ Failed to get storage stats: $e');
+      return {
+        'totalSets': 0,
+        'totalFlashcards': 0,
+        'totalQuizzes': 0,
+        'storageUsed': 0,
+        'storageLimit': StorageConfig.storageBudgetMB * 1024 * 1024,
+        'usagePercentage': 0.0,
+      };
     }
   }
 
