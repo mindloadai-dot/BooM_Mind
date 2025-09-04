@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:async';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -79,6 +80,7 @@ class AuthService extends ChangeNotifier {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseFunctions _functions =
       FirebaseFunctions.instanceFor(region: 'us-central1');
 
@@ -238,80 +240,43 @@ class AuthService extends ChangeNotifier {
         return _currentUser;
       }
 
-      // Mobile implementation - Fixed for iOS compatibility
+      // Mobile implementation - Stable iOS/Android compatible approach
       if (kDebugMode) {
-        debugPrint('📱 Mobile Google Sign-In...');
+        debugPrint('📱 Mobile Google Sign-In using Firebase Auth provider...');
       }
 
-      // For iOS, we need to use a different approach
-      // The signInWithProvider method can cause crashes on iOS
-      // Instead, we'll use the OAuth credential approach
-
       try {
-        // Generate a unique nonce for security
-        final rawNonce = _generateNonce();
+        // Use Firebase Auth provider with iOS-specific optimizations
+        if (kDebugMode) {
+          debugPrint('🔐 Starting Firebase Auth Google Sign-In...');
+        }
 
-        // Create Google provider
+        // Create Google provider with iOS-specific parameters
         final provider = GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
 
-        UserCredential userCredential;
-
+        // iOS-specific configuration to prevent crashes
         if (Platform.isIOS) {
-          // iOS-specific implementation to prevent crashes
-          if (kDebugMode) {
-            debugPrint('🍎 Using iOS-specific Google Sign-In flow...');
-          }
-
-          // For iOS, we need to handle this differently
-          // Create an OAuth credential instead of using signInWithProvider
           provider.setCustomParameters({
             'prompt': 'select_account',
             'access_type': 'offline',
             'include_granted_scopes': 'true',
           });
-
-          // Try using signInWithRedirect for iOS which is more stable
-          try {
-            userCredential =
-                await _firebaseAuth.signInWithProvider(provider).timeout(
-              const Duration(seconds: 60),
-              onTimeout: () {
-                throw TimeoutException(
-                    'Google Sign-In timed out. Please try again.');
-              },
-            );
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint(
-                  '⚠️ signInWithProvider failed, trying alternative method: $e');
-            }
-            // If signInWithProvider fails, throw a more specific error
-            throw Exception(
-                'Google Sign-In is not properly configured. Please ensure Google Sign-In is enabled in Firebase Console and GoogleService-Info.plist is correctly configured.');
-          }
-        } else {
-          // Android implementation
-          if (kDebugMode) {
-            debugPrint('🤖 Using Android Google Sign-In flow...');
-          }
-
-          userCredential =
-              await _firebaseAuth.signInWithProvider(provider).timeout(
-            const Duration(seconds: 45),
-            onTimeout: () {
-              throw TimeoutException(
-                  'Google Sign-In timed out. Please try again.');
-            },
-          );
         }
+
+        // Sign in with provider using timeout
+        final UserCredential userCredential = await _firebaseAuth.signInWithProvider(provider).timeout(
+          const Duration(seconds: 60),
+          onTimeout: () {
+            throw TimeoutException('Google Sign-In timed out. Please try again.');
+          },
+        );
 
         final user = userCredential.user;
 
         if (user == null) {
-          throw Exception(
-              'Failed to get user from Firebase after Google Sign-In');
+          throw Exception('Failed to get user from Firebase after Google Sign-In');
         }
 
         _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
@@ -319,20 +284,41 @@ class AuthService extends ChangeNotifier {
         notifyListeners();
 
         if (kDebugMode) {
-          debugPrint('✅ Google Sign-In successful for user: ${user.email}');
+          debugPrint('✅ Stable Google Sign-In successful for user: ${user.email}');
         }
 
         return _currentUser;
       } catch (e) {
-        // If the above fails, provide a helpful error message
-        if (e.toString().contains('signInWithProvider')) {
-          throw Exception('Google Sign-In configuration error. Please check:\n'
+        // Enhanced error handling for the stable implementation
+        if (kDebugMode) {
+          debugPrint('❌ Stable Google Sign-In failed: $e');
+        }
+
+        if (e is TimeoutException) {
+          throw Exception(
+              'Google Sign-In timed out. Please check your internet connection and try again.');
+        }
+
+        if (e.toString().contains('network') ||
+            e.toString().contains('connection')) {
+          throw Exception(
+              'Network error during Google Sign-In. Please check your internet connection.');
+        }
+
+        if (e.toString().contains('cancelled')) {
+          throw Exception('Google Sign-In was cancelled.');
+        }
+
+        if (e.toString().contains('configuration') ||
+            e.toString().contains('GoogleService')) {
+          throw Exception('Google Sign-In configuration error. Please ensure:\n'
               '1. GoogleService-Info.plist is in ios/Runner\n'
               '2. URL schemes are configured in Info.plist\n'
               '3. Google Sign-In is enabled in Firebase Console\n'
               '4. Bundle ID matches Firebase configuration');
         }
-        rethrow;
+
+        throw Exception('Google Sign-In failed: ${e.toString()}');
       }
     } on TimeoutException {
       if (kDebugMode) {
@@ -449,11 +435,11 @@ class AuthService extends ChangeNotifier {
             AppleIDAuthorizationScopes.fullName,
           ],
           nonce: nonce,
-          // Only include webAuthenticationOptions for web builds
+          // Only include webAuthenticationOptions for web builds with proper configuration
           webAuthenticationOptions: kIsWeb
               ? WebAuthenticationOptions(
-                  clientId: 'com.cogniflow.mindload',
-                  redirectUri: Uri.parse('https://mindload.app/auth/apple'),
+                  clientId: _getAppleWebClientId(),
+                  redirectUri: Uri.parse(_getAppleRedirectUri()),
                 )
               : null,
         ).timeout(
@@ -901,6 +887,18 @@ class AuthService extends ChangeNotifier {
         print('✅ Firebase sign out completed');
       }
 
+      // Step 1.5: Sign out from Google Sign-In to clear cached credentials
+      try {
+        await _googleSignIn.signOut();
+        if (kDebugMode) {
+          print('✅ Google Sign-In sign out completed');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Google Sign-In sign out failed (non-critical): $e');
+        }
+      }
+
       // Step 2: Clear current user state
       _currentUser = null;
       if (kDebugMode) {
@@ -1250,5 +1248,42 @@ class AuthService extends ChangeNotifier {
       }
       // Don't rethrow - this is not critical as we have local Firestore sync as fallback
     }
+  }
+
+  /// Get Apple Web Client ID from environment or configuration
+  String _getAppleWebClientId() {
+    // Try to get from environment first
+    const envClientId = String.fromEnvironment('APPLE_WEB_CLIENT_ID');
+    if (envClientId.isNotEmpty) {
+      return envClientId;
+    }
+
+    // For development, you can set a default or throw an error
+    if (kDebugMode) {
+      debugPrint('⚠️ APPLE_WEB_CLIENT_ID not set, using bundle ID as fallback');
+      return 'com.cogniflow.mindload'; // Fallback to bundle ID
+    }
+
+    throw Exception(
+        'Apple Web Client ID not configured. Set APPLE_WEB_CLIENT_ID environment variable.');
+  }
+
+  /// Get Apple Redirect URI from environment or configuration
+  String _getAppleRedirectUri() {
+    // Try to get from environment first
+    const envRedirectUri = String.fromEnvironment('APPLE_REDIRECT_URI');
+    if (envRedirectUri.isNotEmpty) {
+      return envRedirectUri;
+    }
+
+    // For development, use a default
+    if (kDebugMode) {
+      debugPrint(
+          '⚠️ APPLE_REDIRECT_URI not set, using default for development');
+      return 'https://mindload.app/auth/apple';
+    }
+
+    throw Exception(
+        'Apple Redirect URI not configured. Set APPLE_REDIRECT_URI environment variable.');
   }
 }

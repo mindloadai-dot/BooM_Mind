@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -293,50 +293,58 @@ class FirebaseClientService extends ChangeNotifier {
         return AuthResult(success: true, user: cred.user);
       }
 
-      // Mobile implementation with iOS crash prevention
-      final provider = GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-
-      // Platform-specific configuration
-      if (Platform.isIOS) {
-        provider.setCustomParameters({
-          'prompt': 'select_account',
-          'access_type': 'offline',
-        });
-      }
-
+      // Stable mobile implementation using Firebase Auth provider
       try {
-        // Use timeout to prevent hanging
-        final cred = await _auth.signInWithProvider(provider).timeout(
+        debugPrint('🔐 Starting stable Firebase Auth Google Sign-In...');
+
+        // Create Google provider with iOS-specific parameters
+        final provider = GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+
+        // iOS-specific configuration to prevent crashes
+        if (Platform.isIOS) {
+          provider.setCustomParameters({
+            'prompt': 'select_account',
+            'access_type': 'offline',
+            'include_granted_scopes': 'true',
+          });
+        }
+
+        // Sign in with provider using timeout
+        final UserCredential userCredential = await _auth.signInWithProvider(provider).timeout(
           const Duration(seconds: 60),
           onTimeout: () {
-            throw TimeoutException('Google sign-in timed out');
+            throw TimeoutException('Google Sign-In timed out');
           },
         );
 
-        if (cred.user == null) {
+        if (userCredential.user == null) {
           return AuthResult(
-              success: false, error: 'Failed to get user from Google sign-in');
+              success: false, error: 'Failed to get user from Firebase');
         }
 
-        await _createOrUpdateUserProfile(cred.user!, 'google');
-        return AuthResult(success: true, user: cred.user);
+        await _createOrUpdateUserProfile(userCredential.user!, 'google');
+        return AuthResult(success: true, user: userCredential.user);
       } catch (e) {
-        debugPrint('Google sign-in error: $e');
-
-        // Provide helpful error message for common issues
-        if (e.toString().contains('signInWithProvider')) {
-          return AuthResult(
-              success: false,
-              error:
-                  'Google Sign-In configuration error. Please check Firebase and iOS configuration.');
-        }
+        debugPrint('Stable Google sign-in error: $e');
 
         if (e is TimeoutException) {
           return AuthResult(
               success: false,
               error: 'Google sign-in timed out. Please try again.');
+        }
+
+        if (e.toString().contains('network') ||
+            e.toString().contains('connection')) {
+          return AuthResult(
+              success: false,
+              error: 'Network error. Please check your internet connection.');
+        }
+
+        if (e.toString().contains('cancelled')) {
+          return AuthResult(
+              success: false, error: 'Google Sign-In was cancelled');
         }
 
         return AuthResult(
