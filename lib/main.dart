@@ -20,6 +20,8 @@ import 'package:mindload/services/biometric_auth_service.dart';
 import 'package:mindload/services/user_specific_storage_service.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/notification_preferences.dart';
+import 'package:mindload/neurograph_v2/neurograph_local_storage.dart';
+import 'package:mindload/neurograph_v2/neurograph_offline_repo.dart';
 import 'package:mindload/firebase_options.dart';
 import 'package:mindload/config/environment_config.dart';
 
@@ -211,15 +213,35 @@ void _initializeHeavyServicesAsync() {
     }
   });
 
-            Future.microtask(() async {
-            try {
-              // Unified Storage Service (for all study sets)
-              await UnifiedStorageService.instance.initialize();
-              print('Unified Storage Service initialized successfully');
-            } catch (e) {
-              print('Unified Storage Service initialization failed: $e');
-            }
-          });
+  Future.microtask(() async {
+    try {
+      // Unified Storage Service (for all study sets)
+      await UnifiedStorageService.instance.initialize();
+      print('Unified Storage Service initialized successfully');
+    } catch (e) {
+      print('Unified Storage Service initialization failed: $e');
+    }
+  });
+
+  Future.microtask(() async {
+    try {
+      // NeuroGraph V2 Local Storage (for offline analytics)
+      await NeuroGraphLocalStorage.instance.initialize();
+      print('NeuroGraph V2 Local Storage initialized successfully');
+    } catch (e) {
+      print('NeuroGraph V2 Local Storage initialization failed: $e');
+    }
+  });
+
+  Future.microtask(() async {
+    try {
+      // NeuroGraph V2 Offline Repository (for data access)
+      await NeuroGraphOfflineRepository.instance.initialize();
+      print('NeuroGraph V2 Offline Repository initialized successfully');
+    } catch (e) {
+      print('NeuroGraph V2 Offline Repository initialization failed: $e');
+    }
+  });
 }
 
 class MindLoadApp extends StatelessWidget {
