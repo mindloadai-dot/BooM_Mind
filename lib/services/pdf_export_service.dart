@@ -1050,3 +1050,109 @@ Page: $pageType | MindLoad v${branding['version']}
     );
   }
 }
+
+// PDF Export and Sharing Test Utility
+class PdfExportTestUtility {
+  static Future<void> testPdfExportAndSharing({
+    required String uid,
+    required String setId,
+    required String setTitle,
+    int flashcardCount = 5,
+    int quizCount = 3,
+  }) async {
+    try {
+      debugPrint('🧪 Starting PDF export and sharing test...');
+      
+      final pdfService = PdfExportService.instance;
+      final appVersion = pdfService.getAppVersion();
+      
+      // Test export options
+      final options = PdfExportOptions(
+        setId: setId,
+        includeFlashcards: flashcardCount > 0,
+        includeQuiz: quizCount > 0,
+        style: 'standard',
+        pageSize: 'Letter',
+        includeMindloadBranding: true,
+      );
+
+      // Calculate item counts
+      final itemCounts = <String, int>{};
+      if (options.includeFlashcards) itemCounts['flashcards'] = flashcardCount;
+      if (options.includeQuiz) itemCounts['quizzes'] = quizCount;
+
+      debugPrint('📊 Export configuration:');
+      debugPrint('  - Set ID: $setId');
+      debugPrint('  - Set Title: $setTitle');
+      debugPrint('  - Flashcards: $flashcardCount');
+      debugPrint('  - Quizzes: $quizCount');
+      debugPrint('  - Platform: ${Platform.operatingSystem}');
+      debugPrint('  - App Version: $appVersion');
+
+      // Perform export
+      final result = await pdfService.exportToPdf(
+        uid: uid,
+        setId: setId,
+        appVersion: appVersion,
+        itemCounts: itemCounts,
+        options: options,
+        onProgress: (progress) {
+          debugPrint('📈 Export progress: ${progress.percentage}%');
+        },
+        onCancelled: () {
+          debugPrint('❌ Export cancelled by user');
+        },
+      );
+
+      if (result.success && result.filePath != null) {
+        debugPrint('✅ PDF export successful!');
+        debugPrint('  - File path: ${result.filePath}');
+        debugPrint('  - File size: ${result.bytes} bytes');
+        debugPrint('  - Pages: ${result.pages}');
+        debugPrint('  - Duration: ${result.duration}');
+
+                 // Test sharing
+         debugPrint('📤 Testing PDF sharing...');
+         await pdfService.sharePdf(result.filePath!);
+        
+        debugPrint('✅ PDF sharing test completed successfully!');
+      } else {
+        debugPrint('❌ PDF export failed:');
+        debugPrint('  - Error code: ${result.errorCode}');
+        debugPrint('  - Error message: ${result.errorMessage}');
+        throw Exception('Export failed: ${result.errorMessage}');
+      }
+    } catch (e) {
+      debugPrint('❌ PDF export and sharing test failed: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> testPlatformSpecificFeatures() async {
+    debugPrint('🔧 Testing platform-specific features...');
+    
+    try {
+      // Test file system access
+      final documentsDir = await getApplicationDocumentsDirectory();
+      debugPrint('📁 Documents directory: ${documentsDir.path}');
+      
+      // Test file creation
+      final testFile = File('${documentsDir.path}/test_pdf_export.txt');
+      await testFile.writeAsString('Test content for PDF export');
+      debugPrint('✅ Test file created successfully');
+      
+      // Test file reading
+      final content = await testFile.readAsString();
+      debugPrint('✅ Test file read successfully: $content');
+      
+      // Clean up
+      await testFile.delete();
+      debugPrint('✅ Test file cleaned up');
+      
+      debugPrint('✅ Platform-specific features test completed!');
+    } catch (e) {
+      debugPrint('❌ Platform-specific features test failed: $e');
+      rethrow;
+    }
+  }
+}
