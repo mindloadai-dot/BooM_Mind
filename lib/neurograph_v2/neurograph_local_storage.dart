@@ -320,12 +320,12 @@ class NeuroGraphLocalStorage {
     ''', [userId, thirtyDaysAgo.millisecondsSinceEpoch]);
 
     return {
-      'totalAttempts': attemptCount.first['total'] ?? 0,
-      'correctAttempts': attemptCount.first['correct'] ?? 0,
-      'totalSessions': sessionCount.first['total'] ?? 0,
-      'averageAccuracy': sessionCount.first['avg_accuracy'] ?? 0.0,
+      'totalAttempts': (attemptCount.first['total'] as int?) ?? 0,
+      'correctAttempts': (attemptCount.first['correct'] as int?) ?? 0,
+      'totalSessions': (sessionCount.first['total'] as int?) ?? 0,
+      'averageAccuracy': (sessionCount.first['avg_accuracy'] as double?) ?? 0.0,
       'topicBreakdown': topicBreakdown,
-      'dataAvailable': (attemptCount.first['total'] as int? ?? 0) > 0,
+      'hasData': ((attemptCount.first['total'] as int?) ?? 0) > 0,
       'lastUpdated': now.toIso8601String(),
     };
   }
@@ -473,11 +473,11 @@ class NeuroGraphLocalStorage {
       questionId: row['question_id'],
       topicId: row['topic_id'],
       bloom: row['bloom'],
-      isCorrect: row['is_correct'] == 1,
-      score: row['score'].toDouble(),
-      responseMs: row['response_ms'],
-      timestamp: DateTime.fromMillisecondsSinceEpoch(row['timestamp']),
-      confidencePct: row['confidence_pct']?.toDouble(),
+      isCorrect: (row['is_correct'] as int?) == 1,
+      score: (row['score'] as num?)?.toDouble() ?? 0.0,
+      responseMs: (row['response_ms'] as int?) ?? 0,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(row['timestamp'] as int),
+      confidencePct: (row['confidence_pct'] as num?)?.toDouble(),
     );
   }
 
@@ -487,8 +487,8 @@ class NeuroGraphLocalStorage {
       userId: row['user_id'],
       startedAt: DateTime.fromMillisecondsSinceEpoch(row['started_at']),
       endedAt: DateTime.fromMillisecondsSinceEpoch(row['ended_at']),
-      itemsSeen: row['items_seen'],
-      itemsCorrect: row['items_correct'],
+      itemsSeen: (row['items_seen'] as int?) ?? 0,
+      itemsCorrect: (row['items_correct'] as int?) ?? 0,
       testId: row['test_id'],
       sessionType: row['session_type'],
       subject: row['subject'],

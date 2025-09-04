@@ -35,7 +35,7 @@ export const generateFlashcards = onCall(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-mini',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
@@ -109,7 +109,7 @@ export const generateQuiz = onCall(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-mini',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
@@ -240,7 +240,7 @@ async function generateAISummary(content: string, customInstructions?: string): 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -281,7 +281,7 @@ async function generateFlashcardsDirectly(content: string, count: number): Promi
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -332,7 +332,7 @@ async function generateQuizQuestionsDirectly(content: string, count: number): Pr
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',

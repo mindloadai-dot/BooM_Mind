@@ -84,6 +84,8 @@
         </service>
 
         <!-- Boot receiver for scheduled notifications -->
+        <!-- Temporarily disabled due to plugin compatibility issues -->
+        <!--
         <receiver
             android:name="io.flutter.plugins.flutter_local_notifications.ScheduledNotificationBootReceiver"
             android:enabled="true"
@@ -98,6 +100,7 @@
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
+        -->
         
         <!-- Notification receiver -->
         <receiver

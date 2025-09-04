@@ -24,6 +24,7 @@ import 'package:mindload/models/youtube_preview_models.dart';
 import 'package:mindload/widgets/youtube_preview_card.dart';
 
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/services/enhanced_ai_service.dart';
@@ -3208,14 +3209,83 @@ class _CreateScreenState extends State<CreateScreen>
     );
   }
 
-  void _handleUploadPDF() {
-    // Handle PDF upload
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('PDF upload - Implementation needed'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  void _handleUploadPDF() async {
+    try {
+      // Use file picker to select PDF
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'docx', 'txt', 'rtf', 'epub', 'odt'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        final bytes = file.bytes ?? await File(file.path!).readAsBytes();
+
+        setState(() {
+          _isProcessingDocument = true;
+          _processingProgress = 0.1;
+          _processingStatus = 'Processing document...';
+        });
+
+        try {
+          // Extract text from the document
+          final extractedText = await DocumentProcessor.extractTextFromFile(
+            bytes,
+            file.extension ?? 'pdf',
+            file.name,
+          );
+
+          setState(() {
+            _processingProgress = 1.0;
+            _processingStatus = 'Document processed successfully!';
+            _contentController.text = extractedText;
+            _isProcessingDocument = false;
+          });
+
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    '✅ Document processed: ${extractedText.length} characters extracted'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        } catch (e) {
+          setState(() {
+            _isProcessingDocument = false;
+          });
+
+          // Show error with helpful message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❌ Failed to process document: $e'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessingDocument = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error selecting file: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _handlePasteFromClipboard() {

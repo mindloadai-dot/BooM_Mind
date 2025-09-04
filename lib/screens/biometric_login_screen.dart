@@ -107,7 +107,21 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
       if (kDebugMode) {
         debugPrint('❌ Biometric authentication error: $e');
       }
-      _showError('Authentication error: ${e.toString()}');
+
+      // Show user-friendly error message
+      String errorMessage = e.toString();
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage =
+            errorMessage.substring(11); // Remove 'Exception: ' prefix
+      }
+      _showError(errorMessage);
+
+      // If biometric is not available or not enrolled, offer alternative
+      if (errorMessage.contains('not available') ||
+          errorMessage.contains('not enrolled') ||
+          errorMessage.contains('No biometrics enrolled')) {
+        _showBiometricSetupDialog();
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -115,6 +129,37 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
         });
       }
     }
+  }
+
+  void _showBiometricSetupDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Biometric Setup Required'),
+        content: const Text(
+          'Biometric authentication is not available or not set up on this device. '
+          'Please set up Face ID or fingerprint in your device settings, or use email sign-in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _navigateToAuth();
+            },
+            child: const Text('Sign in with Email'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Disable biometric login since it's not working
+              BiometricAuthService.instance.toggleBiometricLogin(false);
+              _navigateToAuth();
+            },
+            child: const Text('Disable Biometric'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -129,7 +174,7 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
   }
 
   void _navigateToAuth() {
-    Navigator.of(context).pushReplacementNamed('/social-auth');
+    Navigator.of(context).pushReplacementNamed('/auth');
   }
 
   @override

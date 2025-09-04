@@ -14,7 +14,8 @@ import 'package:mindload/services/mindload_notification_service.dart';
 /// Consolidates all study set storage into one system
 /// Ensures all study sets (URL-generated, manually created, YouTube, etc.) are stored in the same location
 class UnifiedStorageService extends ChangeNotifier {
-  static final UnifiedStorageService _instance = UnifiedStorageService._internal();
+  static final UnifiedStorageService _instance =
+      UnifiedStorageService._internal();
   factory UnifiedStorageService() => _instance;
   static UnifiedStorageService get instance => _instance;
   UnifiedStorageService._internal();
@@ -143,14 +144,33 @@ class UnifiedStorageService extends ChangeNotifier {
       )
     ''');
 
+    // Quizzes table
+    await db.execute('''
+      CREATE TABLE quizzes (
+        id TEXT PRIMARY KEY,
+        studySetId TEXT NOT NULL,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL,
+        createdDate INTEGER NOT NULL,
+        data TEXT NOT NULL,
+        FOREIGN KEY (studySetId) REFERENCES study_sets (id) ON DELETE CASCADE
+      )
+    ''');
+
     // Create indexes for better performance
-    await db.execute('CREATE INDEX idx_study_sets_user_id ON study_sets (userId)');
-    await db.execute('CREATE INDEX idx_study_sets_last_opened ON study_sets (lastOpenedAt)');
-    await db.execute('CREATE INDEX idx_study_items_set_id ON study_items (studySetId)');
+    await db
+        .execute('CREATE INDEX idx_study_sets_user_id ON study_sets (userId)');
+    await db.execute(
+        'CREATE INDEX idx_study_sets_last_opened ON study_sets (lastOpenedAt)');
+    await db.execute(
+        'CREATE INDEX idx_study_items_set_id ON study_items (studySetId)');
+    await db.execute(
+        'CREATE INDEX idx_quizzes_set_id ON quizzes (studySetId)');
   }
 
   /// Upgrade database
-  Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
+  Future<void> _upgradeDatabase(
+      Database db, int oldVersion, int newVersion) async {
     // Handle future database upgrades here
     debugPrint('🔄 Upgrading database from v$oldVersion to v$newVersion');
   }
@@ -178,14 +198,17 @@ class UnifiedStorageService extends ChangeNotifier {
     try {
       // Check for ID collision and generate unique ID if needed
       String uniqueId = studySet.id;
-      if (_metadata.containsKey(uniqueId) || _fullStudySets.containsKey(uniqueId)) {
+      if (_metadata.containsKey(uniqueId) ||
+          _fullStudySets.containsKey(uniqueId)) {
         int counter = 1;
         do {
           uniqueId = '${studySet.id}_$counter';
           counter++;
-        } while (_metadata.containsKey(uniqueId) || _fullStudySets.containsKey(uniqueId));
+        } while (_metadata.containsKey(uniqueId) ||
+            _fullStudySets.containsKey(uniqueId));
 
-        debugPrint('⚠️ ID collision detected for ${studySet.id}, using unique ID: $uniqueId');
+        debugPrint(
+            '⚠️ ID collision detected for ${studySet.id}, using unique ID: $uniqueId');
         studySet = studySet.copyWith(id: uniqueId);
       }
 
@@ -207,7 +230,8 @@ class UnifiedStorageService extends ChangeNotifier {
       // Fire first-run notification if this is the first study set
       if (studySet.flashcards.isNotEmpty || studySet.quizQuestions.isNotEmpty) {
         try {
-          await MindLoadNotificationService.fireFirstStudySetNotificationIfNeeded();
+          await MindLoadNotificationService
+              .fireFirstStudySetNotificationIfNeeded();
         } catch (e) {
           debugPrint('Failed to fire first study set notification: $e');
         }
@@ -235,28 +259,56 @@ class UnifiedStorageService extends ChangeNotifier {
       final flashcards = <Flashcard>[];
       final quizQuestions = <QuizQuestion>[];
 
-      for (final item in items) {
-        switch (item['type']) {
+      for (final itemData in items) {
+        // itemData is already Map<String, dynamic> from the method signature
+        final item = itemData;
+
+        // Validate required fields
+        final question = item['question']?.toString();
+        final answer = item['answer']?.toString();
+        final type = item['type']?.toString();
+
+        if (question == null || answer == null || type == null) {
+          debugPrint('⚠️ Skipping invalid item: missing required fields');
+          continue;
+        }
+
+        switch (type) {
           case 'flashcard':
             flashcards.add(Flashcard(
-              id: '${studySetId}_${item['question'].hashCode}',
-              question: item['question'],
-              answer: item['answer'],
-              difficulty: _mapDifficulty(item['difficulty'] ?? 'medium'),
+              id: '${studySetId}_${question.hashCode}',
+              question: question,
+              answer: answer,
+              difficulty:
+                  _mapDifficulty(item['difficulty']?.toString() ?? 'medium'),
             ));
             break;
           case 'multiple_choice':
           case 'short_answer':
+            final options = item['options'];
+            final optionsList = <String>[];
+
+            if (options is List) {
+              optionsList.addAll(options.map((e) => e.toString()));
+            } else if (options is String && options.isNotEmpty) {
+              optionsList.addAll(options.split('|'));
+            }
+
             quizQuestions.add(QuizQuestion(
-              id: '${studySetId}_${item['question'].hashCode}',
-              question: item['question'],
-              correctAnswer: item['answer'],
-              options: item['options'] ?? [],
-              difficulty: _mapDifficulty(item['difficulty'] ?? 'medium'),
-              explanation: item['explanation'],
-              type: item['type'] == 'multiple_choice' ? QuestionType.multipleChoice : QuestionType.shortAnswer,
+              id: '${studySetId}_${question.hashCode}',
+              question: question,
+              correctAnswer: answer,
+              options: optionsList,
+              difficulty:
+                  _mapDifficulty(item['difficulty']?.toString() ?? 'medium'),
+              explanation: item['explanation']?.toString(),
+              type: type == 'multiple_choice'
+                  ? QuestionType.multipleChoice
+                  : QuestionType.shortAnswer,
             ));
             break;
+          default:
+            debugPrint('⚠️ Unknown item type: $type');
         }
       }
 
@@ -368,7 +420,8 @@ class UnifiedStorageService extends ChangeNotifier {
       final studySets = <StudySet>[];
 
       for (final metadata in _metadata.values) {
-        if (metadata.setId.contains(userId) || metadata.setId.startsWith(userId)) {
+        if (metadata.setId.contains(userId) ||
+            metadata.setId.startsWith(userId)) {
           final studySet = await getStudySet(metadata.setId);
           if (studySet != null) {
             studySets.add(studySet);
@@ -457,7 +510,8 @@ class UnifiedStorageService extends ChangeNotifier {
 
       // Find duplicates based on title and creation time (within 1 second)
       for (final metadata in _metadata.values) {
-        final key = '${metadata.title}_${metadata.createdAt.millisecondsSinceEpoch ~/ 1000}';
+        final key =
+            '${metadata.title}_${metadata.createdAt.millisecondsSinceEpoch ~/ 1000}';
         if (seenTitles.containsKey(key)) {
           duplicatesToRemove.add(metadata.setId);
         } else {
@@ -471,7 +525,8 @@ class UnifiedStorageService extends ChangeNotifier {
       }
 
       if (duplicatesToRemove.isNotEmpty) {
-        debugPrint('🧹 Cleaned up ${duplicatesToRemove.length} duplicate study sets');
+        debugPrint(
+            '🧹 Cleaned up ${duplicatesToRemove.length} duplicate study sets');
       }
     } catch (e) {
       debugPrint('❌ Failed to cleanup duplicates: $e');
@@ -538,7 +593,8 @@ class UnifiedStorageService extends ChangeNotifier {
 
       if (_isWeb) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('unified_study_set_${studySet.id}', jsonEncode(studySetData));
+        await prefs.setString(
+            'unified_study_set_${studySet.id}', jsonEncode(studySetData));
       } else {
         // Use SQLite for native platforms
         if (_database != null) {
@@ -552,8 +608,11 @@ class UnifiedStorageService extends ChangeNotifier {
                 'content': studySet.content,
                 'sourceUrl': studySet.sourceUrl,
                 'preview': studySet.content.substring(0, 200),
-                'itemCount': studySet.flashcards.length + studySet.quizQuestions.length,
-                'userId': studySet.id.split('_').first, // Extract user ID from study set ID
+                'itemCount':
+                    studySet.flashcards.length + studySet.quizQuestions.length,
+                'userId': studySet.id
+                    .split('_')
+                    .first, // Extract user ID from study set ID
                 'isPinned': 0, // Default to unpinned
                 'isArchived': 0,
                 'bytes': jsonEncode(studySetData).length,
@@ -603,6 +662,22 @@ class UnifiedStorageService extends ChangeNotifier {
                 conflictAlgorithm: ConflictAlgorithm.replace,
               );
             }
+
+            // Save full quiz objects
+            for (final quiz in studySet.quizzes) {
+              await txn.insert(
+                'quizzes',
+                {
+                  'id': quiz.id,
+                  'studySetId': studySet.id,
+                  'title': quiz.title,
+                  'type': quiz.type.name,
+                  'createdDate': quiz.createdDate.millisecondsSinceEpoch,
+                  'data': jsonEncode(quiz.toJson()),
+                },
+                conflictAlgorithm: ConflictAlgorithm.replace,
+              );
+            }
           });
         }
       }
@@ -641,6 +716,7 @@ class UnifiedStorageService extends ChangeNotifier {
 
             final flashcards = <Flashcard>[];
             final quizQuestions = <QuizQuestion>[];
+            final quizzes = <Quiz>[];
 
             for (final itemRow in itemRows) {
               switch (itemRow['type']) {
@@ -650,26 +726,45 @@ class UnifiedStorageService extends ChangeNotifier {
                     question: itemRow['question'] as String,
                     answer: itemRow['answer'] as String,
                     difficulty: DifficultyLevel.values.firstWhere(
-                      (e) => e.name == (itemRow['difficulty'] as String? ?? 'intermediate'),
+                      (e) =>
+                          e.name ==
+                          (itemRow['difficulty'] as String? ?? 'intermediate'),
                     ),
                   ));
                   break;
                 case 'multipleChoice':
                 case 'shortAnswer':
-                  final options = (itemRow['options'] as String?)?.split('|') ?? [];
+                  final options =
+                      (itemRow['options'] as String?)?.split('|') ?? [];
                   quizQuestions.add(QuizQuestion(
                     id: itemRow['id'] as String,
                     question: itemRow['question'] as String,
                     correctAnswer: itemRow['answer'] as String,
                     options: options,
                     difficulty: DifficultyLevel.values.firstWhere(
-                      (e) => e.name == (itemRow['difficulty'] as String? ?? 'intermediate'),
+                      (e) =>
+                          e.name ==
+                          (itemRow['difficulty'] as String? ?? 'intermediate'),
                     ),
                     explanation: itemRow['explanation'] as String?,
-                    type: itemRow['type'] == 'multipleChoice' ? QuestionType.multipleChoice : QuestionType.shortAnswer,
+                    type: itemRow['type'] == 'multipleChoice'
+                        ? QuestionType.multipleChoice
+                        : QuestionType.shortAnswer,
                   ));
                   break;
               }
+            }
+
+            // Load full quiz objects
+            final quizRows = await _database!.query(
+              'quizzes',
+              where: 'studySetId = ?',
+              whereArgs: [setId],
+            );
+
+            for (final quizRow in quizRows) {
+              final quizData = jsonDecode(quizRow['data'] as String);
+              quizzes.add(Quiz.fromJson(quizData));
             }
 
             return StudySet(
@@ -678,8 +773,11 @@ class UnifiedStorageService extends ChangeNotifier {
               content: studySetRow['content'] as String? ?? '',
               flashcards: flashcards,
               quizQuestions: quizQuestions,
-              createdDate: DateTime.fromMillisecondsSinceEpoch(studySetRow['createdAt'] as int),
-              lastStudied: DateTime.fromMillisecondsSinceEpoch(studySetRow['lastStudied'] as int),
+              quizzes: quizzes,
+              createdDate: DateTime.fromMillisecondsSinceEpoch(
+                  studySetRow['createdAt'] as int),
+              lastStudied: DateTime.fromMillisecondsSinceEpoch(
+                  studySetRow['lastStudied'] as int),
               sourceUrl: studySetRow['sourceUrl'] as String?,
             );
           }
@@ -701,8 +799,11 @@ class UnifiedStorageService extends ChangeNotifier {
       } else {
         if (_database != null) {
           await _database!.transaction((txn) async {
-            await txn.delete('study_items', where: 'studySetId = ?', whereArgs: [setId]);
-            await txn.delete('study_sets', where: 'id = ?', whereArgs: [setId]);
+                      await txn.delete('study_items',
+              where: 'studySetId = ?', whereArgs: [setId]);
+          await txn.delete('quizzes',
+              where: 'studySetId = ?', whereArgs: [setId]);
+          await txn.delete('study_sets', where: 'id = ?', whereArgs: [setId]);
           });
         }
       }
@@ -714,7 +815,8 @@ class UnifiedStorageService extends ChangeNotifier {
   /// Save metadata
   Future<void> _saveMetadata() async {
     try {
-      final metadataJson = _metadata.map((key, value) => MapEntry(key, value.toJson()));
+      final metadataJson =
+          _metadata.map((key, value) => MapEntry(key, value.toJson()));
       final data = jsonEncode(metadataJson);
 
       if (_isWeb) {
@@ -749,7 +851,8 @@ class UnifiedStorageService extends ChangeNotifier {
         final jsonData = jsonDecode(data) as Map<String, dynamic>;
         _metadata.clear();
         for (final entry in jsonData.entries) {
-          _metadata[entry.key] = StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
+          _metadata[entry.key] =
+              StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
         }
       }
     } catch (e) {
@@ -766,7 +869,8 @@ class UnifiedStorageService extends ChangeNotifier {
         final jsonData = jsonDecode(data) as Map<String, dynamic>;
         _metadata.clear();
         for (final entry in jsonData.entries) {
-          _metadata[entry.key] = StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
+          _metadata[entry.key] =
+              StudySetMetadata.fromJson(entry.value as Map<String, dynamic>);
         }
       }
     } catch (e) {
@@ -912,11 +1016,13 @@ class UnifiedStorageService extends ChangeNotifier {
 
   /// Entitlement service compatibility methods
   Future<Map<String, dynamic>?> getUserEntitlements([String? userId]) async {
-    final key = userId != null ? 'user_entitlements_$userId' : 'user_entitlements';
+    final key =
+        userId != null ? 'user_entitlements_$userId' : 'user_entitlements';
     return await getJsonData(key);
   }
 
-  Future<void> saveUserEntitlements(dynamic userIdOrEntitlements, [Map<String, dynamic>? entitlements]) async {
+  Future<void> saveUserEntitlements(dynamic userIdOrEntitlements,
+      [Map<String, dynamic>? entitlements]) async {
     if (entitlements != null) {
       // Called with userId and entitlements
       final userId = userIdOrEntitlements as String;
@@ -961,10 +1067,10 @@ class UnifiedStorageService extends ChangeNotifier {
       for (final setId in setIds) {
         await deleteStudySet(setId);
       }
-      
+
       // Clear user data
       await clearUserData();
-      
+
       // Clear metadata and totals
       _metadata.clear();
       _fullStudySets.clear();
@@ -974,11 +1080,11 @@ class UnifiedStorageService extends ChangeNotifier {
         totalItems: 0,
         lastUpdated: DateTime.now(),
       );
-      
+
       // Save cleared state
       await _saveMetadata();
       await _saveTotals();
-      
+
       debugPrint('✅ All data cleared');
     } catch (e) {
       debugPrint('❌ Failed to clear all data: $e');
@@ -990,16 +1096,19 @@ class UnifiedStorageService extends ChangeNotifier {
     try {
       final studySets = await getAllStudySets();
       final totalSets = studySets.length;
-      final totalFlashcards = studySets.fold<int>(0, (sum, set) => sum + set.flashcards.length);
-      final totalQuizzes = studySets.fold<int>(0, (sum, set) => sum + set.quizzes.length);
-      
+      final totalFlashcards =
+          studySets.fold<int>(0, (sum, set) => sum + set.flashcards.length);
+      final totalQuizzes =
+          studySets.fold<int>(0, (sum, set) => sum + set.quizzes.length);
+
       return {
         'totalSets': totalSets,
         'totalFlashcards': totalFlashcards,
         'totalQuizzes': totalQuizzes,
         'storageUsed': _totals.totalBytes,
         'storageLimit': StorageConfig.storageBudgetMB * 1024 * 1024,
-        'usagePercentage': _totals.getUsagePercentage(StorageConfig.storageBudgetMB),
+        'usagePercentage':
+            _totals.getUsagePercentage(StorageConfig.storageBudgetMB),
       };
     } catch (e) {
       debugPrint('❌ Failed to get storage stats: $e');

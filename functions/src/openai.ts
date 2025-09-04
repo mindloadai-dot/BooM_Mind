@@ -13,7 +13,7 @@ const CONFIG = {
   MAX_REQUESTS_PER_MINUTE: 100,
   MAX_TOKENS_PER_REQUEST: 4000, // Increased for larger content processing
   DEFAULT_TEMPERATURE: 0.1, // Minimal temperature for fastest responses
-  DEFAULT_MODEL: 'gpt-5-mini', // Fastest model
+  DEFAULT_MODEL: 'gpt-4o-mini', // Updated to GPT-4o-mini
   TIMEOUT_MS: 120000, // 2 minute timeout for large content processing
   MAX_CONTENT_LENGTH: 500000, // Maximum 500,000 characters supported
 } as const;
@@ -238,7 +238,7 @@ export const testOpenAI = onCall({
     
     // Test with a simple completion first
     const simpleResponse = await client.chat.completions.create({
-      model: 'gpt-5-mini',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'user',

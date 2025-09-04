@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'auth_service.dart';
 import 'user_specific_storage_service.dart';
 
-/// Service for handling biometric authentication
+/// Enhanced Service for handling biometric authentication with better platform support
 class BiometricAuthService extends ChangeNotifier {
   static final BiometricAuthService _instance =
       BiometricAuthService._internal();
@@ -93,7 +94,16 @@ class BiometricAuthService extends ChangeNotifier {
     try {
       final bool isAvailable = await _localAuth.canCheckBiometrics;
       final bool isDeviceSupported = await _localAuth.isDeviceSupported();
-      return isAvailable && isDeviceSupported;
+      final List<BiometricType> availableBiometrics =
+          await _localAuth.getAvailableBiometrics();
+
+      if (kDebugMode) {
+        debugPrint(
+            '🔍 Biometric availability: canCheck=$isAvailable, deviceSupported=$isDeviceSupported, types=$availableBiometrics');
+      }
+
+      // Check if device supports biometric authentication and has biometrics enrolled
+      return isAvailable && isDeviceSupported && availableBiometrics.isNotEmpty;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Error checking biometric availability: $e');
@@ -263,7 +273,7 @@ class BiometricAuthService extends ChangeNotifier {
     }
   }
 
-  /// Enable biometric authentication
+  /// Enable biometric authentication with enhanced platform support
   Future<bool> enableBiometric() async {
     try {
       final currentUser = AuthService.instance.currentUser;
@@ -282,13 +292,13 @@ class BiometricAuthService extends ChangeNotifier {
         return false;
       }
 
+      // Get platform-specific authentication options
+      final authOptions = await _getPlatformAuthOptions();
+
       // Authenticate with biometric to confirm it works
       final bool didAuthenticate = await _localAuth.authenticate(
         localizedReason: 'Please authenticate to enable biometric login',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+        options: authOptions,
       );
 
       if (didAuthenticate) {
@@ -323,6 +333,15 @@ class BiometricAuthService extends ChangeNotifier {
       }
       return false;
     }
+  }
+
+  /// Get platform-specific authentication options
+  Future<AuthenticationOptions> _getPlatformAuthOptions() async {
+    return const AuthenticationOptions(
+      biometricOnly: true,
+      stickyAuth: true,
+      sensitiveTransaction: true,
+    );
   }
 
   /// Disable biometric authentication
@@ -375,31 +394,35 @@ class BiometricAuthService extends ChangeNotifier {
     }
   }
 
-  /// Authenticate using biometrics for login
+  /// Authenticate using biometrics for login with enhanced error handling
   Future<bool> authenticateWithBiometric({
     String reason = 'Please authenticate to access your account',
   }) async {
     try {
+      // Pre-checks
       if (!_isBiometricEnabled) {
         if (kDebugMode) {
           debugPrint('❌ Biometric authentication not enabled');
         }
-        return false;
+        throw Exception(
+            'Biometric authentication is not enabled. Please enable it in settings.');
       }
 
       if (!await isBiometricAvailable()) {
         if (kDebugMode) {
           debugPrint('❌ Biometric authentication not available');
         }
-        return false;
+        throw Exception(
+            'Biometric authentication is not available on this device or no biometrics are enrolled.');
       }
 
+      // Get platform-specific authentication options
+      final authOptions = await _getPlatformAuthOptions();
+
+      // Attempt authentication with enhanced error handling
       final bool didAuthenticate = await _localAuth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+        options: authOptions,
       );
 
       if (kDebugMode) {
@@ -407,11 +430,51 @@ class BiometricAuthService extends ChangeNotifier {
       }
 
       return didAuthenticate;
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '❌ Biometric authentication platform error: ${e.code} - ${e.message}');
+      }
+
+      // Handle specific platform errors with user-friendly messages
+      switch (e.code) {
+        case 'NotAvailable':
+          throw Exception(
+              'Biometric authentication is not available on this device.');
+        case 'NotEnrolled':
+          throw Exception(
+              'No biometrics enrolled. Please set up Face ID or fingerprint in device settings.');
+        case 'LockedOut':
+          throw Exception(
+              'Biometric authentication is temporarily locked. Please try again later or use device passcode.');
+        case 'PermanentlyLockedOut':
+          throw Exception(
+              'Biometric authentication is permanently locked. Please use device passcode to unlock.');
+        case 'UserCancel':
+          throw Exception('Authentication was cancelled by user.');
+        case 'UserFallback':
+          throw Exception('User selected fallback authentication method.');
+        case 'SystemCancel':
+          throw Exception('Authentication was cancelled by system.');
+        case 'InvalidContext':
+          throw Exception('Authentication context is invalid.');
+        case 'BiometricOnly':
+          throw Exception('Biometric authentication failed. Please try again.');
+        case 'PasscodeNotSet':
+          throw Exception('Device passcode is not set. Please set up a passcode in device settings.');
+        case 'BiometricNotAvailable':
+          throw Exception('Biometric authentication is not available on this device.');
+        case 'BiometricNotEnrolled':
+          throw Exception('No biometrics enrolled. Please set up biometric authentication in device settings.');
+        default:
+          throw Exception(
+              'Biometric authentication failed: ${e.message ?? 'Unknown error'}');
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Biometric authentication error: $e');
       }
-      return false;
+      rethrow;
     }
   }
 
@@ -460,6 +523,35 @@ class BiometricAuthService extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('❌ Failed to reset biometric settings: $e');
       }
+    }
+  }
+
+  /// Get detailed biometric status for debugging
+  Future<Map<String, dynamic>> getBiometricStatus() async {
+    try {
+      final isAvailable = await isBiometricAvailable();
+      final biometrics = await getAvailableBiometrics();
+      final description = await getBiometricDescription();
+
+      return {
+        'isAvailable': isAvailable,
+        'isEnabled': _isBiometricEnabled,
+        'isLoginEnabled': _isBiometricLoginEnabled,
+        'hasPromptBeenShown': _hasPromptBeenShown,
+        'isSetupCompleted': _isSetupCompleted,
+        'lastUser': _lastBiometricUser,
+        'availableBiometrics': biometrics.map((b) => b.toString()).toList(),
+        'description': description,
+        'platform': defaultTargetPlatform.toString(),
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error getting biometric status: $e');
+      }
+      return {
+        'error': e.toString(),
+        'platform': defaultTargetPlatform.toString(),
+      };
     }
   }
 }

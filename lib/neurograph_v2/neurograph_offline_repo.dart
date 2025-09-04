@@ -315,7 +315,7 @@ class NeuroGraphOfflineRepository {
       debugPrint('❌ Error computing user data summary: $e');
       return {
         'error': e.toString(),
-        'dataAvailable': false,
+        'hasData': false,
         'totalAttempts': 0,
         'correctAttempts': 0,
         'totalSessions': 0,

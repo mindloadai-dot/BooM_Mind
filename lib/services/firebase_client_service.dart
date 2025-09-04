@@ -560,7 +560,7 @@ class FirebaseClientService extends ChangeNotifier {
 
       // Sign out from Firebase Auth
       await _auth.signOut();
-      
+
       // Google Sign-In session clearing handled by Firebase Auth
       debugPrint('✅ Google Sign-In session managed by Firebase Auth');
 
@@ -580,6 +580,37 @@ class FirebaseClientService extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Password reset error: $e');
+      return false;
+    }
+  }
+
+  /// Re-authenticate user with password
+  Future<bool> reauthenticateWithPassword(String password) async {
+    try {
+      if (_currentUser == null) return false;
+
+      final credential = EmailAuthProvider.credential(
+        email: _currentUser!.email!,
+        password: password,
+      );
+
+      await _currentUser!.reauthenticateWithCredential(credential);
+      return true;
+    } catch (e) {
+      debugPrint('Re-authentication error: $e');
+      return false;
+    }
+  }
+
+  /// Update user password
+  Future<bool> updatePassword(String newPassword) async {
+    try {
+      if (_currentUser == null) return false;
+
+      await _currentUser!.updatePassword(newPassword);
+      return true;
+    } catch (e) {
+      debugPrint('Update password error: $e');
       return false;
     }
   }

@@ -425,6 +425,13 @@ class EnhancedAIService {
         debugPrint('💳 OpenAI quota/billing issue');
         userFriendlyError =
             'OpenAI quota exceeded. Check billing at platform.openai.com/usage';
+      } else if (e.toString().contains('Provider is overloaded') ||
+          e.toString().contains('Overloaded') ||
+          e.toString().contains('overloaded') ||
+          e.toString().contains('resource-exhausted')) {
+        debugPrint('⚡ OpenAI provider overloaded');
+        userFriendlyError =
+            'OpenAI is experiencing high demand. Using local AI fallback to continue processing your content.';
       } else if (e.toString().contains('failed-precondition') ||
           e.toString().contains('not configured')) {
         debugPrint('⚙️ OpenAI not configured');

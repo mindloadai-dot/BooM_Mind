@@ -38,32 +38,89 @@ class UrlStudySetService {
         'maxItems': maxItems,
       });
 
-      final data = result.data as Map<String, dynamic>;
+      // Safely convert Firebase Functions result
+      final data = result.data is Map<String, dynamic>
+          ? result.data as Map<String, dynamic>
+          : Map<String, dynamic>.from(result.data as Map);
 
       if (data['success'] == true) {
         debugPrint('✅ Study set generated successfully: ${data['studySetId']}');
 
+        // Validate required fields
+        if (data['studySetId'] == null || data['title'] == null) {
+          throw Exception('Invalid response: missing required fields');
+        }
+
         // Save the generated items locally using unified storage
         final items = data['items'] as List<dynamic>?;
-        if (items != null) {
-          await UnifiedStorageService.instance.saveStudySetFromUrl(
-            studySetId: data['studySetId'],
-            title: data['title'],
-            sourceUrl: url,
-            preview: data['preview'],
-            itemCount: data['itemCount'],
-            userId: user.uid,
-            items: items.cast<Map<String, dynamic>>(),
-          );
+        if (items != null && items.isNotEmpty) {
+          try {
+            // Safely convert items to proper format
+            final convertedItems = items.map<Map<String, dynamic>>((item) {
+              if (item is Map<String, dynamic>) {
+                return item;
+              } else if (item is Map) {
+                // Convert Map<Object?, Object?> to Map<String, dynamic>
+                return Map<String, dynamic>.from(item);
+              } else {
+                debugPrint(
+                    '⚠️ Unexpected item type: ${item.runtimeType}, value: $item');
+                throw Exception('Invalid item format: ${item.runtimeType}');
+              }
+            }).toList();
+
+            debugPrint(
+                '📝 Converting ${convertedItems.length} items for local storage');
+
+            await UnifiedStorageService.instance.saveStudySetFromUrl(
+              studySetId: data['studySetId'].toString(),
+              title: data['title'].toString(),
+              sourceUrl: url,
+              preview: data['preview']?.toString() ?? 'Generated from $url',
+              itemCount: data['itemCount'] ?? convertedItems.length,
+              userId: user.uid,
+              items: convertedItems,
+            );
+
+            debugPrint(
+                '✅ Study set saved locally with ${convertedItems.length} items');
+          } catch (e) {
+            debugPrint('❌ Error saving study set locally: $e');
+            // Don't rethrow - the generation was successful, just local saving failed
+            // The user can still access the study set from Firestore
+          }
+        } else {
+          debugPrint('⚠️ No items returned from study set generation');
         }
 
         return data;
       } else {
-        throw Exception('Failed to generate study set');
+        final errorMessage = data['error'] ?? 'Unknown error occurred';
+        throw Exception('Failed to generate study set: $errorMessage');
       }
     } catch (e) {
       debugPrint('❌ Error generating study set: $e');
-      rethrow;
+
+      // Provide user-friendly error messages for common issues
+      if (e.toString().contains('resource-exhausted') ||
+          e.toString().contains('overloaded') ||
+          e.toString().contains('Overloaded')) {
+        throw Exception('OpenAI service is currently experiencing high demand. '
+            'Please try again in a few moments. Your request will work with '
+            'sample content as a fallback.');
+      } else if (e.toString().contains('unauthenticated')) {
+        throw Exception('Please sign in to generate study sets from URLs.');
+      } else if (e.toString().contains('permission-denied')) {
+        throw Exception('You don\'t have permission to access this feature.');
+      } else if (e.toString().contains('invalid-argument')) {
+        throw Exception(
+            'Invalid URL or parameters. Please check the URL and try again.');
+      } else {
+        // Generic error with helpful suggestion
+        throw Exception(
+            'Failed to generate study set. This might be due to high demand on '
+            'AI services. Please try again in a few moments.');
+      }
     }
   }
 

@@ -130,6 +130,54 @@ function chunkText(text, maxChars) {
     }
     return chunks;
 }
+/**
+ * Retry OpenAI API calls with exponential backoff for handling overload errors
+ */
+async function retryOpenAICall(apiCall, operationType, maxRetries = 3) {
+    let lastError;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`🔄 OpenAI API call attempt ${attempt}/${maxRetries} for ${operationType}`);
+            const result = await apiCall();
+            if (attempt > 1) {
+                console.log(`✅ OpenAI API call succeeded on attempt ${attempt} for ${operationType}`);
+            }
+            return result;
+        }
+        catch (error) {
+            lastError = error;
+            // Check if this is a retryable error
+            const isOverloaded = error.message?.includes('Overloaded') ||
+                error.message?.includes('overloaded') ||
+                error.status === 503 ||
+                error.status === 529;
+            const isRetryable = [408, 429, 500, 502, 503, 504, 529].includes(error.status) ||
+                ['overloaded', 'timeout', 'rate limit', 'server error'].some(msg => (error.message || '').toLowerCase().includes(msg));
+            console.warn(`⚠️ OpenAI API call failed (attempt ${attempt}/${maxRetries}) for ${operationType}:`, {
+                error: error.message,
+                status: error.status,
+                isRetryable: isRetryable,
+                isOverloaded: isOverloaded
+            });
+            // Don't retry on the last attempt or non-retryable errors
+            if (attempt === maxRetries || (!isRetryable && !isOverloaded)) {
+                break;
+            }
+            // Calculate delay with exponential backoff + jitter
+            const baseDelay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+            const jitter = Math.random() * 1000; // Add up to 1s random jitter
+            const delay = baseDelay + jitter;
+            console.log(`⏳ Retrying in ${Math.round(delay)}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    // If we get here, all retries failed - throw the last error
+    console.error(`❌ All ${maxRetries} attempts failed for ${operationType}`, {
+        finalError: lastError.message,
+        status: lastError.status
+    });
+    throw lastError;
+}
 // Function to generate study items from text chunk using OpenAI
 async function generateItems(textChunk) {
     try {
@@ -150,22 +198,25 @@ Generate 3-5 study items with this structure:
 - Flashcards for key terms and concepts
 
 Make sure questions are clear, accurate, and test different levels of understanding.`;
-        const response = await client.chat.completions.create({
-            model: 'gpt-5-mini',
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are an expert educational content creator. Generate high-quality study items that help students learn effectively.',
-                },
-                {
-                    role: 'user',
-                    content: prompt,
-                },
-            ],
-            response_format: { type: 'json_object' },
-            temperature: 0.7,
-            max_tokens: 2000,
-        });
+        // Use retry logic for OpenAI API calls
+        const response = await retryOpenAICall(async () => {
+            return await client.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are an expert educational content creator. Generate high-quality study items that help students learn effectively.',
+                    },
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+                response_format: { type: 'json_object' },
+                temperature: 0.7,
+                max_tokens: 2000,
+            });
+        }, 'generateItems');
         const content = response.choices[0]?.message?.content;
         if (!content) {
             throw new Error('No response from OpenAI');
@@ -190,7 +241,11 @@ Make sure questions are clear, accurate, and test different levels of understand
         return items;
     }
     catch (error) {
-        console.error('Error generating items:', error);
+        console.error('Error generating items with retry logic:', error);
+        // Provide more user-friendly error handling
+        if (error.message?.includes('Overloaded') || error.status === 503 || error.status === 529) {
+            console.warn('🔄 OpenAI is overloaded, falling back to sample items');
+        }
         return generateSampleItems(textChunk);
     }
 }

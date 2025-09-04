@@ -40,7 +40,7 @@ const CONFIG = {
     MAX_REQUESTS_PER_MINUTE: 100,
     MAX_TOKENS_PER_REQUEST: 4000,
     DEFAULT_TEMPERATURE: 0.1,
-    DEFAULT_MODEL: 'gpt-5-mini',
+    DEFAULT_MODEL: 'gpt-4o-mini',
     TIMEOUT_MS: 120000,
     MAX_CONTENT_LENGTH: 500000, // Maximum 500,000 characters supported
 };
@@ -228,7 +228,7 @@ exports.testOpenAI = (0, https_1.onCall)({
         const client = createOpenAIClient();
         // Test with a simple completion first
         const simpleResponse = await client.chat.completions.create({
-            model: 'gpt-5-mini',
+            model: 'gpt-4o-mini',
             messages: [
                 {
                     role: 'user',

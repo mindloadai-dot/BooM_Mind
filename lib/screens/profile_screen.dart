@@ -41,16 +41,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
-  late AnimationController _headerController;
-  late AnimationController _statsController;
-  late AnimationController _actionsController;
-  late AnimationController _settingsController;
-
-  late Animation<double> _headerFadeAnimation;
-  late Animation<Offset> _headerSlideAnimation;
-  late Animation<double> _statsScaleAnimation;
-  late Animation<double> _actionsFadeAnimation;
-  late Animation<double> _settingsSlideAnimation;
+  late AnimationController _mainController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
 
   bool _biometricEnabled = false;
   bool _hapticEnabled = true;
@@ -80,59 +74,32 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   void dispose() {
-    _headerController.dispose();
-    _statsController.dispose();
-    _actionsController.dispose();
-    _settingsController.dispose();
+    _mainController.dispose();
     super.dispose();
   }
 
   void _initializeAnimations() {
-    _headerController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _headerFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _headerController, curve: Curves.easeOut),
-    );
-    _headerSlideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-      CurvedAnimation(parent: _headerController, curve: Curves.elasticOut),
-    );
-
-    _statsController = AnimationController(
+    _mainController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _statsScaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
-      CurvedAnimation(parent: _statsController, curve: Curves.elasticOut),
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _mainController, curve: Curves.easeOut),
     );
 
-    _actionsController = AnimationController(
-      duration: const Duration(milliseconds: 700),
-      vsync: this,
-    );
-    _actionsFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _actionsController, curve: Curves.easeInOut),
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+      CurvedAnimation(parent: _mainController, curve: Curves.easeOut),
     );
 
-    _settingsController = AnimationController(
-      duration: const Duration(milliseconds: 900),
-      vsync: this,
-    );
-    _settingsSlideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _settingsController, curve: Curves.easeOutCubic),
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _mainController, curve: Curves.easeOut),
     );
   }
 
   void _startAnimations() {
-    _headerController.forward();
-    Future.delayed(
-        const Duration(milliseconds: 200), () => _statsController.forward());
-    Future.delayed(
-        const Duration(milliseconds: 400), () => _actionsController.forward());
-    Future.delayed(
-        const Duration(milliseconds: 600), () => _settingsController.forward());
+    _mainController.forward();
   }
 
   void _initializeHapticFeedback() async {
@@ -615,9 +582,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileHeader() {
     return FadeTransition(
-      opacity: _headerFadeAnimation,
+      opacity: _fadeAnimation,
       child: SlideTransition(
-        position: _headerSlideAnimation,
+        position: _slideAnimation,
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -638,79 +605,70 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               Row(
                 children: [
-                  // Profile Avatar with pulse animation
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(seconds: 2),
-                    tween: Tween(begin: 0.8, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.scale(
-                        scale: value,
-                        child: GestureDetector(
-                          onTap: _showProfilePictureOptions,
-                          child: Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  context.tokens.primary,
-                                  context.tokens.secondary,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.tokens.primary
-                                      .withOpacity(0.3 * value),
-                                  blurRadius: 12 * value,
-                                  offset: Offset(0, 4 * value),
-                                ),
-                              ],
+                  // Profile Avatar with simple scale animation
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: GestureDetector(
+                      onTap: _showProfilePictureOptions,
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              context.tokens.primary,
+                              context.tokens.secondary,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.tokens.primary.withOpacity(0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: FutureBuilder<String?>(
-                                future: LocalImageStorageService.instance
-                                    .getProfileImagePath(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  }
-                                  if (snapshot.hasData &&
-                                      snapshot.data != null) {
-                                    return Image.file(
-                                      File(snapshot.data!),
-                                      width: 72,
-                                      height: 72,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return _buildInitialsAvatar(context);
-                                      },
-                                    );
-                                  } else {
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: FutureBuilder<String?>(
+                            future: LocalImageStorageService.instance
+                                .getProfileImagePath(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                              if (snapshot.hasData && snapshot.data != null) {
+                                return Image.file(
+                                  File(snapshot.data!),
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
                                     return _buildInitialsAvatar(context);
-                                  }
-                                },
-                              ),
-                            ),
+                                  },
+                                );
+                              } else {
+                                return _buildInitialsAvatar(context);
+                              }
+                            },
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  // User Info with slide animation
+                  // User Info with simple slide animation
                   Expanded(
                     child: SlideTransition(
                       position: Tween<Offset>(
-                        begin: const Offset(-0.3, 0),
+                        begin: const Offset(-0.1, 0),
                         end: Offset.zero,
                       ).animate(CurvedAnimation(
-                        parent: _headerController,
-                        curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+                        parent: _mainController,
+                        curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
                       )),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -739,14 +697,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                   ),
-                  // Edit Profile Button with bounce animation
+                  // Edit Profile Button with simple slide animation
                   SlideTransition(
                     position: Tween<Offset>(
-                      begin: const Offset(0.3, 0),
+                      begin: const Offset(0.1, 0),
                       end: Offset.zero,
                     ).animate(CurvedAnimation(
-                      parent: _headerController,
-                      curve: const Interval(0.5, 1.0, curve: Curves.elasticOut),
+                      parent: _mainController,
+                      curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
                     )),
                     child: SecondaryButton(
                       onPressed: () {
@@ -764,8 +722,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               FadeTransition(
                 opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
                   CurvedAnimation(
-                    parent: _headerController,
-                    curve: const Interval(0.7, 1.0, curve: Curves.easeIn),
+                    parent: _mainController,
+                    curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
                   ),
                 ),
                 child: _buildAccountStatusCard(),
@@ -856,8 +814,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildQuickStats() {
-    return ScaleTransition(
-      scale: _statsScaleAnimation,
+    return FadeTransition(
+      opacity: _fadeAnimation,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -873,11 +831,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             // Header with slide animation
             SlideTransition(
               position: Tween<Offset>(
-                begin: const Offset(-0.2, 0),
+                begin: const Offset(-0.1, 0),
                 end: Offset.zero,
               ).animate(CurvedAnimation(
-                parent: _statsController,
-                curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+                parent: _mainController,
+                curve: const Interval(0.4, 0.8, curve: Curves.easeOut),
               )),
               child: Row(
                 children: [
@@ -951,23 +909,23 @@ class _ProfileScreenState extends State<ProfileScreen>
       String title, String value, IconData icon, Color color, int index) {
     return SlideTransition(
       position: Tween<Offset>(
-        begin: const Offset(0, 0.3),
+        begin: const Offset(0, 0.1),
         end: Offset.zero,
       ).animate(CurvedAnimation(
-        parent: _statsController,
+        parent: _mainController,
         curve: Interval(
-          0.3 + (index * 0.2),
-          0.8 + (index * 0.2),
-          curve: Curves.elasticOut,
+          0.3 + (index * 0.1),
+          (0.5 + (index * 0.1)).clamp(0.0, 1.0),
+          curve: Curves.easeOut,
         ),
       )),
       child: FadeTransition(
         opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
           CurvedAnimation(
-            parent: _statsController,
+            parent: _mainController,
             curve: Interval(
-              0.3 + (index * 0.2),
-              0.8 + (index * 0.2),
+              0.3 + (index * 0.1),
+              (0.5 + (index * 0.1)).clamp(0.0, 1.0),
               curve: Curves.easeIn,
             ),
           ),
@@ -1017,7 +975,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildQuickActions() {
     return FadeTransition(
-      opacity: _actionsFadeAnimation,
+      opacity: _fadeAnimation,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -1033,11 +991,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             // Header with slide animation
             SlideTransition(
               position: Tween<Offset>(
-                begin: const Offset(-0.2, 0),
+                begin: const Offset(-0.1, 0),
                 end: Offset.zero,
               ).animate(CurvedAnimation(
-                parent: _actionsController,
-                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+                parent: _mainController,
+                curve: const Interval(0.5, 0.9, curve: Curves.easeOut),
               )),
               child: Row(
                 children: [
@@ -1115,23 +1073,23 @@ class _ProfileScreenState extends State<ProfileScreen>
       Color color, VoidCallback onTap, int index) {
     return SlideTransition(
       position: Tween<Offset>(
-        begin: const Offset(0, 0.3),
+        begin: const Offset(0, 0.1),
         end: Offset.zero,
       ).animate(CurvedAnimation(
-        parent: _actionsController,
+        parent: _mainController,
         curve: Interval(
-          0.2 + (index * 0.15),
-          0.8 + (index * 0.15),
-          curve: Curves.easeOutCubic,
+          0.6 + (index * 0.1),
+          (0.8 + (index * 0.05)).clamp(0.0, 1.0),
+          curve: Curves.easeOut,
         ),
       )),
       child: FadeTransition(
         opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
           CurvedAnimation(
-            parent: _actionsController,
+            parent: _mainController,
             curve: Interval(
-              0.2 + (index * 0.15),
-              0.8 + (index * 0.15),
+              0.6 + (index * 0.1),
+              (0.8 + (index * 0.05)).clamp(0.0, 1.0),
               curve: Curves.easeIn,
             ),
           ),
@@ -1243,12 +1201,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildSettingsSection() {
-    return SlideTransition(
-      position:
-          Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-        CurvedAnimation(
-            parent: _settingsController, curve: Curves.easeOutCubic),
-      ),
+    return FadeTransition(
+      opacity: _fadeAnimation,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -1264,11 +1218,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             // Header with slide animation
             SlideTransition(
               position: Tween<Offset>(
-                begin: const Offset(-0.2, 0),
+                begin: const Offset(-0.1, 0),
                 end: Offset.zero,
               ).animate(CurvedAnimation(
-                parent: _settingsController,
-                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+                parent: _mainController,
+                curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
               )),
               child: Row(
                 children: [
@@ -1329,8 +1283,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             FadeTransition(
               opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
                 CurvedAnimation(
-                  parent: _settingsController,
-                  curve: const Interval(0.6, 1.0, curve: Curves.easeIn),
+                  parent: _mainController,
+                  curve: const Interval(0.8, 1.0, curve: Curves.easeIn),
                 ),
               ),
               child: Container(
@@ -1464,8 +1418,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             FadeTransition(
               opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
                 CurvedAnimation(
-                  parent: _settingsController,
-                  curve: const Interval(0.7, 1.0, curve: Curves.easeIn),
+                  parent: _mainController,
+                  curve: const Interval(0.8, 1.0, curve: Curves.easeIn),
                 ),
               ),
               child: Container(
@@ -1636,23 +1590,23 @@ class _ProfileScreenState extends State<ProfileScreen>
       IconData icon, VoidCallback onTap, int index) {
     return SlideTransition(
       position: Tween<Offset>(
-        begin: const Offset(0, 0.3),
+        begin: const Offset(0, 0.1),
         end: Offset.zero,
       ).animate(CurvedAnimation(
-        parent: _settingsController,
+        parent: _mainController,
         curve: Interval(
-          0.2 + (index * 0.1),
-          0.8 + (index * 0.1),
-          curve: Curves.easeOutCubic,
+          0.8 + (index * 0.05),
+          (0.9 + (index * 0.02)).clamp(0.0, 1.0),
+          curve: Curves.easeOut,
         ),
       )),
       child: FadeTransition(
         opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
           CurvedAnimation(
-            parent: _settingsController,
+            parent: _mainController,
             curve: Interval(
-              0.2 + (index * 0.1),
-              0.8 + (index * 0.1),
+              0.8 + (index * 0.05),
+              (0.9 + (index * 0.02)).clamp(0.0, 1.0),
               curve: Curves.easeIn,
             ),
           ),
