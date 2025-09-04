@@ -70,9 +70,16 @@ class NeuroGraphService extends ChangeNotifier {
   Future<void> _loadStudyData(SharedPreferences prefs) async {
     try {
       final studyDataJson = prefs.getString(_studyDataKey);
-      if (studyDataJson != null) {
+      if (studyDataJson != null && studyDataJson.isNotEmpty) {
         final List<dynamic> data = jsonDecode(studyDataJson);
-        _studyData = data.map((json) => StudySession.fromJson(json)).toList();
+        _studyData = data.map((json) {
+          try {
+            return StudySession.fromJson(json);
+          } catch (e) {
+            debugPrint('Error parsing study session: $e');
+            return null;
+          }
+        }).where((session) => session != null).cast<StudySession>().toList();
       }
     } catch (e) {
       debugPrint('Error loading study data: $e');
@@ -84,9 +91,16 @@ class NeuroGraphService extends ChangeNotifier {
   Future<void> _loadStreakData(SharedPreferences prefs) async {
     try {
       final streakDataJson = prefs.getString(_streakDataKey);
-      if (streakDataJson != null) {
+      if (streakDataJson != null && streakDataJson.isNotEmpty) {
         final List<dynamic> data = jsonDecode(streakDataJson);
-        _streakData = data.map((json) => StreakData.fromJson(json)).toList();
+        _streakData = data.map((json) {
+          try {
+            return StreakData.fromJson(json);
+          } catch (e) {
+            debugPrint('Error parsing streak data: $e');
+            return null;
+          }
+        }).where((streak) => streak != null).cast<StreakData>().toList();
       }
     } catch (e) {
       debugPrint('Error loading streak data: $e');

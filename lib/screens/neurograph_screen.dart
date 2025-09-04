@@ -90,19 +90,28 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
       final neuroGraphService = NeuroGraphService.instance;
       await neuroGraphService.initialize();
 
-      _lastUpdated = neuroGraphService.lastUpdated;
-      _studyData = neuroGraphService.studyData;
-      _streakData = neuroGraphService.streakData;
-      _recallData = neuroGraphService.recallData;
-      _efficiencyData = neuroGraphService.efficiencyData;
-      _forgettingData = neuroGraphService.forgettingData;
+      if (mounted) {
+        _lastUpdated = neuroGraphService.lastUpdated;
+        _studyData = neuroGraphService.studyData;
+        _streakData = neuroGraphService.streakData;
+        _recallData = neuroGraphService.recallData;
+        _efficiencyData = neuroGraphService.efficiencyData;
+        _forgettingData = neuroGraphService.forgettingData;
 
-      _hasData = neuroGraphService.hasData;
-      setState(() {});
+        _hasData = neuroGraphService.hasData;
+        setState(() {});
+      }
     } catch (e) {
       debugPrint('Error loading NeuroGraph data: $e');
-      _hasData = false;
-      setState(() {});
+      if (mounted) {
+        _hasData = false;
+        _studyData = [];
+        _streakData = [];
+        _recallData = [];
+        _efficiencyData = [];
+        _forgettingData = [];
+        setState(() {});
+      }
     }
   }
 
@@ -124,56 +133,98 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.tokens.surface,
-      appBar: MindloadAppBar(
-        title: 'NeuroGraph',
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshData,
-            tooltip: 'Refresh Data',
-          ),
-        ],
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 16),
-                _buildInfoPanel(),
-                const SizedBox(height: 24),
-                if (_hasData) ...[
-                  _buildStudyHeatmap(),
+    try {
+      return Scaffold(
+        backgroundColor: context.tokens.surface,
+        appBar: MindloadAppBar(
+          title: 'NeuroGraph',
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshData,
+              tooltip: 'Refresh Data',
+            ),
+          ],
+        ),
+        body: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 16),
+                  _buildInfoPanel(),
                   const SizedBox(height: 24),
-                  _buildStreakSparkline(),
-                  const SizedBox(height: 24),
-                  _buildRecallRadar(),
-                  const SizedBox(height: 24),
-                  _buildEfficiencyBar(),
-                  const SizedBox(height: 24),
-                  _buildForgettingCurve(),
-                  const SizedBox(height: 24),
-                  _buildAnalysisCard(),
-                  const SizedBox(height: 24),
-                  _buildQuickTipsCard(),
-                  const SizedBox(height: 24),
-                  _buildGraphExplanations(),
-                ] else ...[
-                  _buildEmptyState(),
+                  if (_hasData) ...[
+                    _buildStudyHeatmap(),
+                    const SizedBox(height: 24),
+                    _buildStreakSparkline(),
+                    const SizedBox(height: 24),
+                    _buildRecallRadar(),
+                    const SizedBox(height: 24),
+                    _buildEfficiencyBar(),
+                    const SizedBox(height: 24),
+                    _buildForgettingCurve(),
+                    const SizedBox(height: 24),
+                    _buildAnalysisCard(),
+                    const SizedBox(height: 24),
+                    _buildQuickTipsCard(),
+                    const SizedBox(height: 24),
+                    _buildGraphExplanations(),
+                  ] else ...[
+                    _buildEmptyState(),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('Error building NeuroGraph screen: $e');
+      return Scaffold(
+        backgroundColor: context.tokens.surface,
+        appBar: MindloadAppBar(
+          title: 'NeuroGraph',
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: context.tokens.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Something went wrong',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: context.tokens.textPrimary,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please try refreshing the page or restarting the app.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: context.tokens.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              PrimaryButton(
+                onPressed: _refreshData,
+                child: const Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildHeader() {
@@ -1050,8 +1101,8 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
           const SizedBox(height: 32),
           PrimaryButton(
             onPressed: () {
-              // Navigate to create screen or study screen
-              Navigator.pushNamed(context, '/create');
+              // Navigate to home screen instead of non-existent /create route
+              Navigator.pushNamed(context, '/home');
             },
             fullWidth: true,
             child: const Text('Start Studying'),
