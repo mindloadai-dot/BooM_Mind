@@ -24,38 +24,48 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         builder: (context, storageService, child) {
           final totals = storageService.totals;
           final metadata = storageService.metadata;
-          final stats = storageService.getStorageStats();
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Storage Overview
-                _buildStorageOverview(stats),
+          return FutureBuilder<Map<String, dynamic>>(
+            future: storageService.getStorageStats(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                const SizedBox(height: 24),
+              final stats = snapshot.data!;
 
-                // Storage Warning Banner
-                if (storageService.isStorageWarning)
-                  _buildStorageWarningBanner(),
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Storage Overview
+                    _buildStorageOverview(stats),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Storage Actions
-                _buildStorageActions(storageService),
+                    // Storage Warning Banner
+                    if (storageService.isStorageWarning)
+                      _buildStorageWarningBanner(),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Study Sets List
-                _buildStudySetsList(metadata, storageService),
+                    // Storage Actions
+                    _buildStorageActions(storageService),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Storage Tips
-                _buildStorageTips(),
-              ],
-            ),
+                    // Study Sets List
+                    _buildStudySetsList(metadata, storageService),
+
+                    const SizedBox(height: 24),
+
+                    // Storage Tips
+                    _buildStorageTips(),
+                  ],
+                ),
+              );
+            },
           );
         },
       ),

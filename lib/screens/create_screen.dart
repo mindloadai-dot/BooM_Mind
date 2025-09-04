@@ -2141,8 +2141,9 @@ class _CreateScreenState extends State<CreateScreen>
 
   /// Auto-populate title from content when moving to final step
   void _autoPopulateTitleFromContent() {
-    if (_titleController.text.trim().isNotEmpty)
+    if (_titleController.text.trim().isNotEmpty) {
       return; // Don't override if user already set title
+    }
 
     String suggestedTitle = '';
 

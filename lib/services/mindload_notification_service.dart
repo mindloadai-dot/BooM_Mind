@@ -930,7 +930,7 @@ class MindLoadNotificationService {
         final m = int.parse(s.substring(3, 5));
         final id = _stableIdForDaily(h, m);
         await _plugin.cancel(id);
-        debugPrint('❌ Cancelled daily notification ID: $id (${s})');
+        debugPrint('❌ Cancelled daily notification ID: $id ($s)');
       }
       await prefs.remove(_dailyPlanKey);
       

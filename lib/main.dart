@@ -31,11 +31,10 @@ import 'package:mindload/screens/achievements_screen.dart';
 import 'package:mindload/screens/settings_screen.dart';
 import 'package:mindload/screens/profile_screen.dart';
 import 'package:mindload/screens/app_icon_demo_screen.dart';
-import 'package:mindload/screens/neurograph_screen.dart';
+import 'package:mindload/neurograph_v2/neurograph_screen.dart';
 import 'package:mindload/screens/notification_debug_screen.dart';
 import 'package:mindload/theme.dart';
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 // Lifecycle observer for notification rescheduling
@@ -239,11 +238,11 @@ class MindLoadApp extends StatelessWidget {
               '/settings': (context) => const SettingsScreen(),
               '/profile': (context) => const ProfileScreen(),
               '/app-icon-demo': (context) => const AppIconDemoScreen(),
-              '/neurograph': (context) => const NeuroGraphScreen(),
+              '/neurograph': (context) => NeuroGraphV2Screen(userId: 'current_user'),
               '/notification-debug': (context) =>
                   const NotificationDebugScreen(),
               '/profile/insights/neurograph': (context) =>
-                  const NeuroGraphScreen(),
+                  NeuroGraphV2Screen(userId: 'current_user'),
             },
           );
         },
@@ -268,12 +267,10 @@ class AppInitializerState extends State<AppInitializer>
   VideoPlayerController? _videoController;
   bool _videoInitialized = false;
 
-  // Animation controllers for glowing dots
-  late AnimationController _dotsController;
+  // Animation controller for glow effect
   late AnimationController _glowController;
 
-  // Animations
-  late Animation<double> _dotsAnimation;
+  // Animation for glow effect
   late Animation<double> _glowAnimation;
 
   @override
@@ -295,21 +292,7 @@ class AppInitializerState extends State<AppInitializer>
   }
 
   void _initializeBackgroundAnimations() {
-    // Glowing dots animation
-    _dotsController = AnimationController(
-      duration: const Duration(seconds: 8),
-      vsync: this,
-    )..repeat();
-
-    _dotsAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _dotsController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Glow intensity animation
+    // Glow intensity animation for video logo
     _glowController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
@@ -350,7 +333,6 @@ class AppInitializerState extends State<AppInitializer>
   void dispose() {
     _safetyTimer?.cancel();
     _videoController?.dispose();
-    _dotsController.dispose();
     _glowController.dispose();
     super.dispose();
   }
@@ -470,26 +452,6 @@ class AppInitializerState extends State<AppInitializer>
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // Black background with glowing dots
-            Container(
-              color: Colors.black,
-              child: AnimatedBuilder(
-                animation: Listenable.merge([
-                  _dotsAnimation,
-                  _glowAnimation,
-                ]),
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: GlowingDotsPainter(
-                      dotsProgress: _dotsAnimation.value,
-                      glowIntensity: _glowAnimation.value,
-                    ),
-                    size: Size.infinite,
-                  );
-                },
-              ),
-            ),
-
             // Main content with video
             Center(
               child: Column(
@@ -507,14 +469,14 @@ class AppInitializerState extends State<AppInitializer>
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF6366F1).withOpacity(
-                                  0.3 * _glowAnimation.value),
+                              color: const Color(0xFF6366F1)
+                                  .withOpacity(0.3 * _glowAnimation.value),
                               blurRadius: 30 * _glowAnimation.value,
                               spreadRadius: 5 * _glowAnimation.value,
                             ),
                             BoxShadow(
-                              color: const Color(0xFF8B5CF6).withOpacity(
-                                  0.2 * _glowAnimation.value),
+                              color: const Color(0xFF8B5CF6)
+                                  .withOpacity(0.2 * _glowAnimation.value),
                               blurRadius: 20 * _glowAnimation.value,
                               spreadRadius: 3 * _glowAnimation.value,
                             ),
@@ -634,71 +596,5 @@ class AppInitializerState extends State<AppInitializer>
         return const HomeScreen();
       },
     );
-  }
-}
-
-/// Custom painter for glowing dots background
-class GlowingDotsPainter extends CustomPainter {
-  final double dotsProgress;
-  final double glowIntensity;
-
-  GlowingDotsPainter({
-    required this.dotsProgress,
-    required this.glowIntensity,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-
-    // Draw floating glowing dots
-    _drawGlowingDots(canvas, size, paint);
-  }
-
-  void _drawGlowingDots(Canvas canvas, Size size, Paint paint) {
-    const dotCount = 20;
-    final random = Random(42); // Fixed seed for consistent dot positions
-
-    for (int i = 0; i < dotCount; i++) {
-      final x = (random.nextDouble() * size.width);
-      final y = (random.nextDouble() * size.height);
-      final baseRadius = 2 + (random.nextDouble() * 6);
-
-      // Animate dot position with gentle floating motion
-      final animatedX = x + (sin(dotsProgress * 2 * pi + i * 0.5) * 15);
-      final animatedY = y + (cos(dotsProgress * 2 * pi + i * 0.3) * 10);
-
-      // Dot color based on position and animation
-      final colorProgress = (sin(dotsProgress * 2 * pi + i) + 1) / 2;
-      final dotColor = Color.lerp(
-        const Color(0xFF6366F1), // Electric blue
-        const Color(0xFF8B5CF6), // Purple
-        colorProgress,
-      )!;
-
-      // Draw outer glow
-      paint.color = dotColor.withOpacity(0.1 * glowIntensity);
-      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius * 8, paint);
-
-      // Draw middle glow
-      paint.color = dotColor.withOpacity(0.3 * glowIntensity);
-      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius * 4, paint);
-
-      // Draw inner glow
-      paint.color = dotColor.withOpacity(0.6 * glowIntensity);
-      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius * 2, paint);
-
-      // Draw core dot
-      paint.color = dotColor.withOpacity(0.9 * glowIntensity);
-      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(GlowingDotsPainter oldDelegate) {
-    return oldDelegate.dotsProgress != dotsProgress ||
-        oldDelegate.glowIntensity != glowIntensity;
   }
 }

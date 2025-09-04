@@ -133,7 +133,7 @@ class _MindloadExportDialogState extends State<MindloadExportDialog> {
       itemCounts['flashcards'] = studySet.flashcards.length;
     }
     if (options.includeQuiz) {
-      itemCounts['quiz'] = studySet.quizQuestions.length;
+      itemCounts['quizzes'] = studySet.quizQuestions.length;
     }
 
     // Use the new PDF export system with MindLoad branding

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/models/study_data.dart';
@@ -2589,6 +2590,72 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       }
                     }
                     break;
+                  case 'test_pdf_upload':
+                    // Test PDF to flashcards conversion with actual PDF file upload
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Please select a PDF file to test...'),
+                          backgroundColor: tokens.warning,
+                        ),
+                      );
+                    }
+
+                    try {
+                      // Use file picker to select a PDF
+                      final result = await FilePicker.platform.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: ['pdf'],
+                        allowMultiple: false,
+                      );
+
+                      if (result != null && result.files.isNotEmpty) {
+                        final file = File(result.files.first.path!);
+
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Testing with uploaded PDF: ${file.path.split('/').last}'),
+                              backgroundColor: tokens.primary,
+                            ),
+                          );
+                        }
+
+                        await PDFFlashcardTestService.testWithActualPDF(file);
+
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'PDF upload test completed! Check debug console for results.'),
+                              backgroundColor: tokens.success,
+                              duration: Duration(seconds: 5),
+                            ),
+                          );
+                        }
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('No PDF file selected'),
+                              backgroundColor: tokens.warning,
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('PDF upload test failed: $e'),
+                            backgroundColor: tokens.error,
+                            duration: Duration(seconds: 5),
+                          ),
+                        );
+                      }
+                    }
+                    break;
                   case 'token_test':
                     // Test token system
                     final economyService = MindloadEconomyService.instance;
@@ -2716,6 +2783,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 12),
                       Text(
                         'Test PDF to Flashcards',
+                        style: TextStyle(color: tokens.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'test_pdf_upload',
+                  child: Row(
+                    children: [
+                      Icon(Icons.upload_file, color: tokens.primary, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Test PDF Upload & Parse',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
                     ],

@@ -451,7 +451,7 @@ class _PdfExportProgressDialogState extends State<PdfExportProgressDialog> {
         uid: 'user_${DateTime.now().millisecondsSinceEpoch}',
         setId: widget.options.setId,
         appVersion: '1.0.0',
-        itemCounts: {'flashcards': 10, 'quiz': 5},
+        itemCounts: {'flashcards': 10, 'quizzes': 5},
         options: widget.options,
         onProgress: (progress) {
           if (mounted) {

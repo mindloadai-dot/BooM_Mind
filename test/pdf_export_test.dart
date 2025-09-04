@@ -615,7 +615,7 @@ void main() {
         expect(failureCount, equals(1));
 
         final failedResult = results.firstWhere((r) => !r.success);
-        expect(failedResult.errorCode, equals('CONCURRENT_EXPORT'));
+        expect(failedResult.errorCode, equals('ALREADY_EXPORTING'));
       });
     });
 

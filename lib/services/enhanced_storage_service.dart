@@ -925,7 +925,7 @@ class EnhancedStorageService extends ChangeNotifier {
   }
 
   // Get storage statistics
-  Map<String, dynamic> getStorageStats() {
+  Future<Map<String, dynamic>> getStorageStats() async {
     final usagePercentage =
         _totals.getUsagePercentage(StorageConfig.storageBudgetMB);
 
@@ -935,10 +935,50 @@ class EnhancedStorageService extends ChangeNotifier {
       'totalItems': _totals.totalItems,
       'budgetMB': StorageConfig.storageBudgetMB,
       'usagePercentage': usagePercentage,
-      'freeSpaceGB':
-          10, // Placeholder - could be calculated from device storage
+      'freeSpaceGB': await _getFreeSpaceGB(),
       'lastUpdated': _totals.lastUpdated.toIso8601String(),
     };
+  }
+
+  // Get free space on device
+  Future<int> _getFreeSpaceGB() async {
+    try {
+      // Try to get actual free space using platform-specific methods
+      final directory = await getApplicationDocumentsDirectory();
+
+      // On mobile platforms, we can try to estimate free space
+      // by checking if we can create a test file
+      final testFile = File('${directory.path}/test_space_check.tmp');
+
+      try {
+        // Try to write a small test file to check if we have space
+        await testFile.writeAsBytes(List.filled(1024 * 1024, 0)); // 1MB test
+        await testFile.delete();
+
+        // If we can write 1MB, we likely have at least 100MB free
+        // Let's try a larger test to get a better estimate
+        try {
+          await testFile
+              .writeAsBytes(List.filled(10 * 1024 * 1024, 0)); // 10MB test
+          await testFile.delete();
+
+          // If we can write 10MB, we likely have at least 1GB free
+          debugPrint('📱 Device has at least 1GB free space');
+          return 1;
+        } catch (e) {
+          // If 10MB fails, we have less than 1GB
+          debugPrint('⚠️ Device has less than 1GB free space');
+          return 0;
+        }
+      } catch (e) {
+        // If even 1MB fails, we're critically low on space
+        debugPrint('⚠️ Device critically low on space');
+        return 0;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Could not determine free space: $e');
+      return 0; // Conservative estimate - assume no space if we can't determine
+    }
   }
 
   // Credit data compatibility methods

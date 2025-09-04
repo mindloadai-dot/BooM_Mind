@@ -29,6 +29,7 @@ class PdfExportService extends ChangeNotifier {
   PdfExportProgress? _currentProgress;
   Timer? _rateLimitTimer;
   final Map<String, DateTime> _userExportTimes = {};
+  Completer<void>? _exportCompleter;
 
   // Getters
   bool get isExporting => _isExporting;
@@ -51,9 +52,23 @@ class PdfExportService extends ChangeNotifier {
     required Function() onCancelled,
     List<dynamic>? studyItems,
   }) async {
+    // Check if there's already an export in progress
+    if (_exportCompleter != null) {
+      return PdfExportResult.failure(
+        errorCode: 'ALREADY_EXPORTING',
+        errorMessage: 'Another export is already in progress.',
+        duration: Duration.zero,
+      );
+    }
+
+    // Create a completer for this export attempt
+    final thisExportCompleter = Completer<void>();
+    _exportCompleter = thisExportCompleter;
+
     try {
       // Check rate limits
       if (!_checkRateLimit(uid)) {
+        _exportCompleter = null;
         return PdfExportResult.failure(
           errorCode: 'RATE_LIMIT_EXCEEDED',
           errorMessage: 'Too many exports. Try again later.',
@@ -61,8 +76,9 @@ class PdfExportService extends ChangeNotifier {
         );
       }
 
-      // Check if already exporting
+      // Check if already exporting (double-check after setting completer)
       if (_isExporting) {
+        _exportCompleter = null;
         return PdfExportResult.failure(
           errorCode: 'ALREADY_EXPORTING',
           errorMessage: 'Another export is already in progress.',
@@ -133,10 +149,20 @@ class PdfExportService extends ChangeNotifier {
         _isExporting = false;
         _currentExportId = null;
         _currentProgress = null;
+        // Complete the completer to allow next export
+        if (_exportCompleter != null) {
+          _exportCompleter!.complete();
+          _exportCompleter = null;
+        }
         notifyListeners();
       }
     } catch (e) {
       debugPrint('❌ PDF export failed: $e');
+      // Complete the completer in case of error
+      if (_exportCompleter != null) {
+        _exportCompleter!.complete();
+        _exportCompleter = null;
+      }
       return PdfExportResult.failure(
         errorCode: 'EXPORT_ERROR',
         errorMessage: 'Export failed: ${e.toString()}',
@@ -401,14 +427,41 @@ class PdfExportService extends ChangeNotifier {
   // Get free space on device
   Future<int> _getFreeSpaceGB() async {
     try {
+      // Try to get actual free space using platform-specific methods
       final directory = await getApplicationDocumentsDirectory();
-      final stat = await directory.stat();
 
-      // For now, return a reasonable default since stat.size might not give free space
-      return 10; // Assume 10GB available
+      // On mobile platforms, we can try to estimate free space
+      // by checking if we can create a test file
+      final testFile = File('${directory.path}/test_space_check.tmp');
+
+      try {
+        // Try to write a small test file to check if we have space
+        await testFile.writeAsBytes(List.filled(1024 * 1024, 0)); // 1MB test
+        await testFile.delete();
+
+        // If we can write 1MB, we likely have at least 100MB free
+        // Let's try a larger test to get a better estimate
+        try {
+          await testFile
+              .writeAsBytes(List.filled(10 * 1024 * 1024, 0)); // 10MB test
+          await testFile.delete();
+
+          // If we can write 10MB, we likely have at least 1GB free
+          debugPrint('📱 Device has at least 1GB free space');
+          return 1;
+        } catch (e) {
+          // If 10MB fails, we have less than 1GB
+          debugPrint('⚠️ Device has less than 1GB free space');
+          return 0;
+        }
+      } catch (e) {
+        // If even 1MB fails, we're critically low on space
+        debugPrint('⚠️ Device critically low on space');
+        return 0;
+      }
     } catch (e) {
       debugPrint('⚠️ Could not determine free space: $e');
-      return 10; // Assume 10GB if we can't determine
+      return 0; // Conservative estimate - assume no space if we can't determine
     }
   }
 
@@ -418,22 +471,87 @@ class PdfExportService extends ChangeNotifier {
       _currentExportId = null;
       _isExporting = false;
       _currentProgress = null;
+      // Complete the completer to allow next export
+      if (_exportCompleter != null) {
+        _exportCompleter!.complete();
+        _exportCompleter = null;
+      }
       notifyListeners();
+    }
+  }
+
+  // Validate PDF file before sharing
+  Future<bool> _validatePdfFile(String filePath) async {
+    try {
+      final file = File(filePath);
+
+      // Check if file exists
+      if (!await file.exists()) {
+        debugPrint('❌ PDF file does not exist: $filePath');
+        return false;
+      }
+
+      // Check file size
+      final fileSize = await file.length();
+      if (fileSize == 0) {
+        debugPrint('❌ PDF file is empty: $filePath');
+        return false;
+      }
+
+      // Check file extension
+      if (!filePath.toLowerCase().endsWith('.pdf')) {
+        debugPrint('❌ File does not have .pdf extension: $filePath');
+        return false;
+      }
+
+      // Validate PDF header
+      final bytes = await file.openRead(0, 4).first;
+      final pdfHeader = String.fromCharCodes(bytes);
+      if (!pdfHeader.startsWith('%PDF')) {
+        debugPrint('❌ File does not have valid PDF header: $filePath');
+        return false;
+      }
+
+      debugPrint('✅ PDF file validation passed: $filePath ($fileSize bytes)');
+      return true;
+    } catch (e) {
+      debugPrint('❌ PDF file validation failed: $e');
+      return false;
     }
   }
 
   Future<void> sharePdf(String filePath) async {
     try {
-      final result = await Share.shareXFiles([XFile(filePath)],
-          text: 'Here is your exported study set.');
+      // Validate PDF file before sharing
+      if (!await _validatePdfFile(filePath)) {
+        throw Exception('PDF file validation failed: $filePath');
+      }
+
+      final file = File(filePath);
+      final fileSize = await file.length();
+
+      // Create XFile with proper MIME type
+      final xFile = XFile(
+        filePath,
+        mimeType: 'application/pdf',
+        name: file.path.split('/').last, // Extract filename
+      );
+
+      // Share with proper metadata
+      final result = await Share.shareXFiles(
+        [xFile],
+        text: 'Here is your exported study set from MindLoad.',
+        subject: 'MindLoad Study Set Export',
+      );
 
       if (result.status == ShareResultStatus.success) {
-        debugPrint('✅ PDF shared successfully');
+        debugPrint('✅ PDF shared successfully: ${file.path} ($fileSize bytes)');
       } else {
         debugPrint('⚠️ PDF share dismissed or failed: ${result.status}');
       }
     } catch (e) {
       debugPrint('❌ Failed to share PDF: $e');
+      rethrow; // Re-throw to allow caller to handle the error
     }
   }
 
@@ -568,7 +686,13 @@ class PdfExportService extends ChangeNotifier {
     );
 
     if (result.success && result.filePath != null) {
-      await sharePdf(result.filePath!);
+      try {
+        await sharePdf(result.filePath!);
+      } catch (e) {
+        debugPrint('❌ Failed to share PDF after successful export: $e');
+        // Note: Export was successful, but sharing failed
+        // The user can still access the file directly
+      }
     } else {
       // Optionally, show an error message to the user
       debugPrint(

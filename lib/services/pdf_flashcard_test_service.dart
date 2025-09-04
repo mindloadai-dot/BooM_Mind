@@ -1,50 +1,55 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/services/enhanced_ai_service.dart';
+import 'package:mindload/services/pdf_text_extraction_service.dart';
 
-/// Service to test and debug PDF to flashcards conversion
+/// Service to test and debug PDF to flashcards conversion with real PDF parsing
 class PDFFlashcardTestService {
   static Future<void> testPDFToFlashcardsConversion() async {
     if (kDebugMode) {
-      print('🧪 Starting PDF to Flashcards Conversion Test...');
-    }
-
-    // Simulate PDF content (common PDF text extraction result)
-    const String pdfContent = '''
-Introduction to Machine Learning
-
-Machine learning is a subset of artificial intelligence (AI) that provides systems the ability to automatically learn and improve from experience without being explicitly programmed. Machine learning focuses on the development of computer programs that can access data and use it to learn for themselves.
-
-The process of learning begins with observations or data, such as examples, direct experience, or instruction, in order to look for patterns in data and make better decisions in the future based on the examples that we provide. The primary aim is to allow the computers to learn automatically without human intervention or assistance and adjust actions accordingly.
-
-Types of Machine Learning:
-
-1. Supervised Learning
-Supervised learning is the machine learning task of learning a function that maps an input to an output based on example input-output pairs. It infers a function from labeled training data consisting of a set of training examples.
-
-2. Unsupervised Learning  
-Unsupervised learning is a type of machine learning algorithm used to draw inferences from datasets consisting of input data without labeled responses. The most common unsupervised learning method is cluster analysis.
-
-3. Reinforcement Learning
-Reinforcement learning is an area of machine learning concerned with how software agents ought to take actions in an environment in order to maximize the notion of cumulative reward.
-
-Applications of Machine Learning:
-- Image Recognition
-- Speech Recognition
-- Medical Diagnosis
-- Financial Services
-- Autonomous Vehicles
-- Recommendation Systems
-    ''';
-
-    if (kDebugMode) {
-      print('📄 Test PDF Content Length: ${pdfContent.length} characters');
-      print('📄 Content Preview: ${pdfContent.substring(0, 200)}...');
+      print(
+          '🧪 Starting PDF to Flashcards Conversion Test with Real PDF Parsing...');
     }
 
     try {
-      // Test the Enhanced AI Service with PDF content
+      // Create a sample PDF for testing
       if (kDebugMode) {
-        print('🚀 Testing EnhancedAIService with PDF content...');
+        print('📄 Creating sample PDF for testing...');
+      }
+
+      final samplePDF =
+          await PDFTextExtractionService.instance.createSamplePDF();
+
+      // Validate the PDF
+      final isValid =
+          await PDFTextExtractionService.instance.isValidPDF(samplePDF);
+      if (!isValid) {
+        throw Exception('Generated sample PDF is not valid');
+      }
+
+      // Get PDF metadata
+      final metadata =
+          await PDFTextExtractionService.instance.getPDFMetadata(samplePDF);
+      if (kDebugMode) {
+        print('📄 PDF Metadata: $metadata');
+      }
+
+      // Extract text from the real PDF
+      if (kDebugMode) {
+        print('📄 Extracting text from real PDF...');
+      }
+
+      final pdfContent =
+          await PDFTextExtractionService.instance.extractTextFromPDF(samplePDF);
+
+      if (kDebugMode) {
+        print('📄 Real PDF Content Length: ${pdfContent.length} characters');
+        print('📄 Content Preview: ${pdfContent.substring(0, 200)}...');
+      }
+
+      // Test the Enhanced AI Service with real PDF content
+      if (kDebugMode) {
+        print('🚀 Testing EnhancedAIService with real PDF content...');
       }
 
       final result = await EnhancedAIService.instance.generateStudyMaterials(
@@ -57,7 +62,8 @@ Applications of Machine Learning:
         realWorldContext: 'high',
         challengeLevel: 'medium',
         learningStyle: 'adaptive',
-        promptEnhancement: 'Focus on key concepts, definitions, and practical applications',
+        promptEnhancement:
+            'Focus on key concepts, definitions, and practical applications',
       );
 
       if (kDebugMode) {
@@ -68,7 +74,7 @@ Applications of Machine Learning:
         print('   - Processing Time: ${result.processingTimeMs}ms');
         print('   - Flashcards Generated: ${result.flashcards.length}');
         print('   - Quiz Questions Generated: ${result.quizQuestions.length}');
-        
+
         if (result.errorMessage != null) {
           print('   - Error: ${result.errorMessage}');
         }
@@ -106,11 +112,127 @@ Applications of Machine Learning:
       // Test individual methods for debugging
       await _testIndividualMethods(pdfContent);
 
+      // Clean up the sample PDF file
+      try {
+        await samplePDF.delete();
+        if (kDebugMode) {
+          print('📄 Sample PDF file cleaned up');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Failed to clean up sample PDF: $e');
+        }
+      }
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('❌ PDF to Flashcards Test Failed: $e');
         print('📍 Stack Trace: $stackTrace');
       }
+      rethrow;
+    }
+  }
+
+  /// Test PDF parsing with an actual PDF file
+  static Future<void> testWithActualPDF(File pdfFile) async {
+    if (kDebugMode) {
+      print('🧪 Testing with actual PDF file: ${pdfFile.path}');
+    }
+
+    try {
+      // Validate the PDF
+      final isValid =
+          await PDFTextExtractionService.instance.isValidPDF(pdfFile);
+      if (!isValid) {
+        throw Exception('The provided file is not a valid PDF');
+      }
+
+      // Get PDF metadata
+      final metadata =
+          await PDFTextExtractionService.instance.getPDFMetadata(pdfFile);
+      if (kDebugMode) {
+        print('📄 PDF Metadata: $metadata');
+      }
+
+      // Extract text from the actual PDF
+      if (kDebugMode) {
+        print('📄 Extracting text from actual PDF...');
+      }
+
+      final pdfContent =
+          await PDFTextExtractionService.instance.extractTextFromPDF(pdfFile);
+
+      if (kDebugMode) {
+        print('📄 Actual PDF Content Length: ${pdfContent.length} characters');
+        print('📄 Content Preview: ${pdfContent.substring(0, 200)}...');
+      }
+
+      // Test the Enhanced AI Service with actual PDF content
+      if (kDebugMode) {
+        print('🚀 Testing EnhancedAIService with actual PDF content...');
+      }
+
+      final result = await EnhancedAIService.instance.generateStudyMaterials(
+        content: pdfContent,
+        flashcardCount: 3,
+        quizCount: 2,
+        difficulty: 'medium',
+        questionTypes: 'comprehensive',
+        cognitiveLevel: 'intermediate',
+        realWorldContext: 'high',
+        challengeLevel: 'medium',
+        learningStyle: 'adaptive',
+        promptEnhancement:
+            'Focus on key concepts, definitions, and practical applications',
+      );
+
+      if (kDebugMode) {
+        print('📊 Actual PDF Test Results:');
+        print('   - Success: ${result.isSuccess}');
+        print('   - Method Used: ${result.method.name}');
+        print('   - Is Fallback: ${result.isFallback}');
+        print('   - Processing Time: ${result.processingTimeMs}ms');
+        print('   - Flashcards Generated: ${result.flashcards.length}');
+        print('   - Quiz Questions Generated: ${result.quizQuestions.length}');
+
+        if (result.errorMessage != null) {
+          print('   - Error: ${result.errorMessage}');
+        }
+
+        // Display generated flashcards
+        if (result.flashcards.isNotEmpty) {
+          print('🃏 Generated Flashcards from Actual PDF:');
+          for (int i = 0; i < result.flashcards.length; i++) {
+            final card = result.flashcards[i];
+            print('   ${i + 1}. Q: ${card.question}');
+            print('      A: ${card.answer}');
+            print('      Difficulty: ${card.difficulty.name}');
+            print('');
+          }
+        } else {
+          print('❌ No flashcards were generated from actual PDF');
+        }
+
+        // Display generated quiz questions
+        if (result.quizQuestions.isNotEmpty) {
+          print('❓ Generated Quiz Questions from Actual PDF:');
+          for (int i = 0; i < result.quizQuestions.length; i++) {
+            final question = result.quizQuestions[i];
+            print('   ${i + 1}. Q: ${question.question}');
+            print('      Options: ${question.options.join(', ')}');
+            print('      Correct: ${question.correctAnswer}');
+            print('      Difficulty: ${question.difficulty.name}');
+            print('');
+          }
+        } else {
+          print('❌ No quiz questions were generated from actual PDF');
+        }
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('❌ Actual PDF Test Failed: $e');
+        print('📍 Stack Trace: $stackTrace');
+      }
+      rethrow;
     }
   }
 
@@ -124,15 +246,16 @@ Applications of Machine Learning:
       if (kDebugMode) {
         print('🤖 Testing OpenAI with different parameters...');
       }
-      
+
       // Test with minimal parameters
-      final minimalResult = await EnhancedAIService.instance.generateStudyMaterials(
+      final minimalResult =
+          await EnhancedAIService.instance.generateStudyMaterials(
         content: content,
         flashcardCount: 1,
         quizCount: 0,
         difficulty: 'easy',
       );
-      
+
       if (kDebugMode) {
         print('   - Minimal Test Success: ${minimalResult.isSuccess}');
         print('   - Method Used: ${minimalResult.method.name}');
@@ -152,15 +275,16 @@ Applications of Machine Learning:
       if (kDebugMode) {
         print('🏠 Testing with medium complexity...');
       }
-      
-      final mediumResult = await EnhancedAIService.instance.generateStudyMaterials(
+
+      final mediumResult =
+          await EnhancedAIService.instance.generateStudyMaterials(
         content: content,
         flashcardCount: 3,
         quizCount: 2,
         difficulty: 'medium',
         questionTypes: 'comprehensive',
       );
-      
+
       if (kDebugMode) {
         print('   - Medium Test Success: ${mediumResult.isSuccess}');
         print('   - Method Used: ${mediumResult.method.name}');
@@ -181,8 +305,9 @@ Applications of Machine Learning:
       if (kDebugMode) {
         print('📋 Testing with full parameters...');
       }
-      
-      final fullResult = await EnhancedAIService.instance.generateStudyMaterials(
+
+      final fullResult =
+          await EnhancedAIService.instance.generateStudyMaterials(
         content: content,
         flashcardCount: 2,
         quizCount: 1,
@@ -192,9 +317,10 @@ Applications of Machine Learning:
         realWorldContext: 'high',
         challengeLevel: 'advanced',
         learningStyle: 'adaptive',
-        promptEnhancement: 'Focus on practical applications and real-world examples',
+        promptEnhancement:
+            'Focus on practical applications and real-world examples',
       );
-      
+
       if (kDebugMode) {
         print('   - Full Test Success: ${fullResult.isSuccess}');
         print('   - Method Used: ${fullResult.method.name}');

@@ -36,6 +36,17 @@ class GenerationResult {
   bool get isSuccess => errorMessage == null;
 }
 
+/// Validation result class
+class ValidationResult {
+  final bool isValid;
+  final String? errorMessage;
+
+  ValidationResult({
+    required this.isValid,
+    this.errorMessage,
+  });
+}
+
 /// Enhanced AI Service with multiple fallback options and robust error handling
 class EnhancedAIService {
   static EnhancedAIService? _instance;
@@ -46,6 +57,99 @@ class EnhancedAIService {
       FirebaseFunctions.instanceFor(region: 'us-central1');
   final AuthService _authService = AuthService.instance;
   final LocalAIFallbackService _localFallback = LocalAIFallbackService.instance;
+
+  /// Validate generation parameters before processing
+  ValidationResult _validateGenerationParameters({
+    required String content,
+    required int flashcardCount,
+    required int quizCount,
+    required String difficulty,
+  }) {
+    // Validate content
+    if (content.trim().isEmpty) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage:
+            'Content cannot be empty. Please provide some text to generate study materials from.',
+      );
+    }
+
+    if (content.length < 10) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage:
+            'Content is too short. Please provide at least 10 characters to generate meaningful study materials.',
+      );
+    }
+
+    if (content.length > 50000) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage:
+            'Content is too long. Please provide content with 50,000 characters or less.',
+      );
+    }
+
+    // Validate flashcard count
+    if (flashcardCount < 0) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage: 'Flashcard count cannot be negative.',
+      );
+    }
+
+    if (flashcardCount > 100) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage:
+            'Flashcard count cannot exceed 100. Please reduce the number.',
+      );
+    }
+
+    // Validate quiz count
+    if (quizCount < 0) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage: 'Quiz count cannot be negative.',
+      );
+    }
+
+    if (quizCount > 50) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage: 'Quiz count cannot exceed 50. Please reduce the number.',
+      );
+    }
+
+    // Validate that at least one type is requested
+    if (flashcardCount == 0 && quizCount == 0) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage:
+            'Please request at least one flashcard or quiz question to generate.',
+      );
+    }
+
+    // Validate difficulty
+    final validDifficulties = [
+      'easy',
+      'medium',
+      'hard',
+      'beginner',
+      'intermediate',
+      'advanced',
+      'standard'
+    ];
+    if (!validDifficulties.contains(difficulty.toLowerCase())) {
+      return ValidationResult(
+        isValid: false,
+        errorMessage:
+            'Invalid difficulty level. Please use: easy, medium, hard, beginner, intermediate, advanced, or standard.',
+      );
+    }
+
+    return ValidationResult(isValid: true);
+  }
 
   /// Main entry point for generating study materials
   Future<GenerationResult> generateStudyMaterials({
@@ -63,6 +167,25 @@ class EnhancedAIService {
     final stopwatch = Stopwatch()..start();
 
     try {
+      // Validate input parameters
+      final validationResult = _validateGenerationParameters(
+        content: content,
+        flashcardCount: flashcardCount,
+        quizCount: quizCount,
+        difficulty: difficulty,
+      );
+
+      if (!validationResult.isValid) {
+        stopwatch.stop();
+        return GenerationResult(
+          flashcards: [],
+          quizQuestions: [],
+          method: GenerationMethod.template,
+          errorMessage: validationResult.errorMessage,
+          processingTimeMs: stopwatch.elapsedMilliseconds,
+        );
+      }
+
       // Try OpenAI first
       final openaiResult = await _tryOpenAIGeneration(
         content: content,
@@ -265,8 +388,8 @@ class EnhancedAIService {
       debugPrint('✅ Mobile generation completed successfully');
 
       // Parse results
-      final flashcards = await _parseFlashcards(flashcardResult.data);
-      final quizQuestions = await _parseQuizQuestions(quizResult.data);
+      final flashcards = _parseFlashcards(flashcardResult.data);
+      final quizQuestions = _parseQuizQuestions(quizResult.data);
 
       performanceTimer.stop();
       final totalTime = performanceTimer.elapsedMilliseconds;
@@ -981,6 +1104,38 @@ class EnhancedAIService {
     final stopwatch = Stopwatch()..start();
 
     try {
+      // Validate input parameters
+      final validationResult = _validateGenerationParameters(
+        content: content,
+        flashcardCount: flashcardCount,
+        quizCount: quizCount,
+        difficulty: difficulty,
+      );
+
+      if (!validationResult.isValid) {
+        stopwatch.stop();
+        return GenerationResult(
+          flashcards: [],
+          quizQuestions: [],
+          method: GenerationMethod.template,
+          errorMessage: validationResult.errorMessage,
+          processingTimeMs: stopwatch.elapsedMilliseconds,
+        );
+      }
+
+      // Validate existing materials
+      if (existingFlashcards.isEmpty && existingQuizQuestions.isEmpty) {
+        stopwatch.stop();
+        return GenerationResult(
+          flashcards: [],
+          quizQuestions: [],
+          method: GenerationMethod.template,
+          errorMessage:
+              'No existing study materials provided. Use generateStudyMaterials instead.',
+          processingTimeMs: stopwatch.elapsedMilliseconds,
+        );
+      }
+
       // Create enhanced prompt that ensures different content
       final enhancedContent = _createEnhancedPromptForAdditionalContent(
         content: content,

@@ -16,7 +16,7 @@ class NotificationDebugScreen extends StatefulWidget {
 class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
   String _statusMessage = 'Ready to test notifications';
   bool _isLoading = false;
-  List<String> _logMessages = [];
+  final List<String> _logMessages = [];
 
   @override
   Widget build(BuildContext context) {

@@ -22,101 +22,112 @@ class StorageWarningBanner extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final stats = storageService.getStorageStats();
-        final usagePercentage = stats['usagePercentage'] as double;
-        final totalBytes = stats['totalBytes'] as int;
-        final budgetMB = stats['budgetMB'] as int;
+        return FutureBuilder<Map<String, dynamic>>(
+          future: storageService.getStorageStats(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox.shrink();
+            }
 
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _getBannerColor(context, usagePercentage),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _getBorderColor(context, usagePercentage),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    _getWarningIcon(usagePercentage),
-                    color: _getIconColor(context, usagePercentage),
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getWarningTitle(usagePercentage),
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                color: _getTextColor(context, usagePercentage),
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getWarningMessage(
-                              usagePercentage, totalBytes, budgetMB),
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: _getTextColor(context, usagePercentage),
-                              ),
-                        ),
-                      ],
-                    ),
+            final stats = snapshot.data!;
+            final usagePercentage = stats['usagePercentage'] as double;
+            final totalBytes = stats['totalBytes'] as int;
+            final budgetMB = stats['budgetMB'] as int;
+
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _getBannerColor(context, usagePercentage),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getBorderColor(context, usagePercentage),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              if (showManageButton) ...[
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: onManageStorage ??
-                          () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const StorageManagementScreen(),
-                              ),
-                            );
-                          },
-                      style: TextButton.styleFrom(
-                        foregroundColor:
-                            _getButtonColor(context, usagePercentage),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _getWarningIcon(usagePercentage),
+                        color: _getIconColor(context, usagePercentage),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getWarningTitle(usagePercentage),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color:
+                                        _getTextColor(context, usagePercentage),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getWarningMessage(
+                                  usagePercentage, totalBytes, budgetMB),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color:
+                                        _getTextColor(context, usagePercentage),
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: const Text('Manage Storage'),
+                    ],
+                  ),
+                  if (showManageButton) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: onManageStorage ??
+                              () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const StorageManagementScreen(),
+                                  ),
+                                );
+                              },
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                _getButtonColor(context, usagePercentage),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                          ),
+                          child: const Text('Manage Storage'),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ],
-            ],
-          ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -251,57 +262,68 @@ class CompactStorageWarningBanner extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final stats = storageService.getStorageStats();
-        final usagePercentage = stats['usagePercentage'] as double;
+        return FutureBuilder<Map<String, dynamic>>(
+          future: storageService.getStorageStats(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox.shrink();
+            }
 
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _getBannerColor(context, usagePercentage),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _getBorderColor(context, usagePercentage),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                _getWarningIcon(usagePercentage),
-                color: _getIconColor(context, usagePercentage),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _getCompactMessage(usagePercentage),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _getTextColor(context, usagePercentage),
-                        fontWeight: FontWeight.w500,
-                      ),
+            final stats = snapshot.data!;
+            final usagePercentage = stats['usagePercentage'] as double;
+
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: _getBannerColor(context, usagePercentage),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _getBorderColor(context, usagePercentage),
+                  width: 1,
                 ),
               ),
-              TextButton(
-                onPressed: onManageStorage ??
-                    () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const StorageManagementScreen(),
-                        ),
-                      );
-                    },
-                style: TextButton.styleFrom(
-                  foregroundColor: _getButtonColor(context, usagePercentage),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: const Size(0, 0),
-                ),
-                child: const Text('Manage'),
+              child: Row(
+                children: [
+                  Icon(
+                    _getWarningIcon(usagePercentage),
+                    color: _getIconColor(context, usagePercentage),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _getCompactMessage(usagePercentage),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: _getTextColor(context, usagePercentage),
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onManageStorage ??
+                        () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const StorageManagementScreen(),
+                            ),
+                          );
+                        },
+                    style: TextButton.styleFrom(
+                      foregroundColor:
+                          _getButtonColor(context, usagePercentage),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      minimumSize: const Size(0, 0),
+                    ),
+                    child: const Text('Manage'),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
