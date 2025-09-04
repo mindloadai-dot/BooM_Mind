@@ -268,17 +268,13 @@ class AppInitializerState extends State<AppInitializer>
   VideoPlayerController? _videoController;
   bool _videoInitialized = false;
 
-  // Animation controllers for dynamic background
-  late AnimationController _backgroundPulseController;
-  late AnimationController _particleController;
-  late AnimationController _gradientController;
-  late AnimationController _waveController;
+  // Animation controllers for glowing dots
+  late AnimationController _dotsController;
+  late AnimationController _glowController;
 
   // Animations
-  late Animation<double> _backgroundPulseAnimation;
-  late Animation<double> _particleAnimation;
-  late Animation<double> _gradientAnimation;
-  late Animation<double> _waveAnimation;
+  late Animation<double> _dotsAnimation;
+  late Animation<double> _glowAnimation;
 
   @override
   void initState() {
@@ -299,59 +295,31 @@ class AppInitializerState extends State<AppInitializer>
   }
 
   void _initializeBackgroundAnimations() {
-    // Background pulse animation - breathing effect
-    _backgroundPulseController = AnimationController(
-      duration: const Duration(seconds: 4),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _backgroundPulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _backgroundPulseController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Particle animation - floating particles
-    _particleController = AnimationController(
-      duration: const Duration(seconds: 6),
-      vsync: this,
-    )..repeat();
-
-    _particleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _particleController,
-      curve: Curves.linear,
-    ));
-
-    // Gradient animation - color cycling
-    _gradientController = AnimationController(
+    // Glowing dots animation
+    _dotsController = AnimationController(
       duration: const Duration(seconds: 8),
       vsync: this,
     )..repeat();
 
-    _gradientAnimation = Tween<double>(
+    _dotsAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _gradientController,
+      parent: _dotsController,
       curve: Curves.easeInOut,
     ));
 
-    // Wave animation - flowing effect
-    _waveController = AnimationController(
-      duration: const Duration(seconds: 5),
+    // Glow intensity animation
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 3),
       vsync: this,
-    )..repeat();
+    )..repeat(reverse: true);
 
-    _waveAnimation = Tween<double>(
-      begin: 0.0,
+    _glowAnimation = Tween<double>(
+      begin: 0.3,
       end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _waveController,
+      parent: _glowController,
       curve: Curves.easeInOut,
     ));
   }
@@ -382,10 +350,8 @@ class AppInitializerState extends State<AppInitializer>
   void dispose() {
     _safetyTimer?.cancel();
     _videoController?.dispose();
-    _backgroundPulseController.dispose();
-    _particleController.dispose();
-    _gradientController.dispose();
-    _waveController.dispose();
+    _dotsController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -504,59 +470,24 @@ class AppInitializerState extends State<AppInitializer>
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // Dynamic Animated Background
-            AnimatedBuilder(
-              animation: Listenable.merge([
-                _backgroundPulseAnimation,
-                _particleAnimation,
-                _gradientAnimation,
-                _waveAnimation,
-              ]),
-              builder: (context, child) {
-                // Dynamic color calculation for background
-                final gradientProgress = _gradientAnimation.value;
-                final primaryColor = Color.lerp(
-                  const Color(0xFF6366F1), // Electric blue
-                  const Color(0xFFEC4899), // Pink
-                  gradientProgress,
-                )!;
-                final secondaryColor = Color.lerp(
-                  const Color(0xFF8B5CF6), // Purple
-                  const Color(0xFF6366F1), // Electric blue
-                  gradientProgress,
-                )!;
-                final tertiaryColor = Color.lerp(
-                  const Color(0xFFEC4899), // Pink
-                  const Color(0xFF8B5CF6), // Purple
-                  gradientProgress,
-                )!;
-
-                return Container(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment.center,
-                      radius: _backgroundPulseAnimation.value,
-                      colors: [
-                        primaryColor.withOpacity(0.3),
-                        secondaryColor.withOpacity(0.2),
-                        tertiaryColor.withOpacity(0.1),
-                        Colors.black,
-                      ],
-                      stops: [0.0, 0.3, 0.7, 1.0],
-                    ),
-                  ),
-                  child: CustomPaint(
-                    painter: DynamicBackgroundPainter(
-                      particleProgress: _particleAnimation.value,
-                      waveProgress: _waveAnimation.value,
-                      primaryColor: primaryColor,
-                      secondaryColor: secondaryColor,
-                      tertiaryColor: tertiaryColor,
+            // Black background with glowing dots
+            Container(
+              color: Colors.black,
+              child: AnimatedBuilder(
+                animation: Listenable.merge([
+                  _dotsAnimation,
+                  _glowAnimation,
+                ]),
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: GlowingDotsPainter(
+                      dotsProgress: _dotsAnimation.value,
+                      glowIntensity: _glowAnimation.value,
                     ),
                     size: Size.infinite,
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
 
             // Main content with video
@@ -566,7 +497,7 @@ class AppInitializerState extends State<AppInitializer>
                 children: [
                   // MP4 Video Logo with enhanced glow
                   AnimatedBuilder(
-                    animation: _backgroundPulseAnimation,
+                    animation: _glowAnimation,
                     builder: (context, child) {
                       return Container(
                         width: 200,
@@ -577,15 +508,15 @@ class AppInitializerState extends State<AppInitializer>
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFF6366F1).withOpacity(
-                                  0.3 * _backgroundPulseAnimation.value),
-                              blurRadius: 30 * _backgroundPulseAnimation.value,
-                              spreadRadius: 5 * _backgroundPulseAnimation.value,
+                                  0.3 * _glowAnimation.value),
+                              blurRadius: 30 * _glowAnimation.value,
+                              spreadRadius: 5 * _glowAnimation.value,
                             ),
                             BoxShadow(
                               color: const Color(0xFF8B5CF6).withOpacity(
-                                  0.2 * _backgroundPulseAnimation.value),
-                              blurRadius: 20 * _backgroundPulseAnimation.value,
-                              spreadRadius: 3 * _backgroundPulseAnimation.value,
+                                  0.2 * _glowAnimation.value),
+                              blurRadius: 20 * _glowAnimation.value,
+                              spreadRadius: 3 * _glowAnimation.value,
                             ),
                           ],
                         ),
@@ -706,20 +637,14 @@ class AppInitializerState extends State<AppInitializer>
   }
 }
 
-/// Custom painter for dynamic background effects
-class DynamicBackgroundPainter extends CustomPainter {
-  final double particleProgress;
-  final double waveProgress;
-  final Color primaryColor;
-  final Color secondaryColor;
-  final Color tertiaryColor;
+/// Custom painter for glowing dots background
+class GlowingDotsPainter extends CustomPainter {
+  final double dotsProgress;
+  final double glowIntensity;
 
-  DynamicBackgroundPainter({
-    required this.particleProgress,
-    required this.waveProgress,
-    required this.primaryColor,
-    required this.secondaryColor,
-    required this.tertiaryColor,
+  GlowingDotsPainter({
+    required this.dotsProgress,
+    required this.glowIntensity,
   });
 
   @override
@@ -728,83 +653,52 @@ class DynamicBackgroundPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
 
-    // Draw floating particles
-    _drawParticles(canvas, size, paint);
-
-    // Draw wave effects
-    _drawWaves(canvas, size, paint);
+    // Draw floating glowing dots
+    _drawGlowingDots(canvas, size, paint);
   }
 
-  void _drawParticles(Canvas canvas, Size size, Paint paint) {
-    const particleCount = 15;
-    final random = Random(42); // Fixed seed for consistent particle positions
+  void _drawGlowingDots(Canvas canvas, Size size, Paint paint) {
+    const dotCount = 20;
+    final random = Random(42); // Fixed seed for consistent dot positions
 
-    for (int i = 0; i < particleCount; i++) {
+    for (int i = 0; i < dotCount; i++) {
       final x = (random.nextDouble() * size.width);
       final y = (random.nextDouble() * size.height);
-      final radius = 2 + (random.nextDouble() * 4);
+      final baseRadius = 2 + (random.nextDouble() * 6);
 
-      // Animate particle position
-      final animatedX = x + (sin(particleProgress * 2 * pi + i) * 20);
-      final animatedY = y + (cos(particleProgress * 2 * pi + i * 0.5) * 15);
+      // Animate dot position with gentle floating motion
+      final animatedX = x + (sin(dotsProgress * 2 * pi + i * 0.5) * 15);
+      final animatedY = y + (cos(dotsProgress * 2 * pi + i * 0.3) * 10);
 
-      // Particle color based on position
-      final colorProgress = (sin(particleProgress * 2 * pi + i) + 1) / 2;
-      final particleColor =
-          Color.lerp(primaryColor, secondaryColor, colorProgress)!;
+      // Dot color based on position and animation
+      final colorProgress = (sin(dotsProgress * 2 * pi + i) + 1) / 2;
+      final dotColor = Color.lerp(
+        const Color(0xFF6366F1), // Electric blue
+        const Color(0xFF8B5CF6), // Purple
+        colorProgress,
+      )!;
 
-      paint.color = particleColor.withOpacity(0.6);
-      canvas.drawCircle(Offset(animatedX, animatedY), radius, paint);
+      // Draw outer glow
+      paint.color = dotColor.withOpacity(0.1 * glowIntensity);
+      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius * 8, paint);
 
-      // Glow effect
-      paint.color = particleColor.withOpacity(0.2);
-      canvas.drawCircle(Offset(animatedX, animatedY), radius * 3, paint);
-    }
-  }
+      // Draw middle glow
+      paint.color = dotColor.withOpacity(0.3 * glowIntensity);
+      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius * 4, paint);
 
-  void _drawWaves(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
-    final waveHeight = 30.0;
-    final waveCount = 3;
+      // Draw inner glow
+      paint.color = dotColor.withOpacity(0.6 * glowIntensity);
+      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius * 2, paint);
 
-    for (int wave = 0; wave < waveCount; wave++) {
-      final waveOffset = wave * (size.height / waveCount);
-      final currentWaveProgress = waveProgress + (wave * 0.3);
-
-      path.reset();
-      path.moveTo(0, size.height);
-
-      for (double x = 0; x <= size.width; x += 5) {
-        final y = waveOffset +
-            sin((x / size.width) * 2 * pi + currentWaveProgress * 2 * pi) *
-                waveHeight +
-            sin((x / size.width) * 4 * pi + currentWaveProgress * 4 * pi) *
-                (waveHeight * 0.5);
-
-        path.lineTo(x, y);
-      }
-
-      path.lineTo(size.width, size.height);
-      path.close();
-
-      // Wave color based on wave index
-      final waveColor = wave == 0
-          ? primaryColor
-          : wave == 1
-              ? secondaryColor
-              : tertiaryColor;
-
-      paint.color = waveColor.withOpacity(0.1);
-      canvas.drawPath(path, paint);
+      // Draw core dot
+      paint.color = dotColor.withOpacity(0.9 * glowIntensity);
+      canvas.drawCircle(Offset(animatedX, animatedY), baseRadius, paint);
     }
   }
 
   @override
-  bool shouldRepaint(DynamicBackgroundPainter oldDelegate) {
-    return oldDelegate.particleProgress != particleProgress ||
-        oldDelegate.waveProgress != waveProgress ||
-        oldDelegate.primaryColor != primaryColor ||
-        oldDelegate.secondaryColor != secondaryColor ||
-        oldDelegate.tertiaryColor != tertiaryColor;
+  bool shouldRepaint(GlowingDotsPainter oldDelegate) {
+    return oldDelegate.dotsProgress != dotsProgress ||
+        oldDelegate.glowIntensity != glowIntensity;
   }
 }
