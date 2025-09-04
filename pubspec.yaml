@@ -50,6 +50,7 @@ dependencies:
   # Networking
   url_launcher: ^6.3.1
   http: ^1.2.2
+  html: ^0.15.4
   cached_network_image: ^3.3.1
   connectivity_plus: ^6.0.5
   uuid: ^4.1.0

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -6,6 +7,42 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/local_ai_fallback_service.dart';
+import 'package:mindload/services/document_processor.dart';
+import 'package:mindload/core/youtube_utils.dart';
+import 'package:mindload/services/youtube_transcript_processor.dart';
+import 'package:mindload/services/youtube_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as html;
+
+// Content source types
+enum ContentSourceType {
+  text,      // Plain text input
+  document,  // PDF, DOCX, etc.
+  youtube,   // YouTube video
+  website,   // Web page
+  url        // Generic URL
+}
+
+// Content processing result
+class ContentProcessingResult {
+  final String extractedText;
+  final String title;
+  final String source;
+  final ContentSourceType sourceType;
+  final Map<String, dynamic> metadata;
+  final bool isSuccess;
+  final String? errorMessage;
+
+  ContentProcessingResult({
+    required this.extractedText,
+    required this.title,
+    required this.source,
+    required this.sourceType,
+    required this.metadata,
+    required this.isSuccess,
+    this.errorMessage,
+  });
+}
 
 // Generation options
 enum GenerationMethod {
@@ -23,6 +60,7 @@ class GenerationResult {
   final String? errorMessage;
   final bool isFallback;
   final int processingTimeMs;
+  final ContentProcessingResult? contentResult;
 
   GenerationResult({
     required this.flashcards,
@@ -31,6 +69,7 @@ class GenerationResult {
     this.errorMessage,
     this.isFallback = false,
     required this.processingTimeMs,
+    this.contentResult,
   });
 
   bool get isSuccess => errorMessage == null;
@@ -47,7 +86,7 @@ class ValidationResult {
   });
 }
 
-/// Enhanced AI Service with multiple fallback options and robust error handling
+/// Enhanced AI Service with comprehensive content processing and OpenAI integration
 class EnhancedAIService {
   static EnhancedAIService? _instance;
   static EnhancedAIService get instance => _instance ??= EnhancedAIService._();
@@ -57,6 +96,317 @@ class EnhancedAIService {
       FirebaseFunctions.instanceFor(region: 'us-central1');
   final AuthService _authService = AuthService.instance;
   final LocalAIFallbackService _localFallback = LocalAIFallbackService.instance;
+  final YouTubeTranscriptProcessor _youtubeProcessor = YouTubeTranscriptProcessor();
+
+  /// Process content from various sources and generate study materials
+  Future<GenerationResult> processContentAndGenerate({
+    required String input,
+    required ContentSourceType sourceType,
+    required int flashcardCount,
+    required int quizCount,
+    required String difficulty,
+    String? questionTypes,
+    String? cognitiveLevel,
+    String? realWorldContext,
+    String? challengeLevel,
+    String? learningStyle,
+    String? promptEnhancement,
+    Map<String, dynamic>? additionalOptions,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      debugPrint('🚀 Starting content processing and generation for: $sourceType');
+
+      // Step 1: Process content based on source type
+      final contentResult = await _processContent(input, sourceType, additionalOptions);
+
+      if (!contentResult.isSuccess) {
+        stopwatch.stop();
+        return GenerationResult(
+          flashcards: [],
+          quizQuestions: [],
+          method: GenerationMethod.template,
+          errorMessage: contentResult.errorMessage,
+          processingTimeMs: stopwatch.elapsedMilliseconds,
+          contentResult: contentResult,
+        );
+      }
+
+      debugPrint('✅ Content processed successfully: ${contentResult.extractedText.length} characters');
+
+      // Step 2: Generate study materials from processed content
+      final generationResult = await generateStudyMaterials(
+        content: contentResult.extractedText,
+        flashcardCount: flashcardCount,
+        quizCount: quizCount,
+        difficulty: difficulty,
+        questionTypes: questionTypes,
+        cognitiveLevel: cognitiveLevel,
+        realWorldContext: realWorldContext,
+        challengeLevel: challengeLevel,
+        learningStyle: learningStyle,
+        promptEnhancement: promptEnhancement,
+      );
+
+      // Step 3: Combine results
+      stopwatch.stop();
+      return GenerationResult(
+        flashcards: generationResult.flashcards,
+        quizQuestions: generationResult.quizQuestions,
+        method: generationResult.method,
+        errorMessage: generationResult.errorMessage,
+        isFallback: generationResult.isFallback,
+        processingTimeMs: stopwatch.elapsedMilliseconds,
+        contentResult: contentResult,
+      );
+
+    } catch (e) {
+      stopwatch.stop();
+      debugPrint('❌ Content processing and generation failed: $e');
+      return GenerationResult(
+        flashcards: [],
+        quizQuestions: [],
+        method: GenerationMethod.template,
+        errorMessage: 'Failed to process content and generate study materials: $e',
+        processingTimeMs: stopwatch.elapsedMilliseconds,
+      );
+    }
+  }
+
+  /// Process content from different source types
+  Future<ContentProcessingResult> _processContent(
+    String input,
+    ContentSourceType sourceType,
+    Map<String, dynamic>? additionalOptions,
+  ) async {
+    try {
+      switch (sourceType) {
+        case ContentSourceType.text:
+          return _processTextContent(input);
+        
+        case ContentSourceType.document:
+          return await _processDocumentContent(input, additionalOptions);
+        
+        case ContentSourceType.youtube:
+          return await _processYouTubeContent(input, additionalOptions);
+        
+        case ContentSourceType.website:
+        case ContentSourceType.url:
+          return await _processWebsiteContent(input, additionalOptions);
+      }
+    } catch (e) {
+      debugPrint('❌ Content processing failed: $e');
+      return ContentProcessingResult(
+        extractedText: '',
+        title: 'Error',
+        source: input,
+        sourceType: sourceType,
+        metadata: {},
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// Process plain text content
+  ContentProcessingResult _processTextContent(String text) {
+    return ContentProcessingResult(
+      extractedText: text.trim(),
+      title: 'Text Content',
+      source: 'text_input',
+      sourceType: ContentSourceType.text,
+      metadata: {
+        'length': text.length,
+        'wordCount': text.split(' ').length,
+      },
+      isSuccess: true,
+    );
+  }
+
+  /// Process document content (PDF, DOCX, etc.)
+  Future<ContentProcessingResult> _processDocumentContent(
+    String filePath,
+    Map<String, dynamic>? additionalOptions,
+  ) async {
+    try {
+      debugPrint('📄 Processing document: $filePath');
+
+      // For now, we'll assume the input is the file path or content
+      // In a real implementation, you'd need to handle file uploads properly
+      
+      // If it's a file path, read the file
+      // If it's content, use it directly
+      String content = filePath;
+      String fileName = 'document';
+      
+      if (additionalOptions != null && additionalOptions['fileBytes'] != null) {
+        final bytes = additionalOptions['fileBytes'] as Uint8List;
+        final extension = additionalOptions['extension'] as String? ?? 'txt';
+        final name = additionalOptions['fileName'] as String? ?? 'document';
+        
+        content = await DocumentProcessor.extractTextFromFile(bytes, extension, name);
+        fileName = name;
+      }
+
+      return ContentProcessingResult(
+        extractedText: content,
+        title: fileName,
+        source: filePath,
+        sourceType: ContentSourceType.document,
+        metadata: {
+          'fileName': fileName,
+          'length': content.length,
+          'wordCount': content.split(' ').length,
+        },
+        isSuccess: true,
+      );
+    } catch (e) {
+      debugPrint('❌ Document processing failed: $e');
+      return ContentProcessingResult(
+        extractedText: '',
+        title: 'Document Error',
+        source: filePath,
+        sourceType: ContentSourceType.document,
+        metadata: {},
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// Process YouTube content
+  Future<ContentProcessingResult> _processYouTubeContent(
+    String url,
+    Map<String, dynamic>? additionalOptions,
+  ) async {
+    try {
+      debugPrint('🎬 Processing YouTube content: $url');
+
+      final videoId = YouTubeUtils.extractYouTubeId(url);
+      if (videoId == null) {
+        throw Exception('Invalid YouTube URL');
+      }
+
+      // Get video metadata
+      final preview = await YouTubeService().getPreview(videoId);
+      
+      // Process transcript
+      final studySet = await _youtubeProcessor.processYouTubeVideo(
+        videoId: videoId,
+        userId: _authService.currentUserId ?? 'anonymous',
+        preferredLanguage: additionalOptions?['preferredLanguage'] as String?,
+        useSubtitlesForQuestions: additionalOptions?['useSubtitlesForQuestions'] as bool? ?? true,
+      );
+
+      if (studySet == null) {
+        throw Exception('Failed to process YouTube video');
+      }
+
+      // Extract text from the study set
+      final transcriptResult = _extractTextFromStudySet(studySet);
+
+      return ContentProcessingResult(
+        extractedText: transcriptResult,
+        title: preview.title,
+        source: url,
+        sourceType: ContentSourceType.youtube,
+        metadata: {
+          'videoId': videoId,
+          'channel': preview.channel,
+          'duration': preview.durationSeconds,
+          'title': preview.title,
+          'length': transcriptResult.length,
+          'wordCount': transcriptResult.split(' ').length,
+        },
+        isSuccess: true,
+      );
+    } catch (e) {
+      debugPrint('❌ YouTube processing failed: $e');
+      return ContentProcessingResult(
+        extractedText: '',
+        title: 'YouTube Error',
+        source: url,
+        sourceType: ContentSourceType.youtube,
+        metadata: {},
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// Process website content
+  Future<ContentProcessingResult> _processWebsiteContent(
+    String url,
+    Map<String, dynamic>? additionalOptions,
+  ) async {
+    try {
+      debugPrint('🌐 Processing website content: $url');
+
+      // Use Cloud Function for URL processing
+      final result = await _functions.httpsCallable('generateStudySetFromUrl').call({
+        'url': url,
+        'userId': _authService.currentUserId ?? 'anonymous',
+        'maxItems': additionalOptions?['maxItems'] ?? 50,
+      });
+
+      if (result.data['success'] == true) {
+        final data = result.data;
+        return ContentProcessingResult(
+          extractedText: data['preview'] ?? '',
+          title: data['title'] ?? 'Website Content',
+          source: url,
+          sourceType: ContentSourceType.website,
+          metadata: {
+            'studySetId': data['studySetId'],
+            'itemCount': data['itemCount'],
+            'length': (data['preview'] ?? '').length,
+            'wordCount': (data['preview'] ?? '').split(' ').length,
+          },
+          isSuccess: true,
+        );
+      } else {
+        throw Exception('Failed to process website content');
+      }
+    } catch (e) {
+      debugPrint('❌ Website processing failed: $e');
+      
+      // Fallback: Try to fetch basic content
+      try {
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          final document = html.parse(response.body);
+          final title = document.querySelector('title')?.text ?? 'Website';
+          final body = document.querySelector('body')?.text ?? '';
+          
+          return ContentProcessingResult(
+            extractedText: body.trim(),
+            title: title,
+            source: url,
+            sourceType: ContentSourceType.website,
+            metadata: {
+              'statusCode': response.statusCode,
+              'length': body.length,
+              'wordCount': body.split(' ').length,
+            },
+            isSuccess: true,
+          );
+        }
+      } catch (fallbackError) {
+        debugPrint('❌ Fallback website processing also failed: $fallbackError');
+      }
+
+      return ContentProcessingResult(
+        extractedText: '',
+        title: 'Website Error',
+        source: url,
+        sourceType: ContentSourceType.website,
+        metadata: {},
+        isSuccess: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
 
   /// Validate generation parameters before processing
   ValidationResult _validateGenerationParameters({
@@ -1523,5 +1873,34 @@ GENERATION INSTRUCTIONS:
       debugPrint('❌ EnhancedAIService test failed: $e');
       debugPrint('❌ Stack trace: $stackTrace');
     }
+  }
+
+  /// Extract text content from a StudySet
+  String _extractTextFromStudySet(StudySet studySet) {
+    final StringBuffer textBuffer = StringBuffer();
+    
+    // Add title
+    textBuffer.writeln(studySet.title);
+    textBuffer.writeln();
+    
+    // Add flashcard content
+    for (final flashcard in studySet.flashcards) {
+      textBuffer.writeln('Question: ${flashcard.question}');
+      textBuffer.writeln('Answer: ${flashcard.answer}');
+      textBuffer.writeln();
+    }
+    
+    // Add quiz content
+    for (final quiz in studySet.quizzes) {
+      textBuffer.writeln('Quiz: ${quiz.title}');
+      for (final question in quiz.questions) {
+        textBuffer.writeln('Question: ${question.question}');
+        textBuffer.writeln('Options: ${question.options.join(', ')}');
+        textBuffer.writeln('Correct Answer: ${question.correctAnswer}');
+        textBuffer.writeln();
+      }
+    }
+    
+    return textBuffer.toString().trim();
   }
 }
