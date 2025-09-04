@@ -66,6 +66,8 @@ class NeuroGraphRepository {
     DateTime? from,
     NeuroGraphFilters? filters,
   }) async {
+    debugPrint('🔍 Querying attempts for user: $uid');
+    
     // Build query
     Query query =
         _firestore.collection('attempts').where('userId', isEqualTo: uid);
@@ -93,18 +95,23 @@ class NeuroGraphRepository {
 
     try {
       // Try cache first, then server
+      debugPrint('📱 Trying cache first for user $uid');
       final cacheSnapshot =
           await query.get(const GetOptions(source: Source.cache));
 
       if (cacheSnapshot.docs.isNotEmpty) {
+        debugPrint('✅ Found ${cacheSnapshot.docs.length} cached attempts');
         return _processAttempts(cacheSnapshot.docs);
       }
 
       // Fallback to server
+      debugPrint('🌐 Cache empty, trying server for user $uid');
       final serverSnapshot =
           await query.get(const GetOptions(source: Source.server));
+      debugPrint('✅ Found ${serverSnapshot.docs.length} server attempts');
       return _processAttempts(serverSnapshot.docs);
     } catch (e) {
+      debugPrint('❌ Server query failed for user $uid: $e');
       // If server fails, try cache again
       try {
         final cacheSnapshot =
@@ -424,7 +431,9 @@ class NeuroGraphRepository {
   /// Get data summary for a user
   Future<Map<String, dynamic>> getUserDataSummary(String uid) async {
     try {
+      debugPrint('🔍 Getting user data summary for uid: $uid');
       final attempts = await attemptsForUser(uid);
+      debugPrint('📊 Found ${attempts.length} attempts for user $uid');
 
       if (attempts.isEmpty) {
         return {
@@ -466,7 +475,7 @@ class NeuroGraphRepository {
         'userTimezone': await getUserTimezone(),
       };
     } catch (e) {
-      debugPrint('Failed to get user data summary for $uid: $e');
+      debugPrint('❌ Failed to get user data summary for $uid: $e');
       return {
         'hasData': false,
         'totalAttempts': 0,
@@ -476,7 +485,83 @@ class NeuroGraphRepository {
         'topics': [],
         'tests': [],
         'userTimezone': await getUserTimezone(),
+        'error': e.toString(),
       };
     }
+  }
+
+  /// Create sample data for testing purposes
+  Future<void> createSampleData(String uid) async {
+    debugPrint('🧪 Creating sample data for user: $uid');
+    
+    final batch = _firestore.batch();
+    final now = DateTime.now();
+    
+    // Create sample topics and tests
+    final topics = ['math', 'science', 'history', 'literature'];
+    final tests = ['quiz_1', 'quiz_2', 'midterm', 'final'];
+    
+    // Generate 50 sample attempts over the last 30 days
+    for (int i = 0; i < 50; i++) {
+      final daysAgo = i % 30;
+      final timestamp = now.subtract(Duration(days: daysAgo));
+      final topicId = topics[i % topics.length];
+      final testId = tests[i % tests.length];
+      final questionId = 'q_${i}_$topicId';
+      
+      // Simulate learning curve - better performance over time
+      final progressFactor = (30 - daysAgo) / 30.0;
+      final baseAccuracy = 0.6 + (progressFactor * 0.3); // 60% to 90%
+      final isCorrect = (i / 50.0) < baseAccuracy;
+      
+      final attemptRef = _firestore.collection('attempts').doc();
+      batch.set(attemptRef, {
+        'userId': uid,
+        'testId': testId,
+        'questionId': questionId,
+        'topicId': topicId,
+        'bloom': ['remember', 'understand', 'apply', 'analyze'][i % 4],
+        'isCorrect': isCorrect,
+        'score': isCorrect ? (0.8 + (0.2 * (i / 50.0))) : (0.2 + (0.3 * (i / 50.0))),
+        'responseMs': 2000 + (i * 100), // Response time varies
+        'ts': Timestamp.fromDate(timestamp),
+        'confidence': isCorrect ? (0.7 + (0.3 * (i / 50.0))) : (0.3 + (0.4 * (i / 50.0))),
+      });
+    }
+    
+    // Create sample questions
+    for (int i = 0; i < 20; i++) {
+      final topicId = topics[i % topics.length];
+      final questionId = 'q_${i}_$topicId';
+      
+      final questionRef = _firestore.collection('questions').doc(questionId);
+      batch.set(questionRef, {
+        'questionId': questionId,
+        'topicId': topicId,
+        'bloom': ['remember', 'understand', 'apply', 'analyze'][i % 4],
+        'difficulty': (i % 5) + 1, // 1-5 difficulty
+        'text': 'Sample question ${i + 1} for $topicId',
+      });
+    }
+    
+    // Create sample sessions
+    for (int i = 0; i < 10; i++) {
+      final daysAgo = i * 3;
+      final startTime = now.subtract(Duration(days: daysAgo, hours: 1));
+      final endTime = startTime.add(const Duration(minutes: 30));
+      
+      final sessionRef = _firestore.collection('sessions').doc();
+      batch.set(sessionRef, {
+        'userId': uid,
+        'startedAt': Timestamp.fromDate(startTime),
+        'endedAt': Timestamp.fromDate(endTime),
+        'itemsSeen': 5 + (i % 10),
+        'itemsCorrect': 3 + (i % 7),
+        'sessionType': ['study', 'quiz', 'review'][i % 3],
+      });
+    }
+    
+    await batch.commit();
+    debugPrint('✅ Sample data created successfully for user: $uid');
   }
 }

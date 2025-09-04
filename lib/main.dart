@@ -32,6 +32,7 @@ import 'package:mindload/screens/settings_screen.dart';
 import 'package:mindload/screens/profile_screen.dart';
 import 'package:mindload/screens/app_icon_demo_screen.dart';
 import 'package:mindload/neurograph_v2/neurograph_screen.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:mindload/screens/notification_debug_screen.dart';
 import 'package:mindload/theme.dart';
 import 'dart:async';
@@ -121,6 +122,10 @@ void main() async {
 
 Future<void> _initializeCoreServices() async {
   try {
+    // Initialize timezone data first (required for NeuroGraph V2)
+    tz.initializeTimeZones();
+    print('✅ Timezone data initialized');
+
     // Initialize critical services in parallel for faster startup
     await Future.wait([
       // Theme Manager (critical for UI)
@@ -238,11 +243,13 @@ class MindLoadApp extends StatelessWidget {
               '/settings': (context) => const SettingsScreen(),
               '/profile': (context) => const ProfileScreen(),
               '/app-icon-demo': (context) => const AppIconDemoScreen(),
-              '/neurograph': (context) => NeuroGraphV2Screen(userId: 'current_user'),
+              '/neurograph': (context) => NeuroGraphV2Screen(
+                userId: AuthService.instance.currentUserId ?? 'anonymous'),
               '/notification-debug': (context) =>
                   const NotificationDebugScreen(),
               '/profile/insights/neurograph': (context) =>
-                  NeuroGraphV2Screen(userId: 'current_user'),
+                  NeuroGraphV2Screen(
+                userId: AuthService.instance.currentUserId ?? 'anonymous'),
             },
           );
         },

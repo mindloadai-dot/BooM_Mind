@@ -80,7 +80,12 @@ class _NeuroGraphV2ScreenState extends State<NeuroGraphV2Screen>
           _isLoading = false;
           _hasError = true;
           _errorMessage =
-              'No learning data available. Start studying to see your analytics!';
+              'No learning data available. Start studying to see your analytics!\n\n'
+              'Debug info:\n'
+              'User ID: ${widget.userId}\n'
+              'Total attempts: ${summary['totalAttempts']}\n'
+              'Timezone: ${summary['userTimezone']}\n'
+              'Error: ${summary['error'] ?? 'No error'}';
         });
         return;
       }
@@ -160,6 +165,43 @@ class _NeuroGraphV2ScreenState extends State<NeuroGraphV2Screen>
 
   Future<void> _refreshData() async {
     await _loadData();
+  }
+
+  Future<void> _createSampleData() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      await _repository.createSampleData(widget.userId);
+      
+      if (!mounted) return;
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sample data created successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      // Reload data
+      await _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create sample data: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _onViewDueItems() {
@@ -281,6 +323,16 @@ class _NeuroGraphV2ScreenState extends State<NeuroGraphV2Screen>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _createSampleData,
+              icon: const Icon(Icons.data_saver_on),
+              label: const Text('Create Sample Data'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: _refreshData,
               icon: const Icon(Icons.refresh),
