@@ -6,6 +6,7 @@ import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/mindload_button_system.dart';
 import 'package:mindload/services/neurograph_service.dart';
 import 'package:mindload/models/neurograph_models.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class NeuroGraphScreen extends StatefulWidget {
   const NeuroGraphScreen({super.key});
@@ -151,29 +152,29 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
           child: SlideTransition(
             position: _slideAnimation,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: UnifiedSpacing.screenPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: UnifiedSpacing.md),
                   _buildInfoPanel(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: UnifiedSpacing.lg),
                   if (_hasData) ...[
                     _buildStudyHeatmap(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: UnifiedSpacing.lg),
                     _buildStreakSparkline(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: UnifiedSpacing.lg),
                     _buildRecallRadar(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: UnifiedSpacing.lg),
                     _buildEfficiencyBar(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: UnifiedSpacing.lg),
                     _buildForgettingCurve(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: UnifiedSpacing.lg),
                     _buildAnalysisCard(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: UnifiedSpacing.lg),
                     _buildQuickTipsCard(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: UnifiedSpacing.lg),
                     _buildGraphExplanations(),
                   ] else ...[
                     _buildEmptyState(),
@@ -195,30 +196,30 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              UnifiedIcon(
                 Icons.error_outline,
                 size: 64,
                 color: context.tokens.error,
               ),
-              const SizedBox(height: 16),
-              Text(
+              const SizedBox(height: UnifiedSpacing.md),
+              UnifiedText(
                 'Something went wrong',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: context.tokens.textPrimary,
-                    ),
+                style: UnifiedTypography.headlineMedium.copyWith(
+                  color: context.tokens.textPrimary,
+                ),
               ),
-              const SizedBox(height: 8),
-              Text(
+              const SizedBox(height: UnifiedSpacing.sm),
+              UnifiedText(
                 'Please try refreshing the page or restarting the app.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: context.tokens.textSecondary,
-                    ),
+                style: UnifiedTypography.bodyMedium.copyWith(
+                  color: context.tokens.textSecondary,
+                ),
               ),
-              const SizedBox(height: 24),
-              PrimaryButton(
+              const SizedBox(height: UnifiedSpacing.lg),
+              UnifiedButton(
                 onPressed: _refreshData,
-                child: const Text('Try Again'),
+                child: const UnifiedText('Try Again'),
               ),
             ],
           ),
@@ -229,7 +230,7 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: UnifiedSpacing.screenPadding,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -239,7 +240,7 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
             context.tokens.secondary.withOpacity(0.05),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: UnifiedBorderRadius.lgRadius,
         border: Border.all(
           color: context.tokens.outline.withOpacity(0.2),
         ),
@@ -250,36 +251,35 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(UnifiedSpacing.md),
                 decoration: BoxDecoration(
                   color: context.tokens.primary,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: UnifiedBorderRadius.mdRadius,
                 ),
-                child: Icon(
+                child: UnifiedIcon(
                   Icons.psychology,
                   color: context.tokens.onPrimary,
                   size: 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: UnifiedSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    UnifiedText(
                       'Your Learning Analytics',
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: context.tokens.textPrimary,
-                              ),
+                      style: UnifiedTypography.headlineMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: context.tokens.textPrimary,
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
+                    const SizedBox(height: UnifiedSpacing.xs),
+                    UnifiedText(
                       'Track your progress and optimize your study habits',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: context.tokens.textSecondary,
-                          ),
+                      style: UnifiedTypography.bodyMedium.copyWith(
+                        color: context.tokens.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -287,20 +287,20 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
             ],
           ),
           if (_lastUpdated != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: UnifiedSpacing.md),
             Row(
               children: [
-                Icon(
+                UnifiedIcon(
                   Icons.schedule,
                   size: 16,
                   color: context.tokens.textSecondary,
                 ),
-                const SizedBox(width: 8),
-                Text(
+                const SizedBox(width: UnifiedSpacing.sm),
+                UnifiedText(
                   'Last updated: ${_lastUpdated!.day}/${_lastUpdated!.month}/${_lastUpdated!.year}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.tokens.textSecondary,
-                      ),
+                  style: UnifiedTypography.bodySmall.copyWith(
+                    color: context.tokens.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -312,10 +312,10 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
 
   Widget _buildInfoPanel() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: UnifiedSpacing.screenPadding,
       decoration: BoxDecoration(
         color: context.tokens.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: UnifiedBorderRadius.lgRadius,
         border: Border.all(
           color: context.tokens.outline.withOpacity(0.2),
         ),
@@ -332,47 +332,47 @@ class _NeuroGraphScreenState extends State<NeuroGraphScreen>
         children: [
           Row(
             children: [
-              Icon(
+              UnifiedIcon(
                 Icons.psychology_outlined,
                 color: context.tokens.primary,
                 size: 24,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: UnifiedSpacing.md),
               Expanded(
-                child: Text(
+                child: UnifiedText(
                   'What is NeuroGraph?',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: context.tokens.textPrimary,
-                      ),
+                  style: UnifiedTypography.headlineMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: context.tokens.textPrimary,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
+          const SizedBox(height: UnifiedSpacing.md),
+          UnifiedText(
             'NeuroGraph analyzes your learning patterns and study behavior to help you understand how your brain processes information. Each chart reveals different aspects of your cognitive performance.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: context.tokens.textSecondary,
-                  height: 1.5,
-                ),
+            style: UnifiedTypography.bodyMedium.copyWith(
+              color: context.tokens.textSecondary,
+              height: 1.5,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: UnifiedSpacing.md),
           Row(
             children: [
-              Icon(
+              UnifiedIcon(
                 Icons.info_outline,
                 color: context.tokens.secondary,
                 size: 20,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: UnifiedSpacing.sm),
               Expanded(
-                child: Text(
+                child: UnifiedText(
                   'Complete quizzes and flashcard sessions to see your data visualized below.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.tokens.secondary,
-                        fontStyle: FontStyle.italic,
-                      ),
+                  style: UnifiedTypography.bodySmall.copyWith(
+                    color: context.tokens.secondary,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ],

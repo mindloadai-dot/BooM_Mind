@@ -21,6 +21,7 @@ import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/widgets/edit_flashcard_dialog.dart';
 import 'package:mindload/widgets/edit_quiz_question_dialog.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class StudyScreen extends StatefulWidget {
   final StudySet studySet;
@@ -1313,7 +1314,7 @@ class _StudyScreenState extends State<StudyScreen>
           title: _currentStudySet.title.toUpperCase(),
           actions: [
             PopupMenuButton<String>(
-              icon: Icon(
+              icon: UnifiedIcon(
                 Icons.more_vert,
                 color: tokens.primary,
               ),
@@ -1327,7 +1328,7 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'notifications',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         _currentStudySet.notificationsEnabled
                             ? Icons.notifications_active
                             : Icons.notifications_off,
@@ -1335,7 +1336,7 @@ class _StudyScreenState extends State<StudyScreen>
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Notifications',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1346,13 +1347,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'rename',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.edit,
                         color: tokens.primary,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Rename Set',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1363,13 +1364,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'refresh',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.refresh,
                         color: tokens.secondary,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Refresh Set',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1380,13 +1381,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'generate_more_quizzes',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.add_circle_outline,
                         color: tokens.primary,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Generate More Quizzes',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1397,13 +1398,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'generate_more_flashcards',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.add_circle_outline,
                         color: tokens.primary,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Generate More Flashcards',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1414,13 +1415,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'generate_more_both',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.add_circle_outline,
                         color: tokens.primary,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Generate More Both',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1431,13 +1432,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'export_flashcards',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.picture_as_pdf,
                         color: tokens.secondary,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Export Flashcards',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1448,13 +1449,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'export_quizzes',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.quiz,
                         color: tokens.secondary,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Export Quizzes',
                         style: TextStyle(color: tokens.textPrimary),
                       ),
@@ -1465,13 +1466,13 @@ class _StudyScreenState extends State<StudyScreen>
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.delete,
                         color: tokens.error,
                         size: 20,
                       ),
                       const SizedBox(width: Spacing.sm),
-                      Text(
+                      UnifiedText(
                         'Delete',
                         style: TextStyle(color: tokens.error),
                       ),
@@ -1493,15 +1494,15 @@ class _StudyScreenState extends State<StudyScreen>
       children: [
         // Tab selector (fixed position at top)
         Padding(
-          padding: const EdgeInsets.all(Spacing.md),
-          child: AccessibleCard(
+          padding: UnifiedSpacing.screenPadding,
+          child: UnifiedCard(
             padding: EdgeInsets.zero,
             margin: EdgeInsets.zero,
             semanticLabel: 'Study mode selector',
             child: Container(
               decoration: BoxDecoration(
                 color: tokens.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: UnifiedBorderRadius.mdRadius,
                 border: Border.all(
                   color: tokens.primary.withValues(alpha: 0.3),
                 ),
@@ -1526,39 +1527,37 @@ class _StudyScreenState extends State<StudyScreen>
                     : _buildQuizzesTab();
               } catch (e) {
                 return Padding(
-                  padding: const EdgeInsets.all(Spacing.md),
+                  padding: UnifiedSpacing.screenPadding,
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        UnifiedIcon(
                           Icons.error_outline,
                           size: 64,
                           color: context.tokens.error,
                         ),
                         const SizedBox(height: 16),
-                        Text(
+                        UnifiedText(
                           'CONTENT ERROR',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: context.tokens.error,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: UnifiedTypography.headlineMedium.copyWith(
+                            color: context.tokens.error,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        UnifiedText(
                           'Failed to load content. Please try refreshing.',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: context.tokens.textSecondary,
-                                  ),
+                          style: UnifiedTypography.bodyMedium.copyWith(
+                            color: context.tokens.textSecondary,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
-                        AccessibleButton(
+                        UnifiedButton(
                           onPressed: () => setState(() {}),
                           variant: ButtonVariant.primary,
-                          child: const Text('RETRY'),
+                          child: const UnifiedText('RETRY'),
                         ),
                       ],
                     ),
@@ -1576,7 +1575,7 @@ class _StudyScreenState extends State<StudyScreen>
     final isSelected = _selectedTabIndex == index;
     final tokens = context.tokens;
     return Expanded(
-      child: AccessibleButton(
+      child: UnifiedButton(
         onPressed: () {
           try {
             setState(() {
@@ -1595,13 +1594,13 @@ class _StudyScreenState extends State<StudyScreen>
         variant: isSelected ? ButtonVariant.primary : ButtonVariant.text,
         semanticLabel: '${isSelected ? 'Current' : 'Switch to'} $title mode',
         fullWidth: true,
-        child: Text(
+        child: UnifiedText(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-                color: isSelected ? tokens.onPrimary : tokens.textPrimary,
-              ),
+          style: UnifiedTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+            color: isSelected ? tokens.onPrimary : tokens.textPrimary,
+          ),
         ),
       ),
     );
@@ -1616,25 +1615,25 @@ class _StudyScreenState extends State<StudyScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              UnifiedIcon(
                 Icons.quiz_outlined,
                 size: 80,
                 color: tokens.primary.withValues(alpha: 0.7),
               ),
               const SizedBox(height: 16),
-              Text(
+              UnifiedText(
                 'NO FLASHCARDS AVAILABLE',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: UnifiedTypography.headlineMedium.copyWith(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
-              Text(
+              UnifiedText(
                 'Use the menu to generate flashcards',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: tokens.textSecondary,
-                    ),
+                style: UnifiedTypography.bodyMedium.copyWith(
+                  color: tokens.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1654,7 +1653,7 @@ class _StudyScreenState extends State<StudyScreen>
           _currentStudySet.flashcards[_currentCardIndex];
 
       return SingleChildScrollView(
-        padding: const EdgeInsets.all(Spacing.md),
+        padding: UnifiedSpacing.screenPadding,
         child: Column(
           children: [
             // Progress indicator
@@ -1670,18 +1669,18 @@ class _StudyScreenState extends State<StudyScreen>
               ),
             ),
 
-            const SizedBox(height: Spacing.md),
+            const SizedBox(height: UnifiedSpacing.md),
 
-            Text(
+            UnifiedText(
               'CARD ${_currentCardIndex + 1} OF ${_currentStudySet.flashcards.length}',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: tokens.textPrimary,
-                    letterSpacing: 1,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: UnifiedTypography.labelMedium.copyWith(
+                color: tokens.textPrimary,
+                letterSpacing: 1,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
-            const SizedBox(height: Spacing.lg),
+            const SizedBox(height: UnifiedSpacing.lg),
 
             // Debug animation values
             if (kDebugMode)
@@ -1728,7 +1727,7 @@ class _StudyScreenState extends State<StudyScreen>
                                       400, // Increased height for better content
                                   decoration: BoxDecoration(
                                     color: tokens.surface,
-                                    borderRadius: BorderRadius.circular(24),
+                                    borderRadius: UnifiedBorderRadius.xlRadius,
                                     border: Border.all(
                                       color: tokens.borderDefault,
                                       width: 2.5,
@@ -1792,7 +1791,7 @@ class _StudyScreenState extends State<StudyScreen>
                                           color: Colors.transparent,
                                           child: InkWell(
                                             borderRadius:
-                                                BorderRadius.circular(20),
+                                                UnifiedBorderRadius.mdRadius,
                                             onTap: () =>
                                                 _editFlashcard(currentCard),
                                             child: Container(
@@ -2107,31 +2106,31 @@ class _StudyScreenState extends State<StudyScreen>
       if (_currentStudySet.quizzes.isEmpty) {
         return Center(
           child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
+            padding: UnifiedSpacing.screenPadding,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                UnifiedIcon(
                   Icons.assignment_outlined,
                   size: 80,
                   color: tokens.primary.withValues(alpha: 0.7),
                 ),
-                const SizedBox(height: Spacing.md),
-                Text(
+                const SizedBox(height: UnifiedSpacing.md),
+                UnifiedText(
                   'NO QUIZZES AVAILABLE',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: tokens.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: UnifiedTypography.headlineMedium.copyWith(
+                    color: tokens.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
-                  semanticsLabel: 'No quizzes available in this study set',
+                  semanticLabel: 'No quizzes available in this study set',
                 ),
-                const SizedBox(height: Spacing.sm),
-                Text(
+                const SizedBox(height: UnifiedSpacing.sm),
+                UnifiedText(
                   'Use the menu to generate quiz questions',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: tokens.textPrimary,
-                      ),
+                  style: UnifiedTypography.bodyMedium.copyWith(
+                    color: tokens.textPrimary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -2141,7 +2140,7 @@ class _StudyScreenState extends State<StudyScreen>
       }
 
       return ListView.builder(
-        padding: const EdgeInsets.all(Spacing.md),
+        padding: UnifiedSpacing.screenPadding,
         itemCount: _currentStudySet.quizzes.length,
         itemBuilder: (context, index) {
           final Quiz quiz = _currentStudySet.quizzes[index];
@@ -2152,7 +2151,7 @@ class _StudyScreenState extends State<StudyScreen>
                   .toInt()
               : null;
 
-          return AccessibleCard(
+          return GestureDetector(
             onTap: quiz.questions.isNotEmpty
                 ? () {
                     try {
@@ -2163,63 +2162,64 @@ class _StudyScreenState extends State<StudyScreen>
                     }
                   }
                 : null,
-            margin: const EdgeInsets.only(bottom: Spacing.md),
-            semanticLabel:
-                'Quiz: ${quiz.title}. ${quiz.questions.length} questions. ${_getQuizTypeLabel(quiz.type)}. ${bestScore != null ? 'Best score $bestScore percent.' : 'Not attempted yet.'} ${quiz.questions.isEmpty ? 'Quiz has no questions.' : 'Tap to start.'}',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.quiz,
-                      color: tokens.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: Spacing.sm),
-                    Expanded(
-                      child: Text(
-                        quiz.title.toUpperCase(),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: tokens.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+            child: UnifiedCard(
+              margin: const EdgeInsets.only(bottom: UnifiedSpacing.md),
+              semanticLabel:
+                  'Quiz: ${quiz.title}. ${quiz.questions.length} questions. ${_getQuizTypeLabel(quiz.type)}. ${bestScore != null ? 'Best score $bestScore percent.' : 'Not attempted yet.'} ${quiz.questions.isEmpty ? 'Quiz has no questions.' : 'Tap to start.'}',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      UnifiedIcon(
+                        Icons.quiz,
+                        color: tokens.primary,
+                        size: 24,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: Spacing.sm),
-                Row(
-                  children: [
-                    Text(
-                      '${quiz.questions.length} Questions • ${_getQuizTypeLabel(quiz.type)}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: quiz.questions.isEmpty
-                                ? tokens.error
-                                : tokens.textSecondary,
+                      const SizedBox(width: UnifiedSpacing.sm),
+                      Expanded(
+                        child: UnifiedText(
+                          quiz.title.toUpperCase(),
+                          style: UnifiedTypography.headlineMedium.copyWith(
+                            color: tokens.textPrimary,
+                            fontWeight: FontWeight.bold,
                           ),
-                    ),
-                    if (quiz.questions.isEmpty) ...[
-                      const SizedBox(width: Spacing.xs),
-                      Icon(
-                        Icons.warning,
-                        size: 16,
-                        color: tokens.error,
+                        ),
                       ),
                     ],
-                  ],
-                ),
-                if (bestScore != null) ...[
-                  const SizedBox(height: Spacing.xs),
-                  Text(
-                    'Best Score: $bestScore%',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: tokens.primary,
-                        ),
                   ),
+                  const SizedBox(height: UnifiedSpacing.sm),
+                  Row(
+                    children: [
+                      UnifiedText(
+                        '${quiz.questions.length} Questions • ${_getQuizTypeLabel(quiz.type)}',
+                        style: UnifiedTypography.bodyMedium.copyWith(
+                          color: quiz.questions.isEmpty
+                              ? tokens.error
+                              : tokens.textSecondary,
+                        ),
+                      ),
+                      if (quiz.questions.isEmpty) ...[
+                        const SizedBox(width: UnifiedSpacing.xs),
+                        UnifiedIcon(
+                          Icons.warning,
+                          size: 16,
+                          color: tokens.error,
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (bestScore != null) ...[
+                    const SizedBox(height: UnifiedSpacing.xs),
+                    UnifiedText(
+                      'Best Score: $bestScore%',
+                      style: UnifiedTypography.bodySmall.copyWith(
+                        color: tokens.primary,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           );
         },
@@ -2227,37 +2227,37 @@ class _StudyScreenState extends State<StudyScreen>
     } catch (e) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(Spacing.lg),
+          padding: UnifiedSpacing.screenPadding,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              UnifiedIcon(
                 Icons.error_outline,
                 size: 64,
                 color: tokens.error,
               ),
-              const SizedBox(height: Spacing.md),
-              Text(
+              const SizedBox(height: UnifiedSpacing.md),
+              UnifiedText(
                 'QUIZZES ERROR',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: tokens.error,
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: UnifiedTypography.headlineMedium.copyWith(
+                  color: tokens.error,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: Spacing.sm),
-              Text(
+              const SizedBox(height: UnifiedSpacing.sm),
+              UnifiedText(
                 'Error loading quizzes: ${e.toString()}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: tokens.textSecondary,
-                    ),
+                style: UnifiedTypography.bodyMedium.copyWith(
+                  color: tokens.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: Spacing.md),
-              AccessibleButton(
+              const SizedBox(height: UnifiedSpacing.md),
+              UnifiedButton(
                 onPressed: () => setState(() {}),
                 variant: ButtonVariant.primary,
-                child: const Text('RETRY'),
+                child: const UnifiedText('RETRY'),
               ),
             ],
           ),
@@ -2277,25 +2277,25 @@ class _StudyScreenState extends State<StudyScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            UnifiedIcon(
               Icons.error_outline,
               size: 64,
               color: context.tokens.error,
             ),
             const SizedBox(height: 16),
-            Text(
+            UnifiedText(
               'QUIZ ERROR',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: context.tokens.error,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: UnifiedTypography.headlineMedium.copyWith(
+                color: context.tokens.error,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(
+            UnifiedText(
               'No quiz loaded. Please try again.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: context.tokens.textSecondary,
-                  ),
+              style: UnifiedTypography.bodyMedium.copyWith(
+                color: context.tokens.textSecondary,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),

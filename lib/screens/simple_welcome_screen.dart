@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mindload/screens/social_auth_screen.dart';
 import 'package:mindload/widgets/brand_mark.dart';
 import 'package:mindload/theme.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class SimpleWelcomeScreen extends StatefulWidget {
   const SimpleWelcomeScreen({super.key});
@@ -10,7 +11,8 @@ class SimpleWelcomeScreen extends StatefulWidget {
   State<SimpleWelcomeScreen> createState() => _SimpleWelcomeScreenState();
 }
 
-class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerProviderStateMixin {
+class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -21,7 +23,7 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
     );
@@ -38,7 +40,8 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
   void _navigateToAuth() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const SocialAuthScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const SocialAuthScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -48,47 +51,41 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
   }
 
   Widget _buildFeatureHighlights(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Column(
         children: [
-          Text(
+          UnifiedText(
             'AI-POWERED STUDY ASSISTANT',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            style: UnifiedTypography.titleSmall.copyWith(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: UnifiedSpacing.lg),
           _buildFeatureItem(
             context,
             Icons.description_rounded,
             'TEXT & PDF',
             'Convert documents into study materials',
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: UnifiedSpacing.sm),
           _buildFeatureItem(
             context,
             Icons.play_circle_filled_rounded,
             'YOUTUBE VIDEOS',
             'Transform video content into quizzes',
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: UnifiedSpacing.sm),
           _buildFeatureItem(
             context,
             Icons.psychology_rounded,
             'SMART AI',
             'Adaptive learning with GPT-4 technology',
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: UnifiedSpacing.sm),
           _buildFeatureItem(
             context,
             Icons.lightbulb_outline_rounded,
@@ -100,39 +97,43 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
     );
   }
 
-  Widget _buildFeatureItem(BuildContext context, IconData icon, String title, String description) {
+  Widget _buildFeatureItem(
+      BuildContext context, IconData icon, String title, String description) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(UnifiedSpacing.sm),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: UnifiedBorderRadius.smRadius,
           ),
-          child: Icon(
+          child: UnifiedIcon(
             icon,
             color: Theme.of(context).colorScheme.primary,
             size: 20,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: UnifiedSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              UnifiedText(
                 title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                style: UnifiedTypography.bodyMedium.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
+              SizedBox(height: UnifiedSpacing.xs),
+              UnifiedText(
                 description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                style: UnifiedTypography.bodySmall.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -156,10 +157,13 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+              padding: UnifiedSpacing.screenPadding,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: (MediaQuery.of(context).size.height - MediaQuery.of(context).padding.vertical - 48).clamp(0.0, double.infinity),
+                  minHeight: (MediaQuery.of(context).size.height -
+                          MediaQuery.of(context).padding.vertical -
+                          48)
+                      .clamp(0.0, double.infinity),
                 ),
                 child: Column(
                   children: [
@@ -181,44 +185,33 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
                                 alignment: CrossAxisAlignment.center,
                                 padding: EdgeInsets.zero,
                               ),
-                              
-                              const SizedBox(height: 48),
-                              
+
+                              SizedBox(height: UnifiedSpacing.xxl),
+
                               // Feature highlights
                               _buildFeatureHighlights(context),
-                              
-                              const SizedBox(height: 48),
-                              
+
+                              SizedBox(height: UnifiedSpacing.xxl),
+
                               // Get started button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 64,
-                                child: ElevatedButton(
-                                  onPressed: _navigateToAuth,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: tokens.primary,
-                                    foregroundColor: tokens.onPrimary,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    elevation: 8,
-                                    shadowColor: tokens.primary.withValues(alpha: 0.5),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.rocket_launch, size: 24),
-                                      const SizedBox(width: 16),
-                                      Text(
-                                        'LAUNCH APP',
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: tokens.onPrimary,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 2,
-                                        ),
+                              UnifiedButton(
+                                onPressed: _navigateToAuth,
+                                fullWidth: true,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    UnifiedIcon(Icons.rocket_launch, size: 24),
+                                    SizedBox(width: UnifiedSpacing.md),
+                                    UnifiedText(
+                                      'LAUNCH APP',
+                                      style: UnifiedTypography.titleMedium
+                                          .copyWith(
+                                        color: tokens.onPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 2,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -226,24 +219,30 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
                         ),
                       ),
                     ),
-                    
+
                     // Bottom info
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: EdgeInsets.only(bottom: UnifiedSpacing.md),
                       child: Column(
                         children: [
-                          Text(
+                          UnifiedText(
                             'v1.0.0 • SECURE NEURAL NETWORK',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha:  0.6),
+                            style: UnifiedTypography.bodySmall.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
                               letterSpacing: 1,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
+                          SizedBox(height: UnifiedSpacing.sm),
+                          UnifiedText(
                             'Powered by Advanced AI • Privacy First',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.secondary.withValues(alpha:  0.7),
+                            style: UnifiedTypography.bodySmall.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .secondary
+                                  .withValues(alpha: 0.7),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -259,5 +258,4 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen> with TickerPr
       ),
     );
   }
-
 }

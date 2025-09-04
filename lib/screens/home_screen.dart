@@ -50,6 +50,7 @@ import 'dart:async' show Timer;
 import 'package:mindload/widgets/token_estimation_display.dart';
 import 'package:mindload/services/token_estimation_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -2999,6 +3000,89 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: CreditsStateBanners(),
             ),
 
+            // Welcome section with unified design
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: UnifiedSpacing.screenPadding,
+                child: UnifiedCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          UnifiedIcon(
+                            Icons.psychology,
+                            size: 32,
+                            color: tokens.primary,
+                          ),
+                          const SizedBox(width: UnifiedSpacing.sm),
+                          Expanded(
+                            child: UnifiedText(
+                              'Welcome to MindLoad',
+                              style: UnifiedTypography.headlineSmall.copyWith(
+                                color: tokens.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: UnifiedSpacing.sm),
+                      UnifiedText(
+                        'Your AI-powered study companion is ready to help you learn smarter.',
+                        style: UnifiedTypography.bodyMedium.copyWith(
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Quick actions section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: UnifiedSpacing.screenPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    UnifiedText(
+                      'Quick Actions',
+                      style: UnifiedTypography.titleMedium.copyWith(
+                        color: tokens.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: UnifiedSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: UnifiedButton(
+                            onPressed: () => _uploadDocument(),
+                            variant: ButtonVariant.primary,
+                            fullWidth: true,
+                            icon: Icons.file_upload,
+                            child: const UnifiedText('Upload Document'),
+                          ),
+                        ),
+                        const SizedBox(width: UnifiedSpacing.sm),
+                        Expanded(
+                          child: UnifiedButton(
+                            onPressed: () => _showPasteTextDialog(),
+                            variant: ButtonVariant.outline,
+                            fullWidth: true,
+                            icon: Icons.paste,
+                            child: const UnifiedText('Paste Text'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             // Header content
             SliverToBoxAdapter(
               child: Padding(
@@ -3200,279 +3284,223 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final daysSinceCreated =
         DateTime.now().difference(studySet.createdDate).inDays;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: Spacing.md),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: tokens.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: tokens.primary.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedbackService().lightImpact();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => StudyScreen(studySet: studySet),
-              ),
-            );
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with title and menu
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            studySet.title,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  color: tokens.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+    return UnifiedCard(
+      margin: const EdgeInsets.only(bottom: UnifiedSpacing.md),
+      child: InkWell(
+        onTap: () {
+          HapticFeedbackService().lightImpact();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StudyScreen(studySet: studySet),
+            ),
+          );
+        },
+        borderRadius: UnifiedBorderRadius.lgRadius,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with title and menu
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        UnifiedText(
+                          studySet.title,
+                          style: UnifiedTypography.titleLarge.copyWith(
+                            color: tokens.textPrimary,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            daysSinceCreated == 0
-                                ? 'Created today'
-                                : daysSinceCreated == 1
-                                    ? 'Created yesterday'
-                                    : 'Created $daysSinceCreated days ago',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: tokens.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: tokens.textSecondary,
-                        size: 20,
-                      ),
-                      color: tokens.surface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      onSelected: (value) =>
-                          _handleStudySetAction(value, studySet),
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'notifications',
-                          child: Row(
-                            children: [
-                              Icon(
-                                studySet.notificationsEnabled
-                                    ? Icons.notifications_active
-                                    : Icons.notifications_off,
-                                color: tokens.primary,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Notifications',
-                                style: TextStyle(
-                                  color: tokens.textPrimary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        PopupMenuItem(
-                          value: 'rename',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit, color: tokens.primary, size: 18),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Rename',
-                                style: TextStyle(
-                                  color: tokens.textPrimary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'refresh',
-                          child: Row(
-                            children: [
-                              Icon(Icons.refresh,
-                                  color: tokens.secondary, size: 18),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Refresh Content',
-                                style: TextStyle(
-                                  color: tokens.textPrimary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'export_flashcards',
-                          child: Row(
-                            children: [
-                              Icon(Icons.picture_as_pdf,
-                                  color: tokens.secondary, size: 18),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Export Flashcards',
-                                style: TextStyle(
-                                  color: tokens.textPrimary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'export_quizzes',
-                          child: Row(
-                            children: [
-                              Icon(Icons.quiz,
-                                  color: tokens.secondary, size: 18),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Export Quizzes',
-                                style: TextStyle(
-                                  color: tokens.textPrimary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, color: tokens.error, size: 18),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Delete',
-                                style: TextStyle(
-                                  color: tokens.error,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 4),
+                        UnifiedText(
+                          daysSinceCreated == 0
+                              ? 'Created today'
+                              : daysSinceCreated == 1
+                                  ? 'Created yesterday'
+                                  : 'Created $daysSinceCreated days ago',
+                          style: UnifiedTypography.bodySmall.copyWith(
+                            color: tokens.textSecondary,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Stats row
-                Row(
-                  children: [
-                    _buildModernStatChip(
-                      icon: Icons.quiz,
-                      label: '${studySet.flashcards.length}',
-                      subtitle: 'Cards',
-                      color: tokens.primary,
+                  ),
+                  PopupMenuButton<String>(
+                    icon: UnifiedIcon(
+                      Icons.more_vert,
+                      color: tokens.textSecondary,
+                      size: 20,
                     ),
-                    const SizedBox(width: 12),
-                    _buildModernStatChip(
-                      icon: Icons.assignment,
-                      label: '${studySet.quizzes.length}',
-                      subtitle: 'Quizzes',
-                      color: tokens.secondary,
+                    color: tokens.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: UnifiedBorderRadius.mdRadius,
                     ),
-                    const Spacer(),
-                    if (studySet.notificationsEnabled)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: tokens.success.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: tokens.success.withValues(alpha: 0.3),
-                          ),
-                        ),
+                    onSelected: (value) =>
+                        _handleStudySetAction(value, studySet),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'notifications',
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.notifications_active,
-                              size: 14,
-                              color: tokens.success,
+                            UnifiedIcon(
+                              studySet.notificationsEnabled
+                                  ? Icons.notifications_active
+                                  : Icons.notifications_off,
+                              color: tokens.primary,
+                              size: 18,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Active',
-                              style: TextStyle(
-                                color: tokens.success,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 12),
+                            UnifiedText(
+                              'Notifications',
+                              style: UnifiedTypography.bodyMedium.copyWith(
+                                color: tokens.textPrimary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                  ],
-                ),
+                      PopupMenuItem(
+                        value: 'rename',
+                        child: Row(
+                          children: [
+                            UnifiedIcon(Icons.edit,
+                                color: tokens.primary, size: 18),
+                            const SizedBox(width: 12),
+                            UnifiedText(
+                              'Rename',
+                              style: UnifiedTypography.bodyMedium.copyWith(
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'refresh',
+                        child: Row(
+                          children: [
+                            UnifiedIcon(Icons.refresh,
+                                color: tokens.secondary, size: 18),
+                            const SizedBox(width: 12),
+                            UnifiedText(
+                              'Refresh Content',
+                              style: UnifiedTypography.bodyMedium.copyWith(
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'export_flashcards',
+                        child: Row(
+                          children: [
+                            UnifiedIcon(Icons.picture_as_pdf,
+                                color: tokens.secondary, size: 18),
+                            const SizedBox(width: 12),
+                            UnifiedText(
+                              'Export Flashcards',
+                              style: UnifiedTypography.bodyMedium.copyWith(
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'export_quizzes',
+                        child: Row(
+                          children: [
+                            UnifiedIcon(Icons.quiz,
+                                color: tokens.secondary, size: 18),
+                            const SizedBox(width: 12),
+                            UnifiedText(
+                              'Export Quizzes',
+                              style: UnifiedTypography.bodyMedium.copyWith(
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            UnifiedIcon(Icons.delete,
+                                color: tokens.error, size: 18),
+                            const SizedBox(width: 12),
+                            UnifiedText(
+                              'Delete',
+                              style: UnifiedTypography.bodyMedium.copyWith(
+                                color: tokens.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
 
-                const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-                // Last studied info
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 14,
+              // Stats row with unified chips
+              Row(
+                children: [
+                  UnifiedChip(
+                    label: '${studySet.flashcards.length} Cards',
+                    icon: UnifiedIcon(Icons.quiz,
+                        size: 16, color: tokens.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  UnifiedChip(
+                    label: '${studySet.quizzes.length} Quizzes',
+                    icon: UnifiedIcon(Icons.assignment,
+                        size: 16, color: tokens.secondary),
+                  ),
+                  const Spacer(),
+                  if (studySet.notificationsEnabled)
+                    UnifiedChip(
+                      label: 'Active',
+                      icon: UnifiedIcon(Icons.notifications_active,
+                          size: 16, color: tokens.success),
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Last studied info
+              Row(
+                children: [
+                  UnifiedIcon(
+                    Icons.access_time,
+                    size: 14,
+                    color: tokens.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  UnifiedText(
+                    daysSinceStudied == 0
+                        ? 'Studied today'
+                        : daysSinceStudied == 1
+                            ? 'Studied yesterday'
+                            : 'Last studied $daysSinceStudied days ago',
+                    style: UnifiedTypography.bodySmall.copyWith(
                       color: tokens.textSecondary,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      daysSinceStudied == 0
-                          ? 'Studied today'
-                          : daysSinceStudied == 1
-                              ? 'Studied yesterday'
-                              : 'Last studied $daysSinceStudied days ago',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: tokens.textSecondary,
-                            fontSize: 12,
-                          ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

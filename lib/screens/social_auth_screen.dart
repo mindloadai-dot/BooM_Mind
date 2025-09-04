@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/firebase_client_service.dart';
-
 import 'package:mindload/theme.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class SocialAuthScreen extends StatefulWidget {
   const SocialAuthScreen({super.key});
@@ -415,8 +415,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
           // Main content area
           SafeArea(
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+              padding: UnifiedSpacing.screenPadding,
               child: Column(
                 children: [
                   Expanded(
@@ -433,68 +432,49 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                                   animation: _glowAnimation,
                                   builder: (context, child) {
                                     try {
-                                      return Text(
+                                      return UnifiedText(
                                         'MINDLOAD',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .displayLarge!
-                                            .copyWith(
+                                        style: UnifiedTypography.displayLarge.copyWith(
                                           color: context.tokens.primary,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 8,
-                                          fontSize:
-                                              42, // Smaller, more reasonable size
+                                          fontSize: 42, // Smaller, more reasonable size
                                           height: 0.9,
                                           shadows: [
                                             Shadow(
-                                              blurRadius:
-                                                  40 * _glowAnimation.value,
-                                              color: context.tokens.primary
-                                                  .withValues(
-                                                      alpha: 0.9 *
-                                                          _glowAnimation.value),
+                                              blurRadius: 40 * _glowAnimation.value,
+                                              color: context.tokens.primary.withValues(
+                                                  alpha: 0.9 * _glowAnimation.value),
                                             ),
                                             Shadow(
-                                              blurRadius:
-                                                  80 * _glowAnimation.value,
-                                              color: context.tokens.primary
-                                                  .withValues(
-                                                      alpha: 0.7 *
-                                                          _glowAnimation.value),
+                                              blurRadius: 80 * _glowAnimation.value,
+                                              color: context.tokens.primary.withValues(
+                                                  alpha: 0.7 * _glowAnimation.value),
                                             ),
                                             Shadow(
-                                              blurRadius:
-                                                  120 * _glowAnimation.value,
-                                              color: context.tokens.primary
-                                                  .withValues(
-                                                      alpha: 0.5 *
-                                                          _glowAnimation.value),
+                                              blurRadius: 120 * _glowAnimation.value,
+                                              color: context.tokens.primary.withValues(
+                                                  alpha: 0.5 * _glowAnimation.value),
                                             ),
                                             Shadow(
-                                              blurRadius:
-                                                  160 * _glowAnimation.value,
-                                              color: context.tokens.primary
-                                                  .withValues(
-                                                      alpha: 0.3 *
-                                                          _glowAnimation.value),
+                                              blurRadius: 160 * _glowAnimation.value,
+                                              color: context.tokens.primary.withValues(
+                                                  alpha: 0.3 * _glowAnimation.value),
                                             ),
                                           ],
                                         ),
                                       );
                                     } catch (e) {
                                       print('❌ Error in glow animation: $e');
-                                      return Text(
+                                      return UnifiedText(
                                         'MINDLOAD',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .displayLarge!
-                                            .copyWith(
-                                              color: context.tokens.primary,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 8,
-                                              fontSize: 42,
-                                              height: 0.9,
-                                            ),
+                                        style: UnifiedTypography.displayLarge.copyWith(
+                                          color: context.tokens.primary,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 8,
+                                          fontSize: 42,
+                                          height: 0.9,
+                                        ),
                                       ); // Fallback text
                                     }
                                   },
@@ -523,52 +503,31 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                                   ),
                                 ),
 
-                                const SizedBox(height: 8),
+                                SizedBox(height: UnifiedSpacing.sm),
                               ],
                             ),
 
-                            const SizedBox(height: 48),
+                            SizedBox(height: UnifiedSpacing.xxl),
 
                             if (!_showEmailForm) ...[
                               // Section header for social login
                               Container(
                                 width: double.infinity,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                child: Text(
+                                padding: EdgeInsets.symmetric(vertical: UnifiedSpacing.md),
+                                child: UnifiedText(
                                   'Sign in to continue',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: context.tokens.textPrimary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  style: UnifiedTypography.titleMedium.copyWith(
+                                    color: context.tokens.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
 
                               // Social sign-in buttons container
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: context.tokens.surface
-                                      .withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: context.tokens.outline
-                                        .withValues(alpha: 0.2),
-                                    width: 1,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: context.tokens.primary
-                                          .withValues(alpha: 0.1),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
+                              UnifiedCard(
+                                padding: UnifiedSpacing.cardPadding,
+                                borderRadius: UnifiedBorderRadius.lgRadius,
                                 child: Column(
                                   children: [
                                     // Social sign-in buttons
@@ -580,7 +539,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                                       textColor: context.tokens.textPrimary,
                                     ),
 
-                                    const SizedBox(height: 20),
+                                    SizedBox(height: UnifiedSpacing.lg),
 
                                     _buildSocialSignInButton(
                                       provider: AuthProvider.apple,
@@ -590,7 +549,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                                       textColor: context.tokens.textPrimary,
                                     ),
 
-                                    const SizedBox(height: 20),
+                                    SizedBox(height: UnifiedSpacing.lg),
 
                                     _buildSocialSignInButton(
                                       provider: AuthProvider.microsoft,
@@ -603,21 +562,19 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                                 ),
                               ),
 
-                              const SizedBox(height: 32),
+                              SizedBox(height: UnifiedSpacing.xxl),
 
                               // Divider
                               Row(
                                 children: [
                                   Expanded(
                                     child: Divider(
-                                      color: context.tokens.outline
-                                          .withValues(alpha: 0.3),
+                                      color: context.tokens.outline.withValues(alpha: 0.3),
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    child: Text(
+                                    padding: EdgeInsets.symmetric(horizontal: UnifiedSpacing.md),
+                                    child: UnifiedText(
                                       'OR',
                                       style: Theme.of(context)
                                           .textTheme

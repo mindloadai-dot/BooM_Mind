@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import 'package:mindload/services/user_profile_service.dart';
-
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/accessible_components.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -41,25 +41,25 @@ class _NotificationSettingsScreenState
         child: SingleChildScrollView(
           child: Container(
             color: tokens.bg,
-            padding: const EdgeInsets.all(16),
+            padding: UnifiedSpacing.screenPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
                 _buildHeader(tokens),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // Notification Style
                 _buildNotificationStyleSection(tokens),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // Notification Categories
                 _buildNotificationCategoriesSection(tokens),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // Permission Status
                 _buildPermissionStatusSection(tokens),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // Save Button
                 _buildSaveButton(tokens),
@@ -72,38 +72,32 @@ class _NotificationSettingsScreenState
   }
 
   Widget _buildHeader(SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tokens.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.primary),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.notifications, color: tokens.primary, size: 28),
-              const SizedBox(width: 16),
+              UnifiedIcon(Icons.notifications, color: tokens.primary, size: 28),
+              SizedBox(width: UnifiedSpacing.md),
               Expanded(
-                child: Text(
+                child: UnifiedText(
                   'Notification Preferences',
-                  style: TextStyle(
+                  style: UnifiedTypography.headlineMedium.copyWith(
                     color: tokens.textPrimary,
-                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
+          SizedBox(height: UnifiedSpacing.sm),
+          UnifiedText(
             'Customize how and when you receive notifications',
-            style: TextStyle(
+            style: UnifiedTypography.bodyLarge.copyWith(
               color: tokens.textSecondary,
-              fontSize: 16,
             ),
           ),
         ],
@@ -115,38 +109,33 @@ class _NotificationSettingsScreenState
     final currentStyle = _userProfile.notificationStyle;
     final availableStyles = _userProfile.availableStyles;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.outline),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          UnifiedText(
             'Notification Style',
-            style: TextStyle(
+            style: UnifiedTypography.headlineSmall.copyWith(
               color: tokens.textPrimary,
-              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
+          SizedBox(height: UnifiedSpacing.sm),
+          UnifiedText(
             'Choose how notifications are delivered to you',
-            style: TextStyle(
+            style: UnifiedTypography.bodyMedium.copyWith(
               color: tokens.textSecondary,
-              fontSize: 14,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: UnifiedSpacing.lg),
 
           // Style Selection
           for (final style in availableStyles) ...[
             _buildStyleOption(tokens, style, currentStyle == style),
-            if (style != availableStyles.last) const SizedBox(height: 12),
+            if (style != availableStyles.last)
+              SizedBox(height: UnifiedSpacing.sm),
           ],
         ],
       ),
@@ -163,14 +152,14 @@ class _NotificationSettingsScreenState
     return GestureDetector(
       onTap: () => _updateNotificationStyle(style),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: UnifiedSpacing.cardPadding,
         decoration: BoxDecoration(
           color: isSelected ? tokens.primary.withOpacity(0.1) : tokens.surface,
           border: Border.all(
             color: isSelected ? tokens.primary : tokens.outline,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: UnifiedBorderRadius.mdRadius,
         ),
         child: Row(
           children: [
@@ -181,38 +170,40 @@ class _NotificationSettingsScreenState
                 color: isSelected
                     ? tokens.primary
                     : tokens.outline.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: UnifiedBorderRadius.lgRadius,
               ),
               child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                child: UnifiedText(emoji, style: const TextStyle(fontSize: 24)),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: UnifiedSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  UnifiedText(
                     name,
-                    style: TextStyle(
+                    style: UnifiedTypography.titleMedium.copyWith(
                       color: tokens.textPrimary,
-                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
+                  SizedBox(height: UnifiedSpacing.xs),
+                  UnifiedText(
                     description,
-                    style: TextStyle(
+                    style: UnifiedTypography.bodyMedium.copyWith(
                       color: tokens.textSecondary,
-                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              Icon(Icons.check_circle, color: tokens.primary, size: 24),
+              UnifiedIcon(
+                Icons.check_circle,
+                color: tokens.primary,
+                size: 24,
+              ),
           ],
         ),
       ),
@@ -220,33 +211,27 @@ class _NotificationSettingsScreenState
   }
 
   Widget _buildNotificationCategoriesSection(SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.outline),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          UnifiedText(
             'Notification Categories',
-            style: TextStyle(
+            style: UnifiedTypography.headlineSmall.copyWith(
               color: tokens.textPrimary,
-              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
+          SizedBox(height: UnifiedSpacing.sm),
+          UnifiedText(
             'Choose which types of notifications you want to receive',
-            style: TextStyle(
+            style: UnifiedTypography.bodyMedium.copyWith(
               color: tokens.textSecondary,
-              fontSize: 14,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: UnifiedSpacing.lg),
           _buildCategoryToggle('Study Reminders', 'Study session notifications',
               Icons.school, 'Study Reminders'),
           _buildCategoryToggle('Streak Alerts', 'Daily streak maintenance',
@@ -274,25 +259,23 @@ class _NotificationSettingsScreenState
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, color: tokens.primary, size: 20),
-          const SizedBox(width: 12),
+          UnifiedIcon(icon, color: tokens.primary, size: 20),
+          SizedBox(width: UnifiedSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                UnifiedText(
                   title,
-                  style: TextStyle(
+                  style: UnifiedTypography.bodyMedium.copyWith(
                     color: tokens.textPrimary,
-                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                Text(
+                UnifiedText(
                   description,
-                  style: TextStyle(
+                  style: UnifiedTypography.bodySmall.copyWith(
                     color: tokens.textSecondary,
-                    fontSize: 12,
                   ),
                 ),
               ],
@@ -313,33 +296,27 @@ class _NotificationSettingsScreenState
   }
 
   Widget _buildPermissionStatusSection(SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.outline),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          UnifiedText(
             'Permission Status',
-            style: TextStyle(
+            style: UnifiedTypography.headlineSmall.copyWith(
               color: tokens.textPrimary,
-              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
+          SizedBox(height: UnifiedSpacing.sm),
+          UnifiedText(
             'Current notification system status',
-            style: TextStyle(
+            style: UnifiedTypography.bodyMedium.copyWith(
               color: tokens.textSecondary,
-              fontSize: 14,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: UnifiedSpacing.lg),
 
           // Check actual permissions
           FutureBuilder<bool>(
@@ -357,7 +334,7 @@ class _NotificationSettingsScreenState
                     Icons.notifications,
                     hasPermissions ? tokens.success : tokens.error,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: UnifiedSpacing.sm),
                   _buildStatusRow(
                     tokens,
                     'Background Processing',
@@ -365,7 +342,7 @@ class _NotificationSettingsScreenState
                     Icons.schedule,
                     Platform.isIOS ? tokens.success : tokens.textSecondary,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: UnifiedSpacing.sm),
                   _buildStatusRow(
                     tokens,
                     'MindLoad Notification Service',
@@ -376,19 +353,22 @@ class _NotificationSettingsScreenState
 
                   // Add iOS-specific test button
                   if (Platform.isIOS) ...[
-                    const SizedBox(height: 20),
+                    SizedBox(height: UnifiedSpacing.lg),
                     AccessibleButton(
                       onPressed: () async {
                         try {
                           // Run comprehensive notification test
-                          await MindLoadNotificationService.runComprehensiveTest();
-                          
+                          await MindLoadNotificationService
+                              .runComprehensiveTest();
+
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
+                                content: UnifiedText(
                                   'Notification test completed! Check your notifications.',
-                                  style: TextStyle(color: tokens.textPrimary),
+                                  style: UnifiedTypography.bodyMedium.copyWith(
+                                    color: tokens.textPrimary,
+                                  ),
                                 ),
                                 backgroundColor: tokens.success,
                               ),
@@ -398,9 +378,11 @@ class _NotificationSettingsScreenState
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
+                                content: UnifiedText(
                                   'Notification test failed: $e',
-                                  style: TextStyle(color: tokens.textPrimary),
+                                  style: UnifiedTypography.bodyMedium.copyWith(
+                                    color: tokens.textPrimary,
+                                  ),
                                 ),
                                 backgroundColor: tokens.error,
                               ),
@@ -412,9 +394,9 @@ class _NotificationSettingsScreenState
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.phonelink_ring),
-                          SizedBox(width: 8),
-                          Text('Test Notifications'),
+                          UnifiedIcon(Icons.phonelink_ring),
+                          SizedBox(width: UnifiedSpacing.sm),
+                          UnifiedText('Test Notifications'),
                         ],
                       ),
                     ),
@@ -422,19 +404,22 @@ class _NotificationSettingsScreenState
 
                   // Add Android-specific test button
                   if (Platform.isAndroid) ...[
-                    const SizedBox(height: 20),
+                    SizedBox(height: UnifiedSpacing.lg),
                     AccessibleButton(
                       onPressed: () async {
                         try {
                           // Run comprehensive notification test
-                          await MindLoadNotificationService.runComprehensiveTest();
-                          
+                          await MindLoadNotificationService
+                              .runComprehensiveTest();
+
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
+                                content: UnifiedText(
                                   'Notification test completed! Check your notifications.',
-                                  style: TextStyle(color: tokens.textPrimary),
+                                  style: UnifiedTypography.bodyMedium.copyWith(
+                                    color: tokens.textPrimary,
+                                  ),
                                 ),
                                 backgroundColor: tokens.success,
                               ),
@@ -444,9 +429,11 @@ class _NotificationSettingsScreenState
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
+                                content: UnifiedText(
                                   'Notification test failed: $e',
-                                  style: TextStyle(color: tokens.textPrimary),
+                                  style: UnifiedTypography.bodyMedium.copyWith(
+                                    color: tokens.textPrimary,
+                                  ),
                                 ),
                                 backgroundColor: tokens.error,
                               ),
@@ -458,9 +445,9 @@ class _NotificationSettingsScreenState
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.notifications_active),
-                          SizedBox(width: 8),
-                          Text('Test Notifications'),
+                          UnifiedIcon(Icons.notifications_active),
+                          SizedBox(width: UnifiedSpacing.sm),
+                          UnifiedText('Test Notifications'),
                         ],
                       ),
                     ),
@@ -478,14 +465,13 @@ class _NotificationSettingsScreenState
       IconData icon, Color statusColor) {
     return Row(
       children: [
-        Icon(icon, color: tokens.primary, size: 20),
-        const SizedBox(width: 12),
+        UnifiedIcon(icon, color: tokens.primary, size: 20),
+        SizedBox(width: UnifiedSpacing.md),
         Expanded(
-          child: Text(
+          child: UnifiedText(
             label,
-            style: TextStyle(
+            style: UnifiedTypography.bodyMedium.copyWith(
               color: tokens.textPrimary,
-              fontSize: 14,
             ),
           ),
         ),
@@ -495,11 +481,10 @@ class _NotificationSettingsScreenState
             color: statusColor,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
+          child: UnifiedText(
             status,
-            style: TextStyle(
+            style: UnifiedTypography.bodySmall.copyWith(
               color: tokens.onPrimary,
-              fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -521,7 +506,7 @@ class _NotificationSettingsScreenState
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: const Text(
+        child: const UnifiedText(
           'Save Notification Settings',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
@@ -537,7 +522,7 @@ class _NotificationSettingsScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: UnifiedText(
                 'Notification style updated to: ${_userProfile.getStyleDisplayName(newStyle)}'),
             backgroundColor: Theme.of(context)
                     .extension<SemanticTokensExtension>()
@@ -551,7 +536,7 @@ class _NotificationSettingsScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update notification style: $e'),
+            content: UnifiedText('Failed to update notification style: $e'),
             backgroundColor: Theme.of(context)
                     .extension<SemanticTokensExtension>()
                     ?.tokens
@@ -567,7 +552,7 @@ class _NotificationSettingsScreenState
     // TODO: Implement saving category preferences
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Notification settings saved!'),
+        content: UnifiedText('Notification settings saved!'),
         backgroundColor: Colors.green,
       ),
     );

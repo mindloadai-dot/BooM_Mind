@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/theme.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 import 'package:mindload/screens/my_plan_screen.dart';
 import 'package:mindload/screens/privacy_security_screen.dart';
@@ -76,22 +77,22 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: UnifiedSpacing.screenPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSettingsHeader(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildProfileSection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildAppearanceSection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildNotificationsSection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildPrivacySecuritySection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildAccountSection(),
-              const SizedBox(height: 40),
+              const SizedBox(height: UnifiedSpacing.xl),
             ],
           ),
         ),
@@ -100,26 +101,13 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildSettingsHeader() {
+    final tokens = context.tokens;
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.tokens.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: context.tokens.outline.withOpacity(0.2),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: context.tokens.outline.withOpacity(0.1),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+        child: UnifiedCard(
           child: Row(
             children: [
               // Settings Icon with scale animation
@@ -131,27 +119,27 @@ class _SettingsScreenState extends State<SettingsScreen>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        context.tokens.primary,
-                        context.tokens.secondary,
+                        tokens.primary,
+                        tokens.secondary,
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: UnifiedBorderRadius.lgRadius,
                     boxShadow: [
                       BoxShadow(
-                        color: context.tokens.primary.withOpacity(0.2),
+                        color: tokens.primary.withValues(alpha: 0.2),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: Icon(
+                  child: UnifiedIcon(
                     Icons.settings,
-                    color: context.tokens.onPrimary,
+                    color: tokens.onPrimary,
                     size: 32,
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: UnifiedSpacing.md),
               // Settings Info with slide animation
               Expanded(
                 child: SlideTransition(
@@ -165,20 +153,19 @@ class _SettingsScreenState extends State<SettingsScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      UnifiedText(
                         'Settings',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: context.tokens.textPrimary,
-                                ),
+                        style: UnifiedTypography.headlineSmall.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: tokens.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      UnifiedText(
                         'Customize your experience',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: context.tokens.textSecondary,
-                            ),
+                        style: UnifiedTypography.bodyMedium.copyWith(
+                          color: tokens.textSecondary,
+                        ),
                       ),
                     ],
                   ),

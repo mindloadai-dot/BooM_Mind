@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mindload/services/auth_service.dart';
 
 import 'package:mindload/theme.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -270,7 +271,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           // Main content area
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(32.0),
+              padding: UnifiedSpacing.screenPadding,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: MediaQuery.of(context).size.height -
@@ -281,7 +282,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: UnifiedSpacing.xl),
 
                     // Massive MINDLOAD branding with enhanced particle glow animation - identical to social auth
                     Column(
@@ -290,12 +291,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         AnimatedBuilder(
                           animation: _glowAnimation,
                           builder: (context, child) {
-                            return Text(
+                            return UnifiedText(
                               'MINDLOAD',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .displayLarge!
-                                  .copyWith(
+                              style: UnifiedTypography.displayLarge.copyWith(
                                 color: tokens.brandTitle,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 8,
@@ -329,13 +327,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           },
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: UnifiedSpacing.md),
 
                         // AI Study Interface subtitle with enhanced visibility - identical to social auth
-                        Text(
+                        UnifiedText(
                           'AI Study Interface',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: UnifiedTypography.headlineMedium.copyWith(
                             color: tokens.textPrimary,
                             letterSpacing: 4,
                             fontWeight: FontWeight.w600,
@@ -351,11 +348,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           textAlign: TextAlign.center,
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: UnifiedSpacing.sm),
                       ],
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: UnifiedSpacing.xxxl),
 
                     // Authentication methods
                     if (!_showEmailForm) ...[
@@ -368,7 +365,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         onPressed: _isLoading ? null : _handleGoogleSignIn,
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: UnifiedSpacing.md),
 
                       _buildSocialSignInButton(
                         icon: Icons.apple,
@@ -378,7 +375,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         onPressed: _isLoading ? null : _handleAppleSignIn,
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: UnifiedSpacing.md),
 
                       _buildSocialSignInButton(
                         icon: Icons.window_outlined,
@@ -388,7 +385,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         onPressed: _isLoading ? null : _handleMicrosoftSignIn,
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: UnifiedSpacing.xl),
 
                       // Divider - identical to social auth screen
                       Row(
@@ -402,18 +399,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: UnifiedSpacing.md),
+                            child: UnifiedText(
                               'OR',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
+                              style: UnifiedTypography.bodySmall.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
                             ),
                           ),
                           Expanded(
@@ -427,7 +422,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         ],
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: UnifiedSpacing.xl),
 
                       // Email sign-in button - identical to social auth screen
                       SizedBox(
@@ -790,10 +785,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 height: 20,
                 child: CircularProgressIndicator(),
               )
-            : Icon(icon, color: textColor),
-        label: Text(
+            : UnifiedIcon(icon, color: textColor),
+        label: UnifiedText(
           label,
-          style: TextStyle(
+          style: UnifiedTypography.titleMedium.copyWith(
             color: textColor,
             fontWeight: FontWeight.w600,
           ),
@@ -802,7 +797,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           backgroundColor: color,
           foregroundColor: textColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: UnifiedBorderRadius.lgRadius,
           ),
           elevation: 0,
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:mindload/theme.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 /// Demo screen to showcase the MP4 video logo
 class AppIconDemoScreen extends StatefulWidget {
@@ -99,7 +100,7 @@ class _AppIconDemoScreenState extends State<AppIconDemoScreen>
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.screenPadding,
         child: Column(
           children: [
             // Main MP4 video logo
@@ -140,17 +141,17 @@ class _AppIconDemoScreenState extends State<AppIconDemoScreen>
               ),
             ),
 
-            const SizedBox(height: 40),
+            SizedBox(height: UnifiedSpacing.xl),
 
             // Controls
             _buildControls(tokens),
 
-            const SizedBox(height: 40),
+            SizedBox(height: UnifiedSpacing.xl),
 
             // Different sizes showcase
             _buildSizeShowcase(tokens),
 
-            const SizedBox(height: 40),
+            SizedBox(height: UnifiedSpacing.xl),
 
             // Features showcase
             _buildFeaturesShowcase(tokens),
@@ -191,12 +192,9 @@ class _AppIconDemoScreenState extends State<AppIconDemoScreen>
   }
 
   Widget _buildControls(SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

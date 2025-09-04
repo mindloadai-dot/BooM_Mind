@@ -10,6 +10,7 @@ import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/widgets/credits_state_banners.dart';
 import 'package:mindload/widgets/youtube_preview_card.dart';
 import 'package:mindload/widgets/accessible_components.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 /// Enhanced Text Upload Screen
 /// Supports both text input and YouTube links with debounced detection
@@ -227,21 +228,21 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
           // Main content
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: UnifiedSpacing.screenPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Input section
                   _buildInputSection(tokens),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: UnifiedSpacing.md),
 
                   // YouTube preview section
                   if (_isLoadingPreview) _buildLoadingPreview(tokens),
                   if (_currentPreview != null) _buildPreviewSection(tokens),
                   if (_errorMessage != null) _buildErrorSection(tokens),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: UnifiedSpacing.lg),
 
                   // Action buttons
                   _buildActionButtons(tokens, availableTokens),
@@ -258,25 +259,21 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'Study Material',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+          style: UnifiedTypography.titleLarge.copyWith(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-
-        const SizedBox(height: 8),
-
-        Text(
+        SizedBox(height: UnifiedSpacing.sm),
+        UnifiedText(
           'Paste study text or a YouTube link (youtube.com / youtu.be)',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: tokens.textSecondary,
-              ),
+          style: UnifiedTypography.bodyMedium.copyWith(
+            color: tokens.textSecondary,
+          ),
         ),
-
-        const SizedBox(height: 16),
-
+        SizedBox(height: UnifiedSpacing.md),
         TextField(
           controller: _textController,
           maxLines: 8,
@@ -284,9 +281,9 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
           textInputAction: TextInputAction.newline,
           keyboardType: TextInputType.multiline,
           textCapitalization: TextCapitalization.sentences,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: tokens.textPrimary,
-              ),
+          style: UnifiedTypography.bodyMedium.copyWith(
+            color: tokens.textPrimary,
+          ),
           decoration: InputDecoration(
             hintText:
                 'Paste your study material here...\n\n• Lecture notes\n• Textbook chapters\n• Articles\n• Course materials\n• YouTube video links',
@@ -295,70 +292,39 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
               height: 1.5,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: UnifiedBorderRadius.smRadius,
               borderSide: BorderSide(
                 color: tokens.borderDefault,
                 width: 1.5,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: UnifiedBorderRadius.smRadius,
               borderSide: BorderSide(
                 color: tokens.borderDefault,
                 width: 1.5,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: UnifiedBorderRadius.smRadius,
               borderSide: BorderSide(
-                color: tokens.borderFocus,
+                color: tokens.primary,
                 width: 2,
               ),
             ),
-            prefixIcon: Icon(
-              _currentVideoId != null ? Icons.play_circle : Icons.text_fields,
-              color: tokens.primary,
-            ),
+            filled: true,
+            fillColor: tokens.surface,
+            contentPadding: EdgeInsets.all(UnifiedSpacing.md),
           ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // Character counter
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${_textController.text.length} characters',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: tokens.textTertiary,
-                  ),
-            ),
-            if (_textController.text.isNotEmpty)
-              TextButton(
-                onPressed: _clearInput,
-                child: Text(
-                  'Clear',
-                  style: TextStyle(
-                    color: tokens.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-          ],
         ),
       ],
     );
   }
 
   Widget _buildLoadingPreview(SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: tokens.surfaceAlt,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: tokens.borderDefault),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.smRadius,
       child: Row(
         children: [
           SizedBox(
@@ -366,12 +332,12 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
             height: 20,
             child: CircularProgressIndicator(),
           ),
-          const SizedBox(width: 12),
-          Text(
+          SizedBox(width: UnifiedSpacing.sm),
+          UnifiedText(
             'Loading YouTube preview...',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: tokens.textSecondary,
-                ),
+            style: UnifiedTypography.bodyMedium.copyWith(
+              color: tokens.textSecondary,
+            ),
           ),
         ],
       ),
@@ -384,14 +350,14 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'YouTube Video Preview',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: tokens.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+          style: UnifiedTypography.titleMedium.copyWith(
+            color: tokens.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: UnifiedSpacing.sm),
         YouTubePreviewCard(
           preview: _currentPreview!,
           onIngest: _handleYouTubeIngest,
@@ -404,27 +370,23 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
   Widget _buildErrorSection(SemanticTokens tokens) {
     if (_errorMessage == null) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.tokens.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.tokens.error.withValues(alpha: 0.3)),
-      ),
+    return UnifiedCard(
+      padding: EdgeInsets.all(UnifiedSpacing.sm),
+      borderRadius: UnifiedBorderRadius.smRadius,
       child: Row(
         children: [
-          Icon(
+          UnifiedIcon(
             Icons.error_outline,
             color: context.tokens.error,
             size: 20,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: UnifiedSpacing.sm),
           Expanded(
-            child: Text(
+            child: UnifiedText(
               _errorMessage!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.tokens.error,
-                  ),
+              style: UnifiedTypography.bodySmall.copyWith(
+                color: context.tokens.error,
+              ),
             ),
           ),
         ],
@@ -458,31 +420,28 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
           ),
 
         // YouTube ingest button (only show for YouTube content)
-        if (isYouTubeLink && canSubmitYouTube) const SizedBox(height: 12),
+        if (isYouTubeLink && canSubmitYouTube)
+          SizedBox(height: UnifiedSpacing.sm),
 
         // Info text for YouTube links
         if (isYouTubeLink && !canSubmitYouTube)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: tokens.surfaceAlt,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: tokens.borderDefault),
-            ),
+          UnifiedCard(
+            padding: EdgeInsets.all(UnifiedSpacing.sm),
+            borderRadius: UnifiedBorderRadius.smRadius,
             child: Row(
               children: [
-                Icon(
+                UnifiedIcon(
                   Icons.info_outline,
                   color: tokens.textSecondary,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: UnifiedSpacing.sm),
                 Expanded(
-                  child: Text(
+                  child: UnifiedText(
                     'Use the preview card above to ingest this YouTube video',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: tokens.textSecondary,
-                        ),
+                    style: UnifiedTypography.bodySmall.copyWith(
+                      color: tokens.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -492,27 +451,27 @@ class _EnhancedTextUploadScreenState extends State<EnhancedTextUploadScreen> {
         // Token information
         if (hasText)
           Container(
-            margin: const EdgeInsets.only(top: 16),
-            padding: const EdgeInsets.all(12),
+            margin: EdgeInsets.only(top: UnifiedSpacing.md),
+            padding: EdgeInsets.all(UnifiedSpacing.sm),
             decoration: BoxDecoration(
               color: tokens.surfaceAlt.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: UnifiedBorderRadius.smRadius,
               border: Border.all(
                   color: tokens.borderDefault.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                Icon(
+                UnifiedIcon(
                   Icons.token,
                   color: tokens.primary,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
-                Text(
+                SizedBox(width: UnifiedSpacing.sm),
+                UnifiedText(
                   'Available MindLoad Tokens: $availableTokens',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: tokens.textSecondary,
-                      ),
+                  style: UnifiedTypography.bodySmall.copyWith(
+                    color: tokens.textSecondary,
+                  ),
                 ),
               ],
             ),

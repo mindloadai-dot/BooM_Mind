@@ -6,12 +6,12 @@ import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/pdf_export_models.dart';
-
 import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/screens/enhanced_subscription_screen.dart';
 import 'package:mindload/screens/subscription_settings_screen.dart';
 import 'package:mindload/screens/tiers_benefits_screen.dart';
 import 'package:mindload/services/auth_service.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 /// Export Screen - Demonstrates credits integration for exports
 ///
@@ -51,24 +51,24 @@ class _ExportScreenState extends State<ExportScreen> {
         onUpgrade: _handleUpgrade,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: UnifiedSpacing.screenPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Study set info
             _buildStudySetInfo(context, tokens),
 
-            const SizedBox(height: 24),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Export quota status
             _buildExportQuotaStatus(context, tokens),
 
-            const SizedBox(height: 24),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Export options
             _buildExportOptions(context, tokens),
 
-            const SizedBox(height: 24),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Export button
             _buildExportButton(context, tokens),
@@ -79,16 +79,9 @@ class _ExportScreenState extends State<ExportScreen> {
   }
 
   Widget _buildStudySetInfo(BuildContext context, SemanticTokens tokens) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: tokens.borderDefault,
-          width: 1.5,
-        ),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.mdRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -99,31 +92,31 @@ class _ExportScreenState extends State<ExportScreen> {
                 height: 40,
                 decoration: BoxDecoration(
                   color: tokens.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: UnifiedBorderRadius.smRadius,
                 ),
-                child: Icon(
+                child: UnifiedIcon(
                   Icons.library_books,
                   size: 20,
                   color: tokens.primary,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: UnifiedSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    UnifiedText(
                       widget.studySetTitle,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: tokens.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: UnifiedTypography.titleMedium.copyWith(
+                        color: tokens.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    Text(
+                    UnifiedText(
                       'Created 2 days ago',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: tokens.textSecondary,
-                          ),
+                      style: UnifiedTypography.bodySmall.copyWith(
+                        color: tokens.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -131,13 +124,13 @@ class _ExportScreenState extends State<ExportScreen> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: UnifiedSpacing.md),
 
           // Study set stats
           Row(
             children: [
               _buildStatChip(context, Icons.quiz, '45 Flashcards', tokens),
-              const SizedBox(width: 12),
+              SizedBox(width: UnifiedSpacing.sm),
               _buildStatChip(
                   context, Icons.help_outline, '25 Questions', tokens),
             ],
@@ -150,10 +143,11 @@ class _ExportScreenState extends State<ExportScreen> {
   Widget _buildStatChip(BuildContext context, IconData icon, String label,
       SemanticTokens tokens) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(
+          horizontal: UnifiedSpacing.sm, vertical: UnifiedSpacing.xs),
       decoration: BoxDecoration(
         color: tokens.surfaceAlt,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: UnifiedBorderRadius.lgRadius,
         border: Border.all(
           color: tokens.borderDefault.withValues(alpha: 0.3),
           width: 1,
@@ -162,18 +156,18 @@ class _ExportScreenState extends State<ExportScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          UnifiedIcon(
             icon,
             size: 14,
             color: tokens.primary,
           ),
-          const SizedBox(width: 4),
-          Text(
+          SizedBox(width: UnifiedSpacing.xs),
+          UnifiedText(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: tokens.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
+            style: UnifiedTypography.bodySmall.copyWith(
+              color: tokens.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),

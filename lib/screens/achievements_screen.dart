@@ -7,6 +7,7 @@ import 'package:mindload/widgets/enhanced_achievement_card.dart';
 
 import 'package:mindload/theme.dart';
 import 'package:mindload/models/achievement_models.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 /// Modernized Achievements Hub Screen with clear achievement instructions
 class AchievementsScreen extends StatefulWidget {
@@ -220,7 +221,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
           child: Opacity(
             opacity: _headerFadeAnimation.value,
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: UnifiedSpacing.screenPadding,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -290,16 +291,17 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                           Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
+                              UnifiedText(
                                 '${(completionRate * 100).toInt()}%',
-                                style: theme.textTheme.headlineMedium?.copyWith(
+                                style:
+                                    UnifiedTypography.headlineMedium.copyWith(
                                   color: tokens.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Text(
+                              UnifiedText(
                                 'Complete',
-                                style: theme.textTheme.labelLarge?.copyWith(
+                                style: UnifiedTypography.labelLarge.copyWith(
                                   color: tokens.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -310,22 +312,22 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
+                  const SizedBox(height: UnifiedSpacing.lg),
+                  UnifiedText(
                     'Your Achievement Progress',
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style: UnifiedTypography.headlineMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: tokens.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: UnifiedSpacing.sm),
+                  UnifiedText(
                     '$earnedAchievements of $totalAchievements completed',
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: UnifiedTypography.bodyMedium.copyWith(
                       color: tokens.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: UnifiedSpacing.lg),
 
                   // Quick stats row
                   _buildQuickStatsRow(tokens, theme),
@@ -764,10 +766,11 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+          horizontal: UnifiedSpacing.md, vertical: UnifiedSpacing.md),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: UnifiedBorderRadius.lgRadius,
         border: Border.all(
           color: color.withOpacity(0.2),
           width: 1,
@@ -776,23 +779,23 @@ class _AchievementsScreenState extends State<AchievementsScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          UnifiedIcon(
             icon,
             color: color,
             size: 24,
           ),
-          const SizedBox(height: 8),
-          Text(
+          const SizedBox(height: UnifiedSpacing.sm),
+          UnifiedText(
             value,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: UnifiedTypography.titleMedium.copyWith(
               color: color,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
+          const SizedBox(height: UnifiedSpacing.xs),
+          UnifiedText(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: UnifiedTypography.bodySmall.copyWith(
               color: tokens.textSecondary,
               fontWeight: FontWeight.w500,
             ),

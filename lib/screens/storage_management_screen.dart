@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/models/storage_models.dart';
 import 'package:mindload/theme.dart';
-
 import 'package:mindload/widgets/mindload_app_bar.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -35,30 +35,30 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
               final stats = snapshot.data!;
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: UnifiedSpacing.screenPadding,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Storage Overview
                     _buildStorageOverview(stats),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: UnifiedSpacing.lg),
 
                     // Storage Warning Banner
                     if (storageService.isStorageWarning)
                       _buildStorageWarningBanner(),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: UnifiedSpacing.lg),
 
                     // Storage Actions
                     _buildStorageActions(storageService),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: UnifiedSpacing.lg),
 
                     // Study Sets List
                     _buildStudySetsList(metadata, storageService),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: UnifiedSpacing.lg),
 
                     // Storage Tips
                     _buildStorageTips(),
@@ -81,93 +81,90 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     final usagePercentage = stats['usagePercentage'] as double;
     final freeSpaceGB = stats['freeSpaceGB'] as int;
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Storage Overview',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          UnifiedText(
+            'Storage Overview',
+            style: UnifiedTypography.headlineSmall.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
+          ),
+          SizedBox(height: UnifiedSpacing.md),
 
-            // Usage bar
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Local Storage',
-                      style: Theme.of(context).textTheme.titleMedium,
+          // Usage bar
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  UnifiedText(
+                    'Local Storage',
+                    style: UnifiedTypography.titleMedium,
+                  ),
+                  UnifiedText(
+                    '${(usagePercentage * 100).toStringAsFixed(1)}%',
+                    style: UnifiedTypography.titleMedium.copyWith(
+                      color: _getUsageColor(usagePercentage),
+                      fontWeight: FontWeight.bold,
                     ),
-                    Text(
-                      '${(usagePercentage * 100).toStringAsFixed(1)}%',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: _getUsageColor(usagePercentage),
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: usagePercentage,
-                  backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    _getUsageColor(usagePercentage),
                   ),
-                  minHeight: 8,
+                ],
+              ),
+              SizedBox(height: UnifiedSpacing.sm),
+              LinearProgressIndicator(
+                value: usagePercentage,
+                backgroundColor: Colors.grey[300],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  _getUsageColor(usagePercentage),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB / $budgetMB MB',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                minHeight: 8,
+              ),
+              SizedBox(height: UnifiedSpacing.xs),
+              UnifiedText(
+                '${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB / $budgetMB MB',
+                style: UnifiedTypography.bodySmall.copyWith(
+                  color: Colors.grey[600],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
 
-            const SizedBox(height: 16),
+          SizedBox(height: UnifiedSpacing.md),
 
-            // Stats grid
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    'Study Sets',
-                    totalSets.toString(),
-                    Icons.folder,
-                    Colors.blue,
-                  ),
+          // Stats grid
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  'Study Sets',
+                  totalSets.toString(),
+                  Icons.folder,
+                  Colors.blue,
                 ),
-                Expanded(
-                  child: _buildStatItem(
-                    'Total Items',
-                    totalItems.toString(),
-                    Icons.article,
-                    Colors.green,
-                  ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Total Items',
+                  totalItems.toString(),
+                  Icons.article,
+                  Colors.green,
                 ),
-                Expanded(
-                  child: _buildStatItem(
-                    'Free Space',
-                    '$freeSpaceGB GB',
-                    Icons.storage,
-                    Colors.orange,
-                  ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Free Space',
+                  '$freeSpaceGB GB',
+                  Icons.storage,
+                  Colors.orange,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -177,20 +174,20 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       String label, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 32),
-        const SizedBox(height: 8),
-        Text(
+        UnifiedIcon(icon, color: color, size: 32),
+        SizedBox(height: UnifiedSpacing.sm),
+        UnifiedText(
           value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+          style: UnifiedTypography.titleLarge.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
-        Text(
+        UnifiedText(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: UnifiedTypography.bodySmall.copyWith(
+            color: Colors.grey[600],
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -199,35 +196,30 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   // Storage warning banner
   Widget _buildStorageWarningBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.tokens.warning.withValues(alpha: 0.1),
-        border:
-            Border.all(color: context.tokens.warning.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.mdRadius,
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: context.tokens.warning),
-          const SizedBox(width: 12),
+          UnifiedIcon(Icons.warning_amber_rounded,
+              color: context.tokens.warning),
+          SizedBox(width: UnifiedSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                UnifiedText(
                   'Storage Almost Full',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: context.tokens.warning,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: UnifiedTypography.titleMedium.copyWith(
+                    color: context.tokens.warning,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                Text(
+                UnifiedText(
                   'Consider archiving old sets or upgrading your plan for more storage.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: context.tokens.warning,
-                      ),
+                  style: UnifiedTypography.bodyMedium.copyWith(
+                    color: context.tokens.warning,
+                  ),
                 ),
               ],
             ),
@@ -239,51 +231,38 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   // Storage actions
   Widget _buildStorageActions(UnifiedStorageService storageService) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Storage Actions',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          UnifiedText(
+            'Storage Actions',
+            style: UnifiedTypography.headlineSmall.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showArchiveDialog(storageService),
-                    icon: const Icon(Icons.archive),
-                    label: const Text('Archive to Cloud'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.tokens.primary,
-                      foregroundColor: context.tokens.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
+          ),
+          SizedBox(height: UnifiedSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: UnifiedButton(
+                  onPressed: () => _showArchiveDialog(storageService),
+                  icon: Icons.archive,
+                  child: UnifiedText('Archive to Cloud'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showCleanupDialog(storageService),
-                    icon: const Icon(Icons.cleaning_services),
-                    label: const Text('Clean Up'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.tokens.success,
-                      foregroundColor: context.tokens.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
+              ),
+              SizedBox(width: UnifiedSpacing.sm),
+              Expanded(
+                child: UnifiedButton(
+                  onPressed: () => _showCleanupDialog(storageService),
+                  icon: Icons.cleaning_services,
+                  child: UnifiedText('Clean Up'),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -294,73 +273,69 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     final sets = metadata.values.toList()
       ..sort((a, b) => b.lastOpenedAt.compareTo(a.lastOpenedAt));
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Study Sets (${sets.length})',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              UnifiedText(
+                'Study Sets (${sets.length})',
+                style: UnifiedTypography.headlineSmall.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                Text(
-                  'Tap to pin/unpin',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              ),
+              UnifiedText(
+                'Tap to pin/unpin',
+                style: UnifiedTypography.bodySmall.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: UnifiedSpacing.md),
+          if (sets.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    UnifiedIcon(
+                      Icons.folder_open,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    SizedBox(height: UnifiedSpacing.md),
+                    UnifiedText(
+                      'No study sets found',
+                      style: UnifiedTypography.titleMedium.copyWith(
                         color: Colors.grey[600],
                       ),
+                    ),
+                    UnifiedText(
+                      'Create or import study sets to see them here',
+                      style: UnifiedTypography.bodyMedium.copyWith(
+                        color: Colors.grey[500],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (sets.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.folder_open,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No study sets found',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                      ),
-                      Text(
-                        'Create or import study sets to see them here',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[500],
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: sets.length,
-                itemBuilder: (context, index) {
-                  final set = sets[index];
-                  return _buildStudySetTile(set, storageService);
-                },
               ),
-          ],
-        ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sets.length,
+              itemBuilder: (context, index) {
+                final set = sets[index];
+                return _buildStudySetTile(set, storageService);
+              },
+            ),
+        ],
       ),
     );
   }
@@ -372,11 +347,11 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     final isArchived = set.isArchived;
 
     return ListTile(
-      leading: Icon(
+      leading: UnifiedIcon(
         isPinned ? Icons.push_pin : Icons.folder,
         color: isPinned ? Colors.red : Colors.grey[600],
       ),
-      title: Text(
+      title: UnifiedText(
         set.title,
         style: TextStyle(
           fontWeight: isPinned ? FontWeight.bold : FontWeight.normal,
@@ -386,15 +361,15 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          UnifiedText(
             '${set.items} items • ${(set.bytes / 1024).toStringAsFixed(1)} KB',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: UnifiedTypography.bodySmall,
           ),
-          Text(
+          UnifiedText(
             'Last opened: ${_formatDate(set.lastOpenedAt)}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: UnifiedTypography.bodySmall.copyWith(
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -403,13 +378,13 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         children: [
           if (isArchived)
             Chip(
-              label: const Text('Archived'),
+              label: UnifiedText('Archived'),
               backgroundColor: Colors.grey[200],
               labelStyle: TextStyle(color: Colors.grey[700]),
             ),
           IconButton(
             onPressed: () => _togglePin(set.setId, storageService),
-            icon: Icon(
+            icon: UnifiedIcon(
               isPinned ? Icons.push_pin : Icons.push_pin_outlined,
               color: isPinned ? Colors.red : Colors.grey[600],
             ),
@@ -423,42 +398,39 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   // Storage tips
   Widget _buildStorageTips() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Storage Tips',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          UnifiedText(
+            'Storage Tips',
+            style: UnifiedTypography.headlineSmall.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            _buildTipItem(
-              Icons.push_pin,
-              'Pin Important Sets',
-              'Pinned sets are never automatically removed from local storage.',
-            ),
-            _buildTipItem(
-              Icons.archive,
-              'Archive Old Sets',
-              'Archive sets you don\'t need locally. You can always re-download them.',
-            ),
-            _buildTipItem(
-              Icons.cleaning_services,
-              'Regular Cleanup',
-              'Use the Clean Up feature to remove old temporary files and free space.',
-            ),
-            _buildTipItem(
-              Icons.upgrade,
-              'Upgrade Plan',
-              'Consider upgrading to a higher tier for more storage capacity.',
-            ),
-          ],
-        ),
+          ),
+          SizedBox(height: UnifiedSpacing.md),
+          _buildTipItem(
+            Icons.push_pin,
+            'Pin Important Sets',
+            'Pinned sets are never automatically removed from local storage.',
+          ),
+          _buildTipItem(
+            Icons.archive,
+            'Archive Old Sets',
+            'Archive sets you don\'t need locally. You can always re-download them.',
+          ),
+          _buildTipItem(
+            Icons.cleaning_services,
+            'Regular Cleanup',
+            'Use the Clean Up feature to remove old temporary files and free space.',
+          ),
+          _buildTipItem(
+            Icons.upgrade,
+            'Upgrade Plan',
+            'Consider upgrading to a higher tier for more storage capacity.',
+          ),
+        ],
       ),
     );
   }
@@ -470,23 +442,23 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.blue[600], size: 24),
-          const SizedBox(width: 12),
+          UnifiedIcon(icon, color: Colors.blue[600], size: 24),
+          SizedBox(width: UnifiedSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                UnifiedText(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: UnifiedTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                Text(
+                UnifiedText(
                   description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: UnifiedTypography.bodyMedium.copyWith(
+                    color: Colors.grey[600],
+                  ),
                 ),
               ],
             ),
@@ -529,23 +501,23 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(set.title),
+        title: UnifiedText(set.title),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Items: ${set.items}'),
-            Text('Size: ${(set.bytes / 1024).toStringAsFixed(1)} KB'),
-            Text('Created: ${_formatDate(set.createdAt)}'),
-            Text('Last opened: ${_formatDate(set.lastOpenedAt)}'),
-            Text('Status: ${set.isPinned ? "Pinned" : "Unpinned"}'),
-            if (set.isArchived) Text('Archived: Yes'),
+            UnifiedText('Items: ${set.items}'),
+            UnifiedText('Size: ${(set.bytes / 1024).toStringAsFixed(1)} KB'),
+            UnifiedText('Created: ${_formatDate(set.createdAt)}'),
+            UnifiedText('Last opened: ${_formatDate(set.lastOpenedAt)}'),
+            UnifiedText('Status: ${set.isPinned ? "Pinned" : "Unpinned"}'),
+            if (set.isArchived) UnifiedText('Archived: Yes'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: UnifiedText('Close'),
           ),
         ],
       ),
@@ -556,26 +528,26 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Archive to Cloud'),
-        content: const Text(
+        title: UnifiedText('Archive to Cloud'),
+        content: UnifiedText(
           'This will move selected study sets to cloud storage, freeing up local space. '
           'You can always re-download them later.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: UnifiedText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               // TODO: Implement archive functionality
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Archive functionality coming soon')),
+                SnackBar(
+                    content: UnifiedText('Archive functionality coming soon')),
               );
             },
-            child: const Text('Archive'),
+            child: UnifiedText('Archive'),
           ),
         ],
       ),
@@ -586,26 +558,26 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clean Up Storage'),
-        content: const Text(
+        title: UnifiedText('Clean Up Storage'),
+        content: UnifiedText(
           'This will remove temporary files and clean up old data to free up space. '
           'This action cannot be undone.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: UnifiedText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               // TODO: Implement cleanup functionality
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Cleanup functionality coming soon')),
+                SnackBar(
+                    content: UnifiedText('Cleanup functionality coming soon')),
               );
             },
-            child: const Text('Clean Up'),
+            child: UnifiedText('Clean Up'),
           ),
         ],
       ),

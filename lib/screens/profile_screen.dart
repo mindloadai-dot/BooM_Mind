@@ -31,6 +31,7 @@ import 'package:mindload/widgets/change_password_dialog.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:mindload/widgets/accessible_components.dart' show ButtonSize;
 import 'package:mindload/constants/product_constants.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -227,14 +228,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             context.tokens.secondary,
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: UnifiedBorderRadius.mdRadius,
       ),
       child: Center(
-        child: Text(
+        child: UnifiedText(
           initials,
-          style: TextStyle(
+          style: UnifiedTypography.headlineMedium.copyWith(
             color: context.tokens.onPrimary,
-            fontSize: 24,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
@@ -281,7 +281,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
+              margin: const EdgeInsets.symmetric(vertical: UnifiedSpacing.md),
               decoration: BoxDecoration(
                 color: context.tokens.outline.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
@@ -290,22 +290,24 @@ class _ProfileScreenState extends State<ProfileScreen>
 
             // Title
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Text(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: UnifiedSpacing.lg, vertical: UnifiedSpacing.sm),
+              child: UnifiedText(
                 'Profile Picture',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: context.tokens.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: UnifiedTypography.headlineMedium.copyWith(
+                  color: context.tokens.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: UnifiedSpacing.md),
 
             // Options
             ListTile(
-              leading: Icon(Icons.camera_alt, color: context.tokens.primary),
-              title: const Text('Take Photo'),
+              leading:
+                  UnifiedIcon(Icons.camera_alt, color: context.tokens.primary),
+              title: const UnifiedText('Take Photo'),
               onTap: () {
                 Navigator.pop(context);
                 _takePhoto();
@@ -562,16 +564,16 @@ class _ProfileScreenState extends State<ProfileScreen>
       appBar: const MindloadAppBar(title: 'Profile'),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: UnifiedSpacing.screenPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildProfileHeader(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildQuickStats(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildQuickActions(),
-              const SizedBox(height: 24),
+              const SizedBox(height: UnifiedSpacing.lg),
               _buildSettingsSection(),
             ],
           ),
@@ -586,10 +588,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: SlideTransition(
         position: _slideAnimation,
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: UnifiedSpacing.screenPadding,
           decoration: BoxDecoration(
             color: context.tokens.surface,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: UnifiedBorderRadius.xlRadius,
             border: Border.all(
               color: context.tokens.outline.withOpacity(0.2),
             ),
@@ -620,7 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               context.tokens.secondary,
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: UnifiedBorderRadius.lgRadius,
                           boxShadow: [
                             BoxShadow(
                               color: context.tokens.primary.withOpacity(0.2),
@@ -630,7 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: UnifiedBorderRadius.lgRadius,
                           child: FutureBuilder<String?>(
                             future: LocalImageStorageService.instance
                                 .getProfileImagePath(),
@@ -817,10 +819,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.screenPadding,
         decoration: BoxDecoration(
           color: context.tokens.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: UnifiedBorderRadius.lgRadius,
           border: Border.all(
             color: context.tokens.outline.withOpacity(0.2),
           ),
@@ -839,23 +841,23 @@ class _ProfileScreenState extends State<ProfileScreen>
               )),
               child: Row(
                 children: [
-                  Icon(
+                  UnifiedIcon(
                     Icons.analytics,
                     color: context.tokens.primary,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
-                  Text(
+                  const SizedBox(width: UnifiedSpacing.md),
+                  UnifiedText(
                     'Quick Stats',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: context.tokens.textPrimary,
-                        ),
+                    style: UnifiedTypography.headlineMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.tokens.textPrimary,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: UnifiedSpacing.lg),
             // Stats cards with staggered animations
             Consumer<MindloadEconomyService>(
               builder: (context, economyService, child) {
@@ -875,7 +877,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         0,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: UnifiedSpacing.md),
                     Expanded(
                       child: _buildAnimatedStatCard(
                         'Used This Month',
@@ -885,7 +887,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         1,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: UnifiedSpacing.md),
                     Expanded(
                       child: _buildAnimatedStatCard(
                         'Remaining Tokens',
@@ -938,34 +940,34 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildStatCard(
       String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: UnifiedSpacing.cardPadding,
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: UnifiedBorderRadius.mdRadius,
         border: Border.all(
           color: color.withOpacity(0.3),
         ),
       ),
       child: Column(
         children: [
-          Icon(
+          UnifiedIcon(
             icon,
             color: color,
             size: 24,
           ),
-          const SizedBox(height: 8),
-          Text(
+          const SizedBox(height: UnifiedSpacing.sm),
+          UnifiedText(
             value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+            style: UnifiedTypography.headlineMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-          Text(
+          UnifiedText(
             title,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.tokens.textSecondary,
-                ),
+            style: UnifiedTypography.bodySmall.copyWith(
+              color: context.tokens.textSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -977,10 +979,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.screenPadding,
         decoration: BoxDecoration(
           color: context.tokens.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: UnifiedBorderRadius.lgRadius,
           border: Border.all(
             color: context.tokens.outline.withOpacity(0.2),
           ),
@@ -999,23 +1001,23 @@ class _ProfileScreenState extends State<ProfileScreen>
               )),
               child: Row(
                 children: [
-                  Icon(
+                  UnifiedIcon(
                     Icons.bolt,
                     color: context.tokens.primary,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
-                  Text(
+                  const SizedBox(width: UnifiedSpacing.md),
+                  UnifiedText(
                     'Quick Actions',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: context.tokens.textPrimary,
-                        ),
+                    style: UnifiedTypography.headlineMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.tokens.textPrimary,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: UnifiedSpacing.lg),
             // Action cards with staggered animations
             _buildAnimatedActionCard(
               'My Plan & Tokens',
@@ -1028,7 +1030,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               0,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UnifiedSpacing.md),
             _buildAnimatedActionCard(
               'Achievements',
               'View your progress and earned badges',
@@ -1041,7 +1043,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               1,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UnifiedSpacing.md),
             _buildAnimatedActionCard(
               'Notification Settings',
               'Customize your study reminders',
@@ -1054,7 +1056,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               2,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UnifiedSpacing.md),
             _buildAnimatedActionCard(
               ProductConstants.neurographTitle,
               ProductConstants.neurographSubtitle,

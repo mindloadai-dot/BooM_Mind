@@ -5,6 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:mindload/services/telemetry_service.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/services/auth_service.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -329,7 +330,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
+            padding: UnifiedSpacing.screenPadding,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: MediaQuery.of(context).size.height -
@@ -340,7 +341,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 40),
+                  SizedBox(height: UnifiedSpacing.xl),
 
                   // Animated MINDLOAD title with glowing effect
                   AnimatedBuilder(
@@ -349,12 +350,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                       animation: _pulseAnimation,
                       builder: (context, child) => Transform.scale(
                         scale: _pulseAnimation.value,
-                        child: Text(
+                        child: UnifiedText(
                           'MINDLOAD',
-                          style: Theme.of(context)
-                              .textTheme
-                              .displayLarge
-                              ?.copyWith(
+                          style: UnifiedTypography.displayLarge.copyWith(
                             color: context.tokens.primary,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 6,
@@ -385,89 +383,76 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  SizedBox(height: UnifiedSpacing.sm),
 
-                  Text(
+                  UnifiedText(
                     'AI STUDY INTERFACE',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: context.tokens.textPrimary,
-                          letterSpacing: 3,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    style: UnifiedTypography.titleMedium.copyWith(
+                      color: context.tokens.textPrimary,
+                      letterSpacing: 3,
+                      fontWeight: FontWeight.w500,
+                    ),
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: 48),
+                  SizedBox(height: UnifiedSpacing.xxl),
 
                   // Authentication status card
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: context.tokens.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: context.tokens.primary.withValues(alpha: 0.3),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.tokens.primary.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
+                  UnifiedCard(
+                    padding: UnifiedSpacing.cardPadding,
+                    margin: EdgeInsets.zero,
+                    elevation: 8,
+                    borderRadius: UnifiedBorderRadius.lgRadius,
                     child: Column(
                       children: [
-                        Icon(
+                        UnifiedIcon(
                           _hasBiometrics
                               ? (_getPreferredBiometricIcon())
                               : Icons.lock,
                           size: 48,
                           color: context.tokens.primary,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
+                        SizedBox(height: UnifiedSpacing.md),
+                        UnifiedText(
                           _hasBiometrics
                               ? 'BIOMETRIC SCAN REQUIRED'
                               : 'SECURE ACCESS ENABLED',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: context.tokens.textPrimary,
-                                    letterSpacing: 1,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: UnifiedTypography.titleMedium.copyWith(
+                            color: context.tokens.textPrimary,
+                            letterSpacing: 1,
+                            fontWeight: FontWeight.bold,
+                          ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
+                        SizedBox(height: UnifiedSpacing.sm),
+                        UnifiedText(
                           _hasBiometrics
                               ? 'Use biometric authentication to unlock your AI study interface'
                               : 'Tap to access your study data and begin your learning journey',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: context.tokens.textSecondary,
-                                  ),
+                          style: UnifiedTypography.bodyMedium.copyWith(
+                            color: context.tokens.textSecondary,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         // Show error message if present
                         if (_errorMessage != null) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: UnifiedSpacing.md),
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(UnifiedSpacing.sm),
                             decoration: BoxDecoration(
                               color: context.tokens.error,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: UnifiedBorderRadius.smRadius,
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                UnifiedIcon(
                                   Icons.error_outline,
                                   color: context.tokens.onPrimary,
                                   size: 16,
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: UnifiedSpacing.sm),
                                 Expanded(
-                                  child: Text(
+                                  child: UnifiedText(
                                     _errorMessage!,
                                     style: TextStyle(
                                       color: context.tokens.onPrimary,
@@ -482,68 +467,45 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                     ),
                   ),
 
-                  const SizedBox(height: 48),
+                  SizedBox(height: UnifiedSpacing.xxl),
 
                   // Authentication button - modernized to match welcome screen
-                  SizedBox(
-                    width: double.infinity,
-                    height: 58,
-                    child: ElevatedButton(
-                      onPressed: _isAuthenticating ? null : _authenticate,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: context.tokens.primary,
-                        foregroundColor: context.tokens.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  UnifiedButton(
+                    onPressed: _isAuthenticating ? null : _authenticate,
+                    fullWidth: true,
+                    loading: _isAuthenticating,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        UnifiedIcon(
+                          _hasBiometrics
+                              ? _getPreferredBiometricIcon()
+                              : Icons.login,
+                          size: 24,
                         ),
-                        elevation: 8,
-                        shadowColor:
-                            context.tokens.primary.withValues(alpha: 0.4),
-                      ),
-                      child: _isAuthenticating
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _hasBiometrics
-                                      ? _getPreferredBiometricIcon()
-                                      : Icons.login,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _hasBiometrics
-                                      ? 'AUTHENTICATE'
-                                      : 'ENTER MINDLOAD',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelLarge
-                                      ?.copyWith(
-                                        color: context.tokens.onPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1,
-                                      ),
-                                ),
-                              ],
-                            ),
+                        SizedBox(width: UnifiedSpacing.sm),
+                        UnifiedText(
+                          _hasBiometrics ? 'AUTHENTICATE' : 'ENTER MINDLOAD',
+                          style: UnifiedTypography.labelLarge.copyWith(
+                            color: context.tokens.onPrimary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: UnifiedSpacing.xl),
 
                   // Bottom version info
-                  Text(
+                  UnifiedText(
                     'v1.0.0 • SECURE NEURAL NETWORK',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: context.tokens.textSecondary,
-                          letterSpacing: 1,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    style: UnifiedTypography.bodySmall.copyWith(
+                      color: context.tokens.textSecondary,
+                      letterSpacing: 1,
+                      fontWeight: FontWeight.w500,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],

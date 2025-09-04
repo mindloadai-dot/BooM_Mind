@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -12,50 +13,46 @@ class PrivacyPolicyScreen extends StatelessWidget {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: MindloadAppBarFactory.secondary(title: 'Privacy Policy'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.screenPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha:  0.3),
-                ),
-              ),
+            UnifiedCard(
+              padding: UnifiedSpacing.cardPadding,
+              borderRadius: UnifiedBorderRadius.lgRadius,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
+                  UnifiedIcon(
                     Icons.security,
                     color: Theme.of(context).colorScheme.primary,
                     size: 48,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
+                  SizedBox(height: UnifiedSpacing.sm),
+                  UnifiedText(
                     'YOUR PRIVACY MATTERS',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    style: UnifiedTypography.headlineSmall.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
+                  SizedBox(height: UnifiedSpacing.sm),
+                  UnifiedText(
                     'Last updated: ${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha:  0.7),
+                    style: UnifiedTypography.bodyMedium.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withValues(alpha: 0.7),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Data We Collect Section
             _buildSection(
@@ -64,7 +61,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Icons.data_usage,
               [
                 'Study progress and performance analytics',
-                'Quiz results and learning preferences', 
+                'Quiz results and learning preferences',
                 'Device push token for notifications (if permitted)',
                 'Authentication information (email, name from SSO providers)',
                 'App usage patterns for AI coaching optimization',
@@ -72,7 +69,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // How We Use Data Section
             _buildSection(
@@ -89,7 +86,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Firebase Integration Section
             _buildSection(
@@ -106,7 +103,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Notification Privacy Section
             _buildSection(
@@ -123,7 +120,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Data Sharing Section
             _buildSection(
@@ -139,7 +136,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Your Rights Section
             _buildSection(
@@ -156,7 +153,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Data Retention Section
             _buildSection(
@@ -172,7 +169,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.lg),
 
             // Contact & Compliance Section
             _buildSection(
@@ -188,33 +185,26 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: UnifiedSpacing.xxl),
 
             // Contact Information
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha:  0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha:  0.2),
-                ),
-              ),
+            UnifiedCard(
+              padding: UnifiedSpacing.cardPadding,
+              borderRadius: UnifiedBorderRadius.mdRadius,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.contact_support,
                         color: Theme.of(context).colorScheme.primary,
                         size: 24,
                       ),
-                      const SizedBox(width: 12),
-                      Text(
+                      SizedBox(width: UnifiedSpacing.sm),
+                      UnifiedText(
                         'QUESTIONS ABOUT PRIVACY?',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: UnifiedTypography.titleMedium.copyWith(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1,
@@ -222,35 +212,25 @@ class PrivacyPolicyScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
+                  SizedBox(height: UnifiedSpacing.sm),
+                  UnifiedText(
                     'Contact our Data Protection Team:\nprivacy@mindload.app',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    style: UnifiedTypography.bodyMedium.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _sendPrivacyEmail(),
-                      icon: const Icon(Icons.email),
-                      label: const Text('CONTACT PRIVACY TEAM'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
+                  SizedBox(height: UnifiedSpacing.md),
+                  UnifiedButton(
+                    onPressed: () => _sendPrivacyEmail(),
+                    fullWidth: true,
+                    icon: Icons.email,
+                    child: UnifiedText('CONTACT PRIVACY TEAM'),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: UnifiedSpacing.xxl),
           ],
         ),
       ),
@@ -263,31 +243,24 @@ class PrivacyPolicyScreen extends StatelessWidget {
     IconData icon,
     List<String> items,
   ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha:  0.3),
-        ),
-      ),
+    return UnifiedCard(
+      padding: UnifiedSpacing.cardPadding,
+      borderRadius: UnifiedBorderRadius.mdRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
+              UnifiedIcon(
                 icon,
                 color: Theme.of(context).colorScheme.primary,
                 size: 24,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: UnifiedSpacing.sm),
               Expanded(
-                child: Text(
+                child: UnifiedText(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: UnifiedTypography.titleMedium.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
@@ -296,33 +269,35 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: UnifiedSpacing.md),
           ...items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  margin: const EdgeInsets.only(top: 8, right: 12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    item,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      height: 1.4,
+                padding: EdgeInsets.only(bottom: UnifiedSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: EdgeInsets.only(
+                          top: UnifiedSpacing.sm, right: UnifiedSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: UnifiedText(
+                        item,
+                        style: UnifiedTypography.bodyMedium.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -332,7 +307,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: 'privacy@mindload.app',
-      query: 'subject=Privacy Policy Inquiry&body=Hello Mindload Privacy Team,\n\nI have a question about...',
+      query:
+          'subject=Privacy Policy Inquiry&body=Hello Mindload Privacy Team,\n\nI have a question about...',
     );
 
     try {

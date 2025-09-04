@@ -75,6 +75,18 @@ class SemanticTokens {
   final Color tierPlatinum;
   final Color tierLegendary;
 
+  // Additional UI tokens for better cohesion
+  final Color cardBackground;
+  final Color cardBorder;
+  final Color chipBackground;
+  final Color chipText;
+  final Color dividerColor;
+  final Color overlayBackground;
+  final Color successBackground;
+  final Color warningBackground;
+  final Color errorBackground;
+  final Color infoBackground;
+
   // Legacy core semantic roles (preserved for compatibility)
   final Color bg;
   final Color elevatedSurface;
@@ -145,6 +157,18 @@ class SemanticTokens {
     required this.tierGold,
     required this.tierPlatinum,
     required this.tierLegendary,
+
+    // Additional UI tokens
+    required this.cardBackground,
+    required this.cardBorder,
+    required this.chipBackground,
+    required this.chipText,
+    required this.dividerColor,
+    required this.overlayBackground,
+    required this.successBackground,
+    required this.warningBackground,
+    required this.errorBackground,
+    required this.infoBackground,
 
     // Legacy tokens (preserved for compatibility)
     required this.bg,
@@ -433,6 +457,18 @@ const SemanticTokens _classicTokens = SemanticTokens(
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6B35),
 
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFFFFFFFF), // White card background
+  cardBorder: Color(0xFFE0E0E0), // Light gray card border
+  chipBackground: Color(0xFFF5F5F5), // Light gray chip background
+  chipText: Color(0xFF333333), // Dark gray chip text
+  dividerColor: Color(0xFFE0E0E0), // Light gray divider
+  overlayBackground: Color(0xCC000000), // Semi-transparent overlay
+  successBackground: Color(0xFFE8F5E8), // Light green success background
+  warningBackground: Color(0xFFFFF3E0), // Light orange warning background
+  errorBackground: Color(0xFFFFEBEE), // Light red error background
+  infoBackground: Color(0xFFE3F2FD), // Light blue info background
+
   // Legacy tokens - high contrast classic theme
   bg: Color(0xFFFFFFFF), // Pure white background
   elevatedSurface: Color(0xFFFFFFFF),
@@ -499,6 +535,18 @@ const SemanticTokens _matrixTokens = SemanticTokens(
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6B35),
+
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFF0A0A0A), // Dark card background
+  cardBorder: Color(0xFF00FF00), // Green card border
+  chipBackground: Color(0xFF003300), // Dark green chip background
+  chipText: Color(0xFF80FF80), // Light green chip text
+  dividerColor: Color(0xFF006600), // Dark green divider
+  overlayBackground: Color(0xE6000000), // Dark overlay
+  successBackground: Color(0xFF003300), // Dark green success background
+  warningBackground: Color(0xFF663300), // Dark orange warning background
+  errorBackground: Color(0xFF660000), // Dark red error background
+  infoBackground: Color(0xFF003366), // Dark blue info background
 
   // Legacy tokens - high contrast Matrix theme
   bg: Color(0xFF000000), // Pure black background
@@ -568,6 +616,18 @@ const SemanticTokens _retroTokens = SemanticTokens(
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6B35),
 
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFFFAF0E6), // Linen card background
+  cardBorder: Color(0xFF8B4513), // Saddle brown card border
+  chipBackground: Color(0xFFF5DEB3), // Wheat chip background
+  chipText: Color(0xFF2F1B14), // Dark brown chip text
+  dividerColor: Color(0xFFD2B48C), // Tan divider
+  overlayBackground: Color(0xCC000000), // Dark overlay
+  successBackground: Color(0xFFE8F5E8), // Light green success background
+  warningBackground: Color(0xFFFFF3E0), // Light orange warning background
+  errorBackground: Color(0xFFFFEBEE), // Light red error background
+  infoBackground: Color(0xFFE3F2FD), // Light blue info background
+
   // Legacy tokens - high contrast retro theme
   bg: Color(0xFFF5F5DC), // Beige background
   elevatedSurface: Color(0xFFFFE4B5),
@@ -634,6 +694,18 @@ const SemanticTokens _cyberNeonTokens = SemanticTokens(
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6B35),
+
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFF0A0A0A), // Dark card background
+  cardBorder: Color(0xFF00FFFF), // Cyan card border
+  chipBackground: Color(0xFF003333), // Dark cyan chip background
+  chipText: Color(0xFF80FFFF), // Light cyan chip text
+  dividerColor: Color(0xFF006666), // Dark cyan divider
+  overlayBackground: Color(0xE6000000), // Dark overlay
+  successBackground: Color(0xFF003300), // Dark green success background
+  warningBackground: Color(0xFF663300), // Dark orange warning background
+  errorBackground: Color(0xFF660000), // Dark red error background
+  infoBackground: Color(0xFF003366), // Dark blue info background
 
   // Legacy tokens - high contrast cyber theme
   bg: Color(0xFF000000), // Pure black background
@@ -702,6 +774,18 @@ const SemanticTokens _darkModeTokens = SemanticTokens(
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6B35),
 
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFF1A1A1A), // Dark card background
+  cardBorder: Color(0xFF374151), // Gray card border
+  chipBackground: Color(0xFF374151), // Gray chip background
+  chipText: Color(0xFFE5E7EB), // Light gray chip text
+  dividerColor: Color(0xFF374151), // Gray divider
+  overlayBackground: Color(0xE6000000), // Dark overlay
+  successBackground: Color(0xFF064E3B), // Dark green success background
+  warningBackground: Color(0xFF78350F), // Dark orange warning background
+  errorBackground: Color(0xFF7F1D1D), // Dark red error background
+  infoBackground: Color(0xFF1E3A8A), // Dark blue info background
+
   // Legacy tokens - high contrast dark theme
   bg: Color(0xFF000000), // Pure black background
   elevatedSurface: Color(0xFF1A1A1A),
@@ -769,6 +853,18 @@ const SemanticTokens _minimalTokens = SemanticTokens(
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6B35),
 
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFFFFFFFF), // White card background
+  cardBorder: Color(0xFFE0E0E0), // Light gray card border
+  chipBackground: Color(0xFFF5F5F5), // Light gray chip background
+  chipText: Color(0xFF333333), // Dark gray chip text
+  dividerColor: Color(0xFFE0E0E0), // Light gray divider
+  overlayBackground: Color(0xCC000000), // Dark overlay
+  successBackground: Color(0xFFE8F5E8), // Light green success background
+  warningBackground: Color(0xFFFFF3E0), // Light orange warning background
+  errorBackground: Color(0xFFFFEBEE), // Light red error background
+  infoBackground: Color(0xFFE3F2FD), // Light blue info background
+
   // Legacy tokens - ultra-minimal high contrast
   bg: Color(0xFFFFFFFF), // Pure white background
   elevatedSurface: Color(0xFFFFFFFF),
@@ -835,6 +931,18 @@ const SemanticTokens _purpleNeonTokens = SemanticTokens(
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6B35),
+
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFF0F0A1A), // Dark purple card background
+  cardBorder: Color(0xFF7C3AED), // Purple card border
+  chipBackground: Color(0xFF2D1B69), // Dark purple chip background
+  chipText: Color(0xFFE9D5FF), // Light purple chip text
+  dividerColor: Color(0xFF581C87), // Purple divider
+  overlayBackground: Color(0xE6000000), // Dark overlay
+  successBackground: Color(0xFF064E3B), // Dark green success background
+  warningBackground: Color(0xFF78350F), // Dark orange warning background
+  errorBackground: Color(0xFF7F1D1D), // Dark red error background
+  infoBackground: Color(0xFF1E3A8A), // Dark blue info background
 
   // Legacy tokens - high contrast purple theme
   bg: Color(0xFF000000), // Pure black background
@@ -1402,6 +1510,26 @@ class SemanticTokensExtension extends ThemeExtension<SemanticTokensExtension> {
         tierLegendary:
             Color.lerp(tokens.tierLegendary, other.tokens.tierLegendary, t)!,
 
+        // Additional UI tokens
+        cardBackground:
+            Color.lerp(tokens.cardBackground, other.tokens.cardBackground, t)!,
+        cardBorder: Color.lerp(tokens.cardBorder, other.tokens.cardBorder, t)!,
+        chipBackground:
+            Color.lerp(tokens.chipBackground, other.tokens.chipBackground, t)!,
+        chipText: Color.lerp(tokens.chipText, other.tokens.chipText, t)!,
+        dividerColor:
+            Color.lerp(tokens.dividerColor, other.tokens.dividerColor, t)!,
+        overlayBackground: Color.lerp(
+            tokens.overlayBackground, other.tokens.overlayBackground, t)!,
+        successBackground: Color.lerp(
+            tokens.successBackground, other.tokens.successBackground, t)!,
+        warningBackground: Color.lerp(
+            tokens.warningBackground, other.tokens.warningBackground, t)!,
+        errorBackground: Color.lerp(
+            tokens.errorBackground, other.tokens.errorBackground, t)!,
+        infoBackground:
+            Color.lerp(tokens.infoBackground, other.tokens.infoBackground, t)!,
+
         // Legacy tokens
         bg: Color.lerp(tokens.bg, other.tokens.bg, t)!,
         elevatedSurface: Color.lerp(
@@ -1490,6 +1618,18 @@ const SemanticTokens _oceanDepthsTokens = SemanticTokens(
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFF00E5FF),
 
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFF0A1929), // Deep ocean card background
+  cardBorder: Color(0xFF1976D2), // Ocean blue card border
+  chipBackground: Color(0xFF1565C0), // Ocean blue chip background
+  chipText: Color(0xFF81D4FA), // Light aqua chip text
+  dividerColor: Color(0xFF1976D2), // Ocean blue divider
+  overlayBackground: Color(0xE60D47A1), // Dark overlay
+  successBackground: Color(0xFF064E3B), // Dark green success background
+  warningBackground: Color(0xFF78350F), // Dark orange warning background
+  errorBackground: Color(0xFF7F1D1D), // Dark red error background
+  infoBackground: Color(0xFF1E3A8A), // Dark blue info background
+
   // Legacy tokens - Ocean depths theme
   bg: Color(0xFF0D47A1), // Deep ocean blue background
   elevatedSurface: Color(0xFF1565C0),
@@ -1557,6 +1697,18 @@ const SemanticTokens _sunsetGlowTokens = SemanticTokens(
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFFFF6F00),
 
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFF3E2723), // Dark brown card background
+  cardBorder: Color(0xFFD84315), // Sunset orange card border
+  chipBackground: Color(0xFFBF360C), // Deep red chip background
+  chipText: Color(0xFFFFAB91), // Light orange chip text
+  dividerColor: Color(0xFFD84315), // Sunset orange divider
+  overlayBackground: Color(0xE6BF360C), // Dark overlay
+  successBackground: Color(0xFF064E3B), // Dark green success background
+  warningBackground: Color(0xFF78350F), // Dark orange warning background
+  errorBackground: Color(0xFF7F1D1D), // Dark red error background
+  infoBackground: Color(0xFF1E3A8A), // Dark blue info background
+
   // Legacy tokens - Sunset glow theme
   bg: Color(0xFFBF360C), // Deep sunset red background
   elevatedSurface: Color(0xFFD84315),
@@ -1623,6 +1775,18 @@ const SemanticTokens _forestNightTokens = SemanticTokens(
   tierGold: Color(0xFFFFD700),
   tierPlatinum: Color(0xFFE5E4E2),
   tierLegendary: Color(0xFF4CAF50),
+
+  // Additional UI tokens for better cohesion
+  cardBackground: Color(0xFF0D1B0F), // Dark forest card background
+  cardBorder: Color(0xFF2E7D32), // Forest green card border
+  chipBackground: Color(0xFF1B5E20), // Deep green chip background
+  chipText: Color(0xFFA5D6A7), // Light green chip text
+  dividerColor: Color(0xFF2E7D32), // Forest green divider
+  overlayBackground: Color(0xE61B5E20), // Dark overlay
+  successBackground: Color(0xFF064E3B), // Dark green success background
+  warningBackground: Color(0xFF78350F), // Dark orange warning background
+  errorBackground: Color(0xFF7F1D1D), // Dark red error background
+  infoBackground: Color(0xFF1E3A8A), // Dark blue info background
 
   // Legacy tokens - Forest night theme
   bg: Color(0xFF1B5E20), // Deep forest green background

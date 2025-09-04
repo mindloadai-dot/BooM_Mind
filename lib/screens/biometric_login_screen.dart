@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mindload/services/biometric_auth_service.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 /// Biometric Login Screen - shown at app startup when biometric login is enabled
 class BiometricLoginScreen extends StatefulWidget {
@@ -183,7 +184,7 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
       backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: UnifiedSpacing.screenPadding,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -209,7 +210,7 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                           ),
                         ],
                       ),
-                      child: Icon(
+                      child: UnifiedIcon(
                         Icons.fingerprint,
                         size: 80,
                         color: Theme.of(context).colorScheme.primary,
@@ -219,24 +220,24 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                 },
               ),
 
-              const SizedBox(height: 40),
+              SizedBox(height: UnifiedSpacing.xl),
 
               // Title
-              Text(
+              UnifiedText(
                 'Welcome Back',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                style: UnifiedTypography.headlineMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onBackground,
                     ),
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: UnifiedSpacing.md),
 
               // Subtitle
-              Text(
+              UnifiedText(
                 'Use $_biometricDescription to continue',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                style: UnifiedTypography.bodyLarge.copyWith(
                       color: Theme.of(context)
                           .colorScheme
                           .onBackground
@@ -245,25 +246,22 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 40),
+              SizedBox(height: UnifiedSpacing.xl),
 
               // Error message
               if (_hasError) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                UnifiedCard(
+                  padding: UnifiedSpacing.cardPadding,
+                  borderRadius: UnifiedBorderRadius.mdRadius,
                   child: Row(
                     children: [
-                      Icon(
+                      UnifiedIcon(
                         Icons.error_outline,
                         color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: UnifiedSpacing.sm),
                       Expanded(
-                        child: Text(
+                        child: UnifiedText(
                           _errorMessage,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
@@ -273,44 +271,24 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
               ],
 
               // Authenticate button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed:
-                      _isAuthenticating ? null : _authenticateWithBiometric,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+              UnifiedButton(
+                onPressed: _isAuthenticating ? null : _authenticateWithBiometric,
+                fullWidth: true,
+                loading: _isAuthenticating,
+                child: UnifiedText(
+                  'Authenticate with $_biometricDescription',
+                  style: UnifiedTypography.titleMedium.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-                  child: _isAuthenticating
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'Authenticate with $_biometricDescription',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: UnifiedSpacing.md),
 
               // Alternative options
               Row(
@@ -318,7 +296,7 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                 children: [
                   TextButton(
                     onPressed: _navigateToAuth,
-                    child: const Text('Sign in with email'),
+                    child: UnifiedText('Sign in with email'),
                   ),
                   TextButton(
                     onPressed: () async {
@@ -327,7 +305,7 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
                           .toggleBiometricLogin(false);
                       _navigateToHome();
                     },
-                    child: const Text('Skip biometric'),
+                    child: UnifiedText('Skip biometric'),
                   ),
                 ],
               ),
@@ -335,9 +313,9 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen>
               const Spacer(),
 
               // Footer
-              Text(
+              UnifiedText(
                 'MindLoad - AI Study Companion',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                style: UnifiedTypography.bodySmall.copyWith(
                       color: Theme.of(context)
                           .colorScheme
                           .onBackground

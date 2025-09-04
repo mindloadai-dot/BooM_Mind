@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mindload/theme.dart';
 import 'package:mindload/widgets/brand_mark.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 /// Demo screen to showcase BrandMark component across all themes
 /// Useful for validating subtitle readability and theme display
@@ -32,54 +33,52 @@ class _BrandDemoScreenState extends State<BrandDemoScreen> {
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: UnifiedSpacing.screenPadding,
         children: [
           // Instructions
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'BrandMark Theme Demo',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This demo showcases the BrandMark component across different themes. '
-                    'The subtitle readability is handled by the theme system.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Switch themes to see how BrandMark adapts.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+          UnifiedCard(
+            padding: UnifiedSpacing.cardPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                UnifiedText(
+                  'BrandMark Theme Demo',
+                  style: UnifiedTypography.titleLarge,
+                ),
+                SizedBox(height: UnifiedSpacing.sm),
+                UnifiedText(
+                  'This demo showcases the BrandMark component across different themes. '
+                  'The subtitle readability is handled by the theme system.',
+                  style: UnifiedTypography.bodyMedium,
+                ),
+                SizedBox(height: UnifiedSpacing.md),
+                Row(
+                  children: [
+                    UnifiedIcon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
+                    SizedBox(width: UnifiedSpacing.sm),
+                    Expanded(
+                      child: UnifiedText(
+                        'Switch themes to see how BrandMark adapts.',
+                        style: UnifiedTypography.bodySmall,
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           
-          const SizedBox(height: 24),
+          SizedBox(height: UnifiedSpacing.lg),
           
           // Current theme demo
-          Card(
+          UnifiedCard(
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
+                  padding: UnifiedSpacing.cardPadding,
+                  child: UnifiedText(
                     'Current Theme: ${ThemeManager.instance.getThemeDisplayName(ThemeManager.instance.currentTheme)}',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: UnifiedTypography.titleMedium,
                   ),
                 ),
                 SizedBox(
@@ -94,22 +93,22 @@ class _BrandDemoScreenState extends State<BrandDemoScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: UnifiedSpacing.cardPadding,
                   child: _buildThemeInfo(ThemeManager.instance.currentTheme),
                 ),
               ],
             ),
           ),
           
-          const SizedBox(height: 24),
+          SizedBox(height: UnifiedSpacing.lg),
           
           // All themes preview
-          Text(
+          UnifiedText(
             'All Themes Preview',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: UnifiedTypography.headlineSmall,
           ),
           
-          const SizedBox(height: 16),
+          SizedBox(height: UnifiedSpacing.md),
           
           ...AppTheme.values.map((theme) => _buildThemePreviewCard(theme)),
         ],
@@ -124,15 +123,15 @@ class _BrandDemoScreenState extends State<BrandDemoScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
+        UnifiedIcon(
           Icons.palette,
           color: tokens.primary,
           size: 20,
         ),
-        const SizedBox(width: 8),
-        Text(
+        SizedBox(width: UnifiedSpacing.sm),
+        UnifiedText(
           'Theme: ${ThemeManager.instance.getThemeDisplayName(theme)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          style: UnifiedTypography.bodySmall.copyWith(
             color: tokens.textPrimary,
             fontWeight: FontWeight.w500,
           ),
@@ -145,23 +144,23 @@ class _BrandDemoScreenState extends State<BrandDemoScreen> {
   Widget _buildThemePreviewCard(AppTheme theme) {
     final tokens = ThemeManager.instance.getSemanticTokens(theme);
     
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+    return UnifiedCard(
+      margin: EdgeInsets.only(bottom: UnifiedSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: UnifiedSpacing.cardPadding,
             child: Row(
               children: [
-                Icon(ThemeManager.instance.getThemeIcon(theme)),
-                const SizedBox(width: 12),
-                Text(
+                UnifiedIcon(ThemeManager.instance.getThemeIcon(theme)),
+                SizedBox(width: UnifiedSpacing.sm),
+                UnifiedText(
                   ThemeManager.instance.getThemeDisplayName(theme),
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: UnifiedTypography.titleMedium,
                 ),
                 const Spacer(),
-                Icon(
+                UnifiedIcon(
                   Icons.palette,
                   color: tokens.primary,
                   size: 20,
@@ -186,7 +185,7 @@ class _BrandDemoScreenState extends State<BrandDemoScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Title preview
-                  Text(
+                  UnifiedText(
                     'MINDLOAD',
                     style: TextStyle(
                       color: tokens.brandTitle,
@@ -195,15 +194,15 @@ class _BrandDemoScreenState extends State<BrandDemoScreen> {
                       letterSpacing: 3,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: UnifiedSpacing.xs),
                   // Subtitle preview with overlay background if needed
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    padding: EdgeInsets.symmetric(horizontal: UnifiedSpacing.sm, vertical: UnifiedSpacing.xs),
                     decoration: (tokens.heroOverlay.a * 255.0).round() & 0xff > 10 ? BoxDecoration(
                       color: tokens.heroOverlay,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: UnifiedBorderRadius.xsRadius,
                     ) : null,
-                    child: Text(
+                    child: UnifiedText(
                       'AI STUDY INTERFACE',
                       style: TextStyle(
                         color: tokens.brandSubtitle,
@@ -220,18 +219,18 @@ class _BrandDemoScreenState extends State<BrandDemoScreen> {
           
           // Theme details
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: UnifiedSpacing.cardPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                UnifiedText(
                   'Background: ${tokens.heroBackground.toString()}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: UnifiedTypography.bodySmall,
                 ),
-                const SizedBox(height: 4),
-                Text(
+                SizedBox(height: UnifiedSpacing.xs),
+                UnifiedText(
                   'Subtitle: ${tokens.brandSubtitle.toString()}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  style: UnifiedTypography.bodySmall.copyWith(
                     color: Theme.of(context).colorScheme.secondary,
                   ),
                 ),

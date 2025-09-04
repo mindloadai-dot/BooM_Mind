@@ -33,6 +33,7 @@ import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
 import 'package:mindload/services/advanced_flashcard_generator.dart';
 import 'package:mindload/models/advanced_study_models.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 /// Redesigned Create Screen - Modern, intuitive study set creation
 ///
@@ -194,7 +195,7 @@ class _CreateScreenState extends State<CreateScreen>
                 return FadeTransition(
                   opacity: _fadeAnimation,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+                    padding: UnifiedSpacing.screenPadding,
                     physics: const BouncingScrollPhysics(),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
@@ -207,7 +208,7 @@ class _CreateScreenState extends State<CreateScreen>
                           // Step content based on current step
                           _buildCurrentStepContent(tokens),
 
-                          const SizedBox(height: 32),
+                          const SizedBox(height: UnifiedSpacing.xl),
 
                           // Navigation buttons
                           _buildNavigationButtons(tokens),
@@ -229,7 +230,8 @@ class _CreateScreenState extends State<CreateScreen>
     final stepNames = ['Source', 'Content', 'Options', 'Review'];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+          horizontal: UnifiedSpacing.md, vertical: UnifiedSpacing.md),
       decoration: BoxDecoration(
         color: tokens.surface,
         border: Border(
@@ -264,37 +266,35 @@ class _CreateScreenState extends State<CreateScreen>
                   ),
                   child: Center(
                     child: isCompleted
-                        ? Icon(
+                        ? UnifiedIcon(
                             Icons.check,
                             size: 18,
                             color: tokens.onPrimary,
                           )
-                        : Text(
+                        : UnifiedText(
                             '${index + 1}',
-                            style: TextStyle(
+                            style: UnifiedTypography.bodySmall.copyWith(
                               color: isActive
                                   ? tokens.primary
                                   : tokens.textSecondary,
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
                             ),
                           ),
                   ),
                 ),
 
                 // Step name
-                const SizedBox(width: 8),
+                const SizedBox(width: UnifiedSpacing.sm),
                 Expanded(
-                  child: Text(
+                  child: UnifiedText(
                     stepNames[index],
-                    style: TextStyle(
+                    style: UnifiedTypography.bodySmall.copyWith(
                       color: isActive
                           ? tokens.primary
                           : isCompleted
                               ? tokens.textPrimary
                               : tokens.textSecondary,
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                      fontSize: 12,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -305,7 +305,8 @@ class _CreateScreenState extends State<CreateScreen>
                   Expanded(
                     child: Container(
                       height: 2,
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: UnifiedSpacing.sm),
                       decoration: BoxDecoration(
                         color: isCompleted
                             ? tokens.primary
@@ -589,34 +590,32 @@ class _CreateScreenState extends State<CreateScreen>
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(UnifiedSpacing.md),
               decoration: BoxDecoration(
                 color: tokens.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: UnifiedBorderRadius.mdRadius,
               ),
-              child: Icon(
+              child: UnifiedIcon(
                 icon,
                 color: tokens.primary,
                 size: 24,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: UnifiedSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  UnifiedText(
                     title,
-                    style: TextStyle(
-                      fontSize: 24,
+                    style: UnifiedTypography.headlineMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: tokens.textPrimary,
                     ),
                   ),
-                  Text(
+                  UnifiedText(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: UnifiedTypography.bodyLarge.copyWith(
                       color: tokens.textSecondary,
                     ),
                   ),
@@ -635,7 +634,7 @@ class _CreateScreenState extends State<CreateScreen>
       width: double.infinity,
       decoration: BoxDecoration(
         color: tokens.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: UnifiedBorderRadius.lgRadius,
         border: Border.all(
           color: tokens.borderDefault.withOpacity(0.2),
           width: 1,
@@ -649,7 +648,7 @@ class _CreateScreenState extends State<CreateScreen>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.screenPadding,
         child: child,
       ),
     );
@@ -659,16 +658,15 @@ class _CreateScreenState extends State<CreateScreen>
   Widget _buildCardHeader(SemanticTokens tokens, String title, IconData icon) {
     return Row(
       children: [
-        Icon(
+        UnifiedIcon(
           icon,
           size: 20,
           color: tokens.primary,
         ),
-        const SizedBox(width: 8),
-        Text(
+        const SizedBox(width: UnifiedSpacing.sm),
+        UnifiedText(
           title,
-          style: TextStyle(
-            fontSize: 18,
+          style: UnifiedTypography.titleMedium.copyWith(
             fontWeight: FontWeight.w600,
             color: tokens.textPrimary,
           ),
