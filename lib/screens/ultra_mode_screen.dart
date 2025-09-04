@@ -6,6 +6,7 @@ import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/ultra_audio_controller.dart';
 import 'package:mindload/services/credit_service.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
+import 'package:mindload/services/mindload_notification_service.dart';
 import 'package:mindload/models/study_data.dart';
 import 'package:mindload/screens/study_screen.dart';
 import 'package:mindload/screens/study_set_selection_screen.dart';
@@ -925,6 +926,9 @@ class _UltraModeScreenState extends State<UltraModeScreen>
         itemsStudied: _selectedStudySet?.flashcards.length ?? 0,
         accuracyRate: null, // Ultra mode doesn't track accuracy
       );
+
+      // Check and fire first ultra mode session micro notification
+      MindLoadNotificationService.checkAndFireFirstUltraModeNotification();
 
       debugPrint(
           'Ultra Mode session completion tracked: ${sessionDuration}min, completed: $wasCompleted');

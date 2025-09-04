@@ -89,35 +89,35 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _initializeAnimations() {
     _headerController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
     _headerFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _headerController, curve: Curves.easeOut),
     );
     _headerSlideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-      CurvedAnimation(parent: _headerController, curve: Curves.easeOutCubic),
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+      CurvedAnimation(parent: _headerController, curve: Curves.elasticOut),
     );
 
     _statsController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _statsScaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _statsScaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(parent: _statsController, curve: Curves.elasticOut),
     );
 
     _actionsController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 700),
       vsync: this,
     );
     _actionsFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _actionsController, curve: Curves.easeIn),
+      CurvedAnimation(parent: _actionsController, curve: Curves.easeInOut),
     );
 
     _settingsController = AnimationController(
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 900),
       vsync: this,
     );
     _settingsSlideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -594,20 +594,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       backgroundColor: context.tokens.surface,
       appBar: const MindloadAppBar(title: 'Profile'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileHeader(),
-            const SizedBox(height: 24),
-            _buildQuickStats(),
-            const SizedBox(height: 24),
-            _buildQuickActions(),
-            const SizedBox(height: 24),
-            _buildSettingsSection(),
-            const SizedBox(height: 24),
-            _buildProfileActions(context),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProfileHeader(),
+              const SizedBox(height: 24),
+              _buildQuickStats(),
+              const SizedBox(height: 24),
+              _buildQuickActions(),
+              const SizedBox(height: 24),
+              _buildSettingsSection(),
+            ],
+          ),
         ),
       ),
     );
@@ -638,97 +638,138 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               Row(
                 children: [
-                  // Profile Avatar
-                  GestureDetector(
-                    onTap: _showProfilePictureOptions,
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            context.tokens.primary,
-                            context.tokens.secondary,
-                          ],
+                  // Profile Avatar with pulse animation
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(seconds: 2),
+                    tween: Tween(begin: 0.8, end: 1.0),
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: GestureDetector(
+                          onTap: _showProfilePictureOptions,
+                          child: Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  context.tokens.primary,
+                                  context.tokens.secondary,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: context.tokens.primary
+                                      .withOpacity(0.3 * value),
+                                  blurRadius: 12 * value,
+                                  offset: Offset(0, 4 * value),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: FutureBuilder<String?>(
+                                future: LocalImageStorageService.instance
+                                    .getProfileImagePath(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  }
+                                  if (snapshot.hasData &&
+                                      snapshot.data != null) {
+                                    return Image.file(
+                                      File(snapshot.data!),
+                                      width: 72,
+                                      height: 72,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return _buildInitialsAvatar(context);
+                                      },
+                                    );
+                                  } else {
+                                    return _buildInitialsAvatar(context);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.tokens.primary.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 16),
+                  // User Info with slide animation
+                  Expanded(
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(-0.3, 0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: _headerController,
+                        curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+                      )),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getDisplayName(),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: context.tokens.textPrimary,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Welcome back!',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: context.tokens.textSecondary,
+                                ),
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: FutureBuilder<String?>(
-                          future: LocalImageStorageService.instance
-                              .getProfileImagePath(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-                            if (snapshot.hasData && snapshot.data != null) {
-                              return Image.file(
-                                File(snapshot.data!),
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return _buildInitialsAvatar(context);
-                                },
-                              );
-                            } else {
-                              return _buildInitialsAvatar(context);
-                            }
-                          },
-                        ),
-                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  // User Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getDisplayName(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: context.tokens.textPrimary,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Welcome back!',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: context.tokens.textSecondary,
-                                  ),
-                        ),
-                      ],
+                  // Edit Profile Button with bounce animation
+                  SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.3, 0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: _headerController,
+                      curve: const Interval(0.5, 1.0, curve: Curves.elasticOut),
+                    )),
+                    child: SecondaryButton(
+                      onPressed: () {
+                        HapticFeedbackService().lightImpact();
+                        _showEditProfileDialog();
+                      },
+                      size: ButtonSize.small,
+                      child: const Icon(Icons.edit),
                     ),
-                  ),
-                  // Edit Profile Button
-                  SecondaryButton(
-                    onPressed: () {
-                      HapticFeedbackService().lightImpact();
-                      _showEditProfileDialog();
-                    },
-                    size: ButtonSize.small,
-                    child: const Icon(Icons.edit),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              _buildAccountStatusCard(),
+              // Account Status Card with fade animation
+              FadeTransition(
+                opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                  CurvedAnimation(
+                    parent: _headerController,
+                    curve: const Interval(0.7, 1.0, curve: Curves.easeIn),
+                  ),
+                ),
+                child: _buildAccountStatusCard(),
+              ),
             ],
           ),
         ),
@@ -829,24 +870,35 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.analytics,
-                  color: context.tokens.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Quick Stats',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: context.tokens.textPrimary,
-                      ),
-                ),
-              ],
+            // Header with slide animation
+            SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(-0.2, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: _statsController,
+                curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+              )),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.analytics,
+                    color: context.tokens.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Quick Stats',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: context.tokens.textPrimary,
+                        ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
+            // Stats cards with staggered animations
             Consumer<MindloadEconomyService>(
               builder: (context, economyService, child) {
                 final userEconomy = economyService.userEconomy;
@@ -857,29 +909,32 @@ class _ProfileScreenState extends State<ProfileScreen>
                 return Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard(
+                      child: _buildAnimatedStatCard(
                         'Monthly Tokens',
                         '${userEconomy.monthlyQuota}',
                         Icons.flash_on,
                         context.tokens.primary,
+                        0,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: _buildStatCard(
+                      child: _buildAnimatedStatCard(
                         'Used This Month',
                         '${userEconomy.creditsUsedThisMonth}',
                         Icons.trending_up,
                         context.tokens.secondary,
+                        1,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: _buildStatCard(
+                      child: _buildAnimatedStatCard(
                         'Remaining Tokens',
                         '${userEconomy.creditsRemaining}',
                         Icons.account_balance_wallet,
                         context.tokens.success,
+                        2,
                       ),
                     ),
                   ],
@@ -888,6 +943,36 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedStatCard(
+      String title, String value, IconData icon, Color color, int index) {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.3),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: _statsController,
+        curve: Interval(
+          0.3 + (index * 0.2),
+          0.8 + (index * 0.2),
+          curve: Curves.elasticOut,
+        ),
+      )),
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _statsController,
+            curve: Interval(
+              0.3 + (index * 0.2),
+              0.8 + (index * 0.2),
+              curve: Curves.easeIn,
+            ),
+          ),
+        ),
+        child: _buildStatCard(title, value, icon, color),
       ),
     );
   }
@@ -945,25 +1030,36 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.bolt,
-                  color: context.tokens.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Quick Actions',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: context.tokens.textPrimary,
-                      ),
-                ),
-              ],
+            // Header with slide animation
+            SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(-0.2, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: _actionsController,
+                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+              )),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.bolt,
+                    color: context.tokens.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Quick Actions',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: context.tokens.textPrimary,
+                        ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
-            _buildActionCard(
+            // Action cards with staggered animations
+            _buildAnimatedActionCard(
               'My Plan & Tokens',
               'Manage your subscription and token balance',
               Icons.card_membership,
@@ -972,9 +1068,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 context,
                 MaterialPageRoute(builder: (context) => const MyPlanScreen()),
               ),
+              0,
             ),
             const SizedBox(height: 12),
-            _buildActionCard(
+            _buildAnimatedActionCard(
               'Achievements',
               'View your progress and earned badges',
               Icons.emoji_events,
@@ -984,9 +1081,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 MaterialPageRoute(
                     builder: (context) => const AchievementsScreen()),
               ),
+              1,
             ),
             const SizedBox(height: 12),
-            _buildActionCard(
+            _buildAnimatedActionCard(
               'Notification Settings',
               'Customize your study reminders',
               Icons.notifications,
@@ -996,17 +1094,49 @@ class _ProfileScreenState extends State<ProfileScreen>
                 MaterialPageRoute(
                     builder: (context) => const NotificationSettingsScreen()),
               ),
+              2,
             ),
             const SizedBox(height: 12),
-            _buildActionCard(
+            _buildAnimatedActionCard(
               ProductConstants.neurographTitle,
               ProductConstants.neurographSubtitle,
               Icons.analytics,
               context.tokens.primary,
               () => Navigator.pushNamed(context, '/neurograph'),
+              3,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedActionCard(String title, String subtitle, IconData icon,
+      Color color, VoidCallback onTap, int index) {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.3),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: _actionsController,
+        curve: Interval(
+          0.2 + (index * 0.15),
+          0.8 + (index * 0.15),
+          curve: Curves.easeOutCubic,
+        ),
+      )),
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _actionsController,
+            curve: Interval(
+              0.2 + (index * 0.15),
+              0.8 + (index * 0.15),
+              curve: Curves.easeIn,
+            ),
+          ),
+        ),
+        child: _buildActionCard(title, subtitle, icon, color, onTap),
       ),
     );
   }
@@ -1021,7 +1151,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           onTap();
         },
         borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: color.withOpacity(0.05),
@@ -1029,20 +1160,44 @@ class _ProfileScreenState extends State<ProfileScreen>
             border: Border.all(
               color: color.withOpacity(0.2),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+              // Animated icon container
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 300),
+                tween: Tween(begin: 0.8, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withOpacity(0.2),
+                            blurRadius: 4 * value,
+                            offset: Offset(0, 2 * value),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        icon,
+                        color: color,
+                        size: 24,
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -1066,9 +1221,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: context.tokens.textSecondary,
+              // Animated chevron
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 200),
+                tween: Tween(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(4 * value, 0),
+                    child: Icon(
+                      Icons.chevron_right,
+                      color: context.tokens.textSecondary,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -1096,26 +1261,37 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.settings,
-                  color: context.tokens.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Settings & Preferences',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: context.tokens.textPrimary,
-                      ),
-                ),
-              ],
+            // Header with slide animation
+            SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(-0.2, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: _settingsController,
+                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+              )),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.settings,
+                    color: context.tokens.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Settings & Preferences',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: context.tokens.textPrimary,
+                        ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
-            _buildSettingsTile(
+            // Settings tiles with staggered animations
+            _buildAnimatedSettingsTile(
               'App Settings',
               'Customize app appearance and behavior',
               Icons.palette,
@@ -1123,10 +1299,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                 context,
                 MaterialPageRoute(builder: (context) => const SettingsScreen()),
               ),
+              0,
             ),
             const SizedBox(height: 12),
 
-            _buildSettingsTile(
+            _buildAnimatedSettingsTile(
               'Account Security',
               'Manage password and security settings',
               Icons.security,
@@ -1135,204 +1312,226 @@ class _ProfileScreenState extends State<ProfileScreen>
                 MaterialPageRoute(
                     builder: (context) => const PrivacySecurityScreen()),
               ),
+              1,
             ),
             const SizedBox(height: 12),
 
-            _buildSettingsTile(
+            _buildAnimatedSettingsTile(
               'Change Password',
               'Update your account password',
               Icons.lock_reset,
               () => _showChangePasswordDialog(),
+              2,
             ),
             const SizedBox(height: 12),
 
-            // Biometric Authentication Toggle
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.tokens.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: context.tokens.outline.withOpacity(0.2),
+            // Biometric Authentication Toggle with animation
+            FadeTransition(
+              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: _settingsController,
+                  curve: const Interval(0.6, 1.0, curve: Curves.easeIn),
                 ),
               ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.tokens.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: context.tokens.outline.withOpacity(0.2),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: context.tokens.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.fingerprint,
+                            color: context.tokens.primary,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Biometric Authentication',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: context.tokens.textPrimary,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Use fingerprint, face ID, or PIN for quick access',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: context.tokens.textSecondary,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _biometricEnabled,
+                          onChanged: _toggleBiometric,
+                          activeColor: context.tokens.primary,
+                          activeTrackColor:
+                              context.tokens.primary.withOpacity(0.3),
+                        ),
+                      ],
+                    ),
+                    if (_biometricEnabled) ...[
+                      const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: context.tokens.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          color: context.tokens.surface.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
-                          Icons.fingerprint,
-                          color: context.tokens.primary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              'Biometric Authentication',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: context.tokens.textPrimary,
-                                  ),
+                            Icon(
+                              Icons.login,
+                              size: 20,
+                              color: context.tokens.textSecondary,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Use fingerprint, face ID, or PIN for quick access',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: context.tokens.textSecondary,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Require biometric login at app startup',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          color: context.tokens.textPrimary,
+                                        ),
                                   ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Use biometric authentication every time you open the app',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: context.tokens.textSecondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: BiometricAuthService
+                                  .instance.isBiometricLoginEnabled,
+                              onChanged: (value) async {
+                                await BiometricAuthService.instance
+                                    .toggleBiometricLogin(value);
+                                setState(() {}); // Refresh UI
+                              },
+                              activeColor: context.tokens.primary,
+                              activeTrackColor:
+                                  context.tokens.primary.withOpacity(0.3),
                             ),
                           ],
                         ),
                       ),
-                      Switch(
-                        value: _biometricEnabled,
-                        onChanged: _toggleBiometric,
-                        activeColor: context.tokens.primary,
-                        activeTrackColor:
-                            context.tokens.primary.withOpacity(0.3),
-                      ),
                     ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Haptic Feedback Toggle with animation
+            FadeTransition(
+              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: _settingsController,
+                  curve: const Interval(0.7, 1.0, curve: Curves.easeIn),
+                ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.tokens.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: context.tokens.outline.withOpacity(0.3),
                   ),
-                  if (_biometricEnabled) ...[
-                    const SizedBox(height: 16),
+                ),
+                child: Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: context.tokens.surface.withOpacity(0.5),
+                        color: context.tokens.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Row(
+                      child: Icon(
+                        Icons.vibration,
+                        color: context.tokens.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.login,
-                            size: 20,
-                            color: context.tokens.textSecondary,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Require biometric login at app startup',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: context.tokens.textPrimary,
-                                      ),
+                          Text(
+                            'Haptic Feedback',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: context.tokens.textPrimary,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Use biometric authentication every time you open the app',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: context.tokens.textSecondary,
-                                      ),
-                                ),
-                              ],
-                            ),
                           ),
-                          Switch(
-                            value: BiometricAuthService
-                                .instance.isBiometricLoginEnabled,
-                            onChanged: (value) async {
-                              await BiometricAuthService.instance
-                                  .toggleBiometricLogin(value);
-                              setState(() {}); // Refresh UI
-                            },
-                            activeColor: context.tokens.primary,
-                            activeTrackColor:
-                                context.tokens.primary.withOpacity(0.3),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Feel vibrations for interactions and feedback',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: context.tokens.textSecondary,
+                                ),
                           ),
                         ],
                       ),
                     ),
+                    Switch(
+                      value: _hapticEnabled,
+                      onChanged: _toggleHapticFeedback,
+                      activeColor: context.tokens.primary,
+                      activeTrackColor: context.tokens.primary.withOpacity(0.3),
+                    ),
                   ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Haptic Feedback Toggle
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.tokens.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: context.tokens.outline.withOpacity(0.3),
                 ),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: context.tokens.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.vibration,
-                      color: context.tokens.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Haptic Feedback',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: context.tokens.textPrimary,
-                                  ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Feel vibrations for interactions and feedback',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: context.tokens.textSecondary,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: _hapticEnabled,
-                    onChanged: _toggleHapticFeedback,
-                    activeColor: context.tokens.primary,
-                    activeTrackColor: context.tokens.primary.withOpacity(0.3),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 12),
 
-            _buildSettingsTile(
+            _buildAnimatedSettingsTile(
               'Data & Privacy',
               'Control your data and privacy settings',
               Icons.privacy_tip,
@@ -1341,15 +1540,25 @@ class _ProfileScreenState extends State<ProfileScreen>
                 MaterialPageRoute(
                     builder: (context) => const PrivacyPolicyScreen()),
               ),
+              3,
             ),
             const SizedBox(height: 20),
 
-            // Sign Out Button
-            DestructiveButton(
-              onPressed: _showSignOutDialog,
-              fullWidth: true,
-              icon: Icons.logout,
-              child: const Text('Sign Out'),
+            // Sign Out Button with pulse animation
+            TweenAnimationBuilder<double>(
+              duration: const Duration(seconds: 2),
+              tween: Tween(begin: 0.95, end: 1.0),
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: DestructiveButton(
+                    onPressed: _showSignOutDialog,
+                    fullWidth: true,
+                    icon: Icons.logout,
+                    child: const Text('Sign Out'),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -1419,6 +1628,36 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedSettingsTile(String title, String subtitle,
+      IconData icon, VoidCallback onTap, int index) {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.3),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: _settingsController,
+        curve: Interval(
+          0.2 + (index * 0.1),
+          0.8 + (index * 0.1),
+          curve: Curves.easeOutCubic,
+        ),
+      )),
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _settingsController,
+            curve: Interval(
+              0.2 + (index * 0.1),
+              0.8 + (index * 0.1),
+              curve: Curves.easeIn,
+            ),
+          ),
+        ),
+        child: _buildSettingsTile(title, subtitle, icon, onTap),
       ),
     );
   }
@@ -1496,9 +1735,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       await AuthService.instance.signOut();
 
       if (mounted) {
-        // Clear any navigation stack and go to social auth screen
+        // Clear any navigation stack and go to auth screen
         Navigator.of(context)
-            .pushNamedAndRemoveUntil('/social-auth', (route) => false);
+            .pushNamedAndRemoveUntil('/auth', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -1516,243 +1755,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     showDialog(
       context: context,
       builder: (context) => ChangePasswordDialog(),
-    );
-  }
-
-  /// Build profile actions section
-  Widget _buildProfileActions(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.tokens.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.tokens.outline.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: context.tokens.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Profile Actions',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.tokens.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 16),
-          _buildProfileActionItem(
-            context,
-            'Export Profile Data',
-            'Download your complete profile and study data',
-            Icons.download,
-            context.tokens.primary,
-            _exportProfileData,
-          ),
-          const SizedBox(height: 12),
-          _buildProfileActionItem(
-            context,
-            'Account Settings',
-            'Manage account security and preferences',
-            Icons.security,
-            context.tokens.secondary,
-            _openAccountSettings,
-          ),
-          const SizedBox(height: 12),
-          _buildProfileActionItem(
-            context,
-            'Privacy Settings',
-            'Control your data privacy and visibility',
-            Icons.privacy_tip,
-            context.tokens.accent,
-            _openPrivacySettings,
-          ),
-          const SizedBox(height: 12),
-          _buildProfileActionItem(
-            context,
-            'Backup & Sync',
-            'Manage your data backup and synchronization',
-            Icons.cloud_sync,
-            Colors.blue,
-            _openBackupSettings,
-          ),
-          const SizedBox(height: 12),
-          _buildProfileActionItem(
-            context,
-            'Delete Account',
-            'Permanently delete your account and all data',
-            Icons.delete_forever,
-            context.tokens.error,
-            _confirmDeleteAccount,
-            isDestructive: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Build individual profile action item
-  Widget _buildProfileActionItem(
-    BuildContext context,
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-    VoidCallback onTap, {
-    bool isDestructive = false,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedbackService().lightImpact();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDestructive
-                ? color.withOpacity(0.05)
-                : color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: color.withOpacity(0.2),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color:
-                            isDestructive ? color : context.tokens.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.tokens.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: context.tokens.textSecondary,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Profile action handlers
-  void _exportProfileData() {
-    // TODO: Implement profile data export
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Profile data export will be available soon'),
-        backgroundColor: context.tokens.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _openAccountSettings() {
-    Navigator.pushNamed(context, '/settings');
-  }
-
-  void _openPrivacySettings() {
-    // TODO: Implement privacy settings screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Privacy settings will be available soon'),
-        backgroundColor: context.tokens.secondary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _openBackupSettings() {
-    // TODO: Implement backup settings screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Backup settings will be available soon'),
-        backgroundColor: Colors.blue,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _confirmDeleteAccount() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Account'),
-          content: const Text(
-            'Are you sure you want to permanently delete your account? '
-            'This action cannot be undone and all your data will be lost.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteAccount();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: context.tokens.error,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _deleteAccount() {
-    // TODO: Implement account deletion
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Account deletion will be implemented soon'),
-        backgroundColor: context.tokens.error,
-        behavior: SnackBarBehavior.floating,
-      ),
     );
   }
 }

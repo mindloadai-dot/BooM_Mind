@@ -1093,6 +1093,169 @@ class MindLoadNotificationService {
     }
   }
 
+  // --- Micro Notifications for First-Time Events ---
+
+  /// Constants for first-time event tracking
+  static const String _firstQuizCompletedKey = 'hasCompletedFirstQuiz';
+  static const String _firstFlashcardSetViewedKey = 'hasViewedFirstFlashcardSet';
+  static const String _firstStudySetCreatedKey = 'hasCreatedFirstStudySet';
+  static const String _firstUltraModeSessionKey = 'hasCompletedFirstUltraModeSession';
+
+  /// Check and fire first quiz completion notification
+  static Future<void> checkAndFireFirstQuizNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasCompletedFirstQuiz = prefs.getBool(_firstQuizCompletedKey) ?? false;
+      
+      if (!hasCompletedFirstQuiz) {
+        // Mark as completed
+        await prefs.setBool(_firstQuizCompletedKey, true);
+        
+        // Fire micro notification
+        await scheduleMicroNotification(
+          '🎯 First Quiz Complete!',
+          'Congratulations! You\'ve completed your first quiz. Keep up the great work!',
+          category: 'mindload_achievements',
+        );
+        
+        debugPrint('🎉 First quiz completion notification fired');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to check/fire first quiz notification: $e');
+    }
+  }
+
+  /// Check and fire first flashcard set viewing notification
+  static Future<void> checkAndFireFirstFlashcardSetNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasViewedFirstFlashcardSet = prefs.getBool(_firstFlashcardSetViewedKey) ?? false;
+      
+      if (!hasViewedFirstFlashcardSet) {
+        // Mark as viewed
+        await prefs.setBool(_firstFlashcardSetViewedKey, true);
+        
+        // Fire micro notification
+        await scheduleMicroNotification(
+          '📚 First Flashcard Set Viewed!',
+          'Great start! You\'ve explored your first flashcard set. Ready to learn more?',
+          category: 'mindload_achievements',
+        );
+        
+        debugPrint('🎉 First flashcard set viewing notification fired');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to check/fire first flashcard set notification: $e');
+    }
+  }
+
+  /// Check and fire first study set creation notification
+  static Future<void> checkAndFireFirstStudySetNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasCreatedFirstStudySet = prefs.getBool(_firstStudySetCreatedKey) ?? false;
+      
+      if (!hasCreatedFirstStudySet) {
+        // Mark as created
+        await prefs.setBool(_firstStudySetCreatedKey, true);
+        
+        // Fire micro notification
+        await scheduleMicroNotification(
+          '🧠 First Study Set Created!',
+          'Amazing! You\'ve created your first study set. Your learning journey begins now!',
+          category: 'mindload_achievements',
+        );
+        
+        debugPrint('🎉 First study set creation notification fired');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to check/fire first study set notification: $e');
+    }
+  }
+
+  /// Check and fire first ultra mode session notification
+  static Future<void> checkAndFireFirstUltraModeNotification() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasCompletedFirstUltraModeSession = prefs.getBool(_firstUltraModeSessionKey) ?? false;
+      
+      if (!hasCompletedFirstUltraModeSession) {
+        // Mark as completed
+        await prefs.setBool(_firstUltraModeSessionKey, true);
+        
+        // Fire micro notification
+        await scheduleMicroNotification(
+          '⚡ First Ultra Mode Session!',
+          'Incredible! You\'ve completed your first ultra mode session. You\'re unstoppable!',
+          category: 'mindload_achievements',
+        );
+        
+        debugPrint('🎉 First ultra mode session notification fired');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to check/fire first ultra mode notification: $e');
+    }
+  }
+
+  /// Schedule a micro notification (instant, low-priority)
+  static Future<void> scheduleMicroNotification(
+    String title,
+    String body, {
+    String? category,
+    String? payload,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+
+    // Skip notification on unsupported platforms
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      debugPrint('⚠️ Skipping micro notification on unsupported platform: ${Platform.operatingSystem}');
+      return;
+    }
+
+    try {
+      // Check permissions first
+      final hasPermission = await _hasPermissions();
+      if (!hasPermission) {
+        debugPrint('⚠️ No notification permissions for micro notification');
+        return;
+      }
+
+      // Generate unique ID
+      final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      debugPrint('🆔 Generated micro notification ID: $id');
+
+      // Create notification details with lower priority for micro notifications
+      final details = NotificationDetails(
+        android: const AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDesc,
+          importance: Importance.defaultImportance, // Lower priority than regular notifications
+          priority: Priority.defaultPriority,
+          playSound: true,
+          enableVibration: false, // No vibration for micro notifications
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false, // No badge for micro notifications
+          presentSound: true,
+          categoryIdentifier: category ?? 'mindload_notifications',
+        ),
+      );
+
+      // Show notification
+      await _plugin.show(id, title, body, details, payload: payload);
+
+      debugPrint('✅ Micro notification sent successfully: "$title"');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Failed to send micro notification: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
   /// Test daily notification system
   static Future<void> testDailyNotificationSystem() async {
     debugPrint('📅 Testing daily notification system...');

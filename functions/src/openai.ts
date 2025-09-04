@@ -13,7 +13,7 @@ const CONFIG = {
   MAX_REQUESTS_PER_MINUTE: 100,
   MAX_TOKENS_PER_REQUEST: 4000, // Increased for larger content processing
   DEFAULT_TEMPERATURE: 0.1, // Minimal temperature for fastest responses
-  DEFAULT_MODEL: 'gpt-4o-mini', // Fastest model
+  DEFAULT_MODEL: 'gpt-5-mini', // Fastest model
   TIMEOUT_MS: 120000, // 2 minute timeout for large content processing
   MAX_CONTENT_LENGTH: 500000, // Maximum 500,000 characters supported
 } as const;
@@ -238,7 +238,7 @@ export const testOpenAI = onCall({
     
     // Test with a simple completion first
     const simpleResponse = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         {
           role: 'user',
@@ -376,12 +376,12 @@ export const generateFlashcards = onCall({
     logger.warn(`Large content detected: ${content.length} characters - optimizing for speed`);
     
     // Extract key sentences and paragraphs intelligently
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
-    const paragraphs = content.split('\n\n').filter(p => p.trim().length > 50);
+    const sentences = content.split(/[.!?]+/).filter((s: string) => s.trim().length > 20);
+    const paragraphs = content.split('\n\n').filter((p: string) => p.trim().length > 50);
     
     // Priority content selection (more intelligent than simple truncation)
     const importantSentences = sentences
-      .filter(s => {
+      .filter((s: string) => {
         const lower = s.toLowerCase();
         // Prioritize sentences with key indicators
         return lower.includes('important') || lower.includes('key') || 
@@ -514,12 +514,12 @@ export const generateQuiz = onCall({
     logger.warn(`Large content detected for quiz: ${content.length} characters - optimizing`);
     
     // Extract content optimized for quiz generation
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 15);
-    const paragraphs = content.split('\n\n').filter(p => p.trim().length > 30);
+    const sentences = content.split(/[.!?]+/).filter((s: string) => s.trim().length > 15);
+    const paragraphs = content.split('\n\n').filter((p: string) => p.trim().length > 30);
     
     // For quizzes, prioritize factual and definitive content
     const factualSentences = sentences
-      .filter(s => {
+      .filter((s: string) => {
         const lower = s.toLowerCase();
         return lower.includes('is') || lower.includes('are') || lower.includes('was') || 
                lower.includes('were') || lower.includes('can') || lower.includes('will') ||

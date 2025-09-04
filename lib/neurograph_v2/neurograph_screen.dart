@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import 'neurograph_config.dart';
 import 'neurograph_models.dart';
-import 'neurograph_repo.dart';
+import 'neurograph_offline_repo.dart';
 import 'neurograph_compute.dart';
 import 'neurograph_widgets.dart';
 
@@ -21,7 +22,7 @@ class NeuroGraphV2Screen extends StatefulWidget {
 class _NeuroGraphV2ScreenState extends State<NeuroGraphV2Screen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  late NeuroGraphRepository _repository;
+  late NeuroGraphOfflineRepository _repository;
 
   // Data state
   List<Attempt> _attempts = [];
@@ -47,7 +48,7 @@ class _NeuroGraphV2ScreenState extends State<NeuroGraphV2Screen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 6, vsync: this);
-    _repository = NeuroGraphRepository();
+    _repository = NeuroGraphOfflineRepository();
     _loadData();
   }
 
@@ -175,29 +176,29 @@ class _NeuroGraphV2ScreenState extends State<NeuroGraphV2Screen>
 
     try {
       await _repository.createSampleData(widget.userId);
-      
+
       if (!mounted) return;
-      
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sample data created successfully!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Sample data created successfully!'),
+          backgroundColor: context.tokens.success,
         ),
       );
-      
+
       // Reload data
       await _loadData();
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to create sample data: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: context.tokens.error,
         ),
       );
-      
+
       setState(() {
         _isLoading = false;
       });
@@ -346,172 +347,190 @@ class _NeuroGraphV2ScreenState extends State<NeuroGraphV2Screen>
 
   Widget _buildLearningCurveTab(ColorScheme colorScheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartHeader(
-            'Learning Curve',
-            'Track your daily accuracy and progress over time',
-            Icons.trending_up,
-            colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          NeuroGraphWidgets.learningCurveChart(
-            dailyPoints: _dailyPoints,
-            emaValues: _emaValues,
-            goalMin: NeuroGraphConfig.goalAccuracyMin,
-            goalMax: NeuroGraphConfig.goalAccuracyMax,
-            chartHeight: NeuroGraphConfig.chartHeight,
-            primaryColor: colorScheme.primary,
-            secondaryColor: colorScheme.secondary,
-            goalColor: Color(NeuroGraphConfig.goalColor),
-          ),
-          const SizedBox(height: 16),
-          _buildChartLegend([
-            _LegendItem('Daily Accuracy', colorScheme.primary),
-            _LegendItem('7-day EMA', colorScheme.secondary),
-            _LegendItem(
-                'Goal Range (80-90%)', Color(NeuroGraphConfig.goalColor)),
-          ]),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildChartHeader(
+              'Learning Curve',
+              'Track your daily accuracy and progress over time',
+              Icons.trending_up,
+              colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            NeuroGraphWidgets.learningCurveChart(
+              context: context,
+              dailyPoints: _dailyPoints,
+              emaValues: _emaValues,
+              goalMin: NeuroGraphConfig.goalAccuracyMin,
+              goalMax: NeuroGraphConfig.goalAccuracyMax,
+              chartHeight: NeuroGraphConfig.chartHeight,
+              primaryColor: colorScheme.primary,
+              secondaryColor: colorScheme.secondary,
+              goalColor: Color(NeuroGraphConfig.goalColor),
+            ),
+            const SizedBox(height: 16),
+            _buildChartLegend([
+              _LegendItem('Daily Accuracy', colorScheme.primary),
+              _LegendItem('7-day EMA', colorScheme.secondary),
+              _LegendItem(
+                  'Goal Range (80-90%)', Color(NeuroGraphConfig.goalColor)),
+            ]),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSpacedReviewTab(ColorScheme colorScheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartHeader(
-            'Spaced Review',
-            'Items due for review based on forgetting curve',
-            Icons.schedule,
-            colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          NeuroGraphWidgets.spacedReviewPanel(
-            recallModels: _recallModels,
-            chartHeight: NeuroGraphConfig.chartHeight,
-            primaryColor: colorScheme.primary,
-            accentColor: colorScheme.tertiary,
-            onViewDueItems: _onViewDueItems,
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildChartHeader(
+              'Spaced Review',
+              'Items due for review based on forgetting curve',
+              Icons.schedule,
+              colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            NeuroGraphWidgets.spacedReviewPanel(
+              context: context,
+              recallModels: _recallModels,
+              chartHeight: NeuroGraphConfig.chartHeight,
+              primaryColor: colorScheme.primary,
+              accentColor: colorScheme.tertiary,
+              onViewDueItems: _onViewDueItems,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildRetrievalPracticeTab(ColorScheme colorScheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartHeader(
-            'Retrieval Practice',
-            'Practice sessions vs subsequent exam performance',
-            Icons.psychology,
-            colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          NeuroGraphWidgets.retrievalPracticeMeter(
-            weekPoints: _weekPoints,
-            chartHeight: NeuroGraphConfig.chartHeight,
-            primaryColor: colorScheme.primary,
-            secondaryColor: colorScheme.secondary,
-          ),
-          const SizedBox(height: 16),
-          _buildChartLegend([
-            _LegendItem('Retrieval Sessions', colorScheme.primary),
-            _LegendItem('Exam Scores', colorScheme.secondary),
-          ]),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildChartHeader(
+              'Retrieval Practice',
+              'Practice sessions vs subsequent exam performance',
+              Icons.psychology,
+              colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            NeuroGraphWidgets.retrievalPracticeMeter(
+              context: context,
+              weekPoints: _weekPoints,
+              chartHeight: NeuroGraphConfig.chartHeight,
+              primaryColor: colorScheme.primary,
+              secondaryColor: colorScheme.secondary,
+            ),
+            const SizedBox(height: 16),
+            _buildChartLegend([
+              _LegendItem('Retrieval Sessions', colorScheme.primary),
+              _LegendItem('Exam Scores', colorScheme.secondary),
+            ]),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCalibrationTab(ColorScheme colorScheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartHeader(
-            'Calibration',
-            'How well your confidence matches your accuracy',
-            Icons.psychology_alt,
-            colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          NeuroGraphWidgets.calibrationPlot(
-            calibration: _calibration,
-            chartHeight: NeuroGraphConfig.chartHeight,
-            primaryColor: colorScheme.primary,
-            errorColor: colorScheme.error,
-          ),
-          const SizedBox(height: 16),
-          _buildChartLegend([
-            _LegendItem('Perfect Calibration', Colors.grey),
-            _LegendItem('Your Calibration', colorScheme.primary),
-          ]),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildChartHeader(
+              'Calibration',
+              'How well your confidence matches your accuracy',
+              Icons.psychology_alt,
+              colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            NeuroGraphWidgets.calibrationPlot(
+              context: context,
+              calibration: _calibration,
+              chartHeight: NeuroGraphConfig.chartHeight,
+              primaryColor: colorScheme.primary,
+              errorColor: colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            _buildChartLegend([
+              _LegendItem('Perfect Calibration', Colors.grey),
+              _LegendItem('Your Calibration', colorScheme.primary),
+            ]),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMasteryTab(ColorScheme colorScheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartHeader(
-            'Mastery Progress',
-            'Track items through NEW → PRACTICING → MASTERED',
-            Icons.school,
-            colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          NeuroGraphWidgets.masteryProgressChart(
-            weekStacks: _weekStacks,
-            chartHeight: NeuroGraphConfig.chartHeight,
-            newColor: colorScheme.primary,
-            practicingColor: colorScheme.secondary,
-            masteredColor: colorScheme.tertiary,
-          ),
-          const SizedBox(height: 16),
-          _buildChartLegend([
-            _LegendItem('New', colorScheme.primary),
-            _LegendItem('Practicing', colorScheme.secondary),
-            _LegendItem('Mastered', colorScheme.tertiary),
-          ]),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildChartHeader(
+              'Mastery Progress',
+              'Track items through NEW → PRACTICING → MASTERED',
+              Icons.school,
+              colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            NeuroGraphWidgets.masteryProgressChart(
+              context: context,
+              weekStacks: _weekStacks,
+              chartHeight: NeuroGraphConfig.chartHeight,
+              newColor: colorScheme.primary,
+              practicingColor: colorScheme.secondary,
+              masteredColor: colorScheme.tertiary,
+            ),
+            const SizedBox(height: 16),
+            _buildChartLegend([
+              _LegendItem('New', colorScheme.primary),
+              _LegendItem('Practicing', colorScheme.secondary),
+              _LegendItem('Mastered', colorScheme.tertiary),
+            ]),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildConsistencyTab(ColorScheme colorScheme) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChartHeader(
-            'Study Consistency',
-            'Daily study activity and streaks',
-            Icons.calendar_today,
-            colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          NeuroGraphWidgets.consistencyHeatmap(
-            heatData: _heatData,
-            chartHeight: NeuroGraphConfig.chartHeight,
-            primaryColor: colorScheme.primary,
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildChartHeader(
+              'Study Consistency',
+              'Daily study activity and streaks',
+              Icons.calendar_today,
+              colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            NeuroGraphWidgets.consistencyHeatmap(
+              context: context,
+              heatData: _heatData,
+              chartHeight: NeuroGraphConfig.chartHeight,
+              primaryColor: colorScheme.primary,
+            ),
+          ],
+        ),
       ),
     );
   }

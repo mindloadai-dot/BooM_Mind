@@ -10,6 +10,7 @@ import 'package:mindload/widgets/deadline_date_picker.dart';
 import 'package:mindload/widgets/token_estimation_display.dart';
 import 'package:mindload/widgets/enhanced_upload_panel.dart';
 import 'package:mindload/widgets/semantic_color_picker.dart';
+import 'package:mindload/widgets/url_study_set_dialog.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/token_estimation_service.dart';
 import 'package:mindload/services/deadline_service.dart';
@@ -55,6 +56,7 @@ class _CreateScreenState extends State<CreateScreen>
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _instructionController = TextEditingController();
   final TextEditingController _youtubeController = TextEditingController();
+  final TextEditingController _urlController = TextEditingController();
 
   // Animation controllers for smooth transitions
   late AnimationController _pageController;
@@ -157,6 +159,7 @@ class _CreateScreenState extends State<CreateScreen>
     _titleController.dispose();
     _instructionController.dispose();
     _youtubeController.dispose();
+    _urlController.dispose();
     _pageController.dispose();
     _fadeController.dispose();
     super.dispose();
@@ -683,6 +686,12 @@ class _CreateScreenState extends State<CreateScreen>
         'subtitle': 'Paste or type content'
       },
       {
+        'id': 'url',
+        'icon': Icons.link,
+        'title': 'URL',
+        'subtitle': 'Generate from web content'
+      },
+      {
         'id': 'youtube',
         'icon': Icons.play_circle_outline,
         'title': 'YouTube',
@@ -968,6 +977,7 @@ class _CreateScreenState extends State<CreateScreen>
                       Icons.remove_circle_outline,
                       color: value > min ? tokens.primary : tokens.textTertiary,
                     ),
+                    iconSize: 20,
                   ),
                   IconButton(
                     onPressed: value < max ? () => onChanged(value + 1) : null,
@@ -975,6 +985,7 @@ class _CreateScreenState extends State<CreateScreen>
                       Icons.add_circle_outline,
                       color: value < max ? tokens.primary : tokens.textTertiary,
                     ),
+                    iconSize: 20,
                   ),
                 ],
               ),
@@ -1253,6 +1264,8 @@ class _CreateScreenState extends State<CreateScreen>
     switch (_contentInputType) {
       case 'text':
         return 'Text Input';
+      case 'url':
+        return 'URL Input';
       case 'youtube':
         return 'YouTube Video';
       case 'document':
@@ -1292,6 +1305,8 @@ class _CreateScreenState extends State<CreateScreen>
     switch (_contentInputType) {
       case 'text':
         return _buildTextInput(context, tokens);
+      case 'url':
+        return _buildURLInput(context, tokens);
       case 'youtube':
         return _buildYouTubeInput(context, tokens);
       case 'document':
@@ -1317,10 +1332,166 @@ class _CreateScreenState extends State<CreateScreen>
           availableTokens: economy.userEconomy?.creditsRemaining ?? 0,
           onInsufficientTokens: () {
             // Handle insufficient tokens
-            _handleInsufficientTokens();
+            _handleBuyCredits();
           },
         );
       },
+    );
+  }
+
+  /// Build URL input section
+  Widget _buildURLInput(BuildContext context, SemanticTokens tokens) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: tokens.borderDefault,
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.link,
+                  size: 20,
+                  color: tokens.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'URL Content Generation',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: tokens.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+
+          // Description
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              'Paste a URL to automatically extract web content and generate study materials. The content will be processed offline once generated.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: tokens.textSecondary,
+                    height: 1.4,
+                  ),
+            ),
+          ),
+
+          // URL input field
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: TextField(
+              controller: _urlController,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: tokens.textPrimary,
+                  ),
+              decoration: InputDecoration(
+                hintText: 'https://example.com/article',
+                hintStyle: TextStyle(
+                  color: tokens.textTertiary,
+                ),
+                prefixIcon: Icon(
+                  Icons.link,
+                  color: tokens.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: tokens.borderDefault,
+                    width: 1.5,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: tokens.borderDefault,
+                    width: 1.5,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: tokens.borderFocus,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Generate button
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _urlController.text.trim().isNotEmpty
+                  ? _showUrlStudySetDialog
+                  : null,
+              icon: Icon(Icons.auto_awesome, color: tokens.onPrimary),
+              label: Text(
+                'Generate Study Set from URL',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: tokens.onPrimary,
+                    ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: tokens.primary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+
+          // Info card
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: tokens.surfaceAlt,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: tokens.borderDefault),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: tokens.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'How it works',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '• Extracts clean content from web pages\n• Generates 40-60 study items (MCQs, flashcards, short answers)\n• Works completely offline once generated\n• Processing takes 2-5 minutes',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.textSecondary,
+                        height: 1.4,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3011,6 +3182,28 @@ class _CreateScreenState extends State<CreateScreen>
       const SnackBar(
         content: Text('Subscription upgrade - Implementation needed'),
         duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Show URL study set generation dialog
+  void _showUrlStudySetDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => UrlStudySetDialog(
+        onStudySetGenerated: (studySetId, title) {
+          // Handle successful study set generation
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Study set "$title" generated successfully!'),
+              backgroundColor: context.tokens.success,
+            ),
+          );
+
+          // Navigate back to home or study set selection
+          Navigator.of(context).pop(); // Close dialog
+          Navigator.of(context).pop(); // Close create screen
+        },
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mindload/services/credit_service.dart';
-
+import 'package:mindload/services/mindload_economy_service.dart';
+import 'package:mindload/models/mindload_economy_models.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/widgets/customize_study_set_dialog.dart';
 import 'package:mindload/models/study_data.dart';
@@ -11,10 +11,14 @@ import 'package:mindload/theme.dart';
 
 class StudySetSelectionScreen extends StatefulWidget {
   final Function(StudySet) onStudySetSelected;
+  final String? sourceContent;
+  final String? sourceTitle;
 
   const StudySetSelectionScreen({
     super.key,
     required this.onStudySetSelected,
+    this.sourceContent,
+    this.sourceTitle,
   });
 
   @override
@@ -22,16 +26,82 @@ class StudySetSelectionScreen extends StatefulWidget {
       _StudySetSelectionScreenState();
 }
 
-class _StudySetSelectionScreenState extends State<StudySetSelectionScreen> {
-  final CreditService _creditService = CreditService.instance;
+class _StudySetSelectionScreenState extends State<StudySetSelectionScreen>
+    with TickerProviderStateMixin {
+  final MindloadEconomyService _economyService =
+      MindloadEconomyService.instance;
   List<StudySet> _savedStudySets = [];
   StudySet? _lastCustomSet;
   bool _isLoading = true;
+  bool _isGenerating = false;
+
+  // Animation controllers
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late AnimationController _pulseController;
+
+  // Animations
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
+    _initializeAnimations();
     _loadStudySets();
+  }
+
+  void _initializeAnimations() {
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start animations
+    _fadeController.forward();
+    _slideController.forward();
+    _pulseController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _slideController.dispose();
+    _pulseController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadStudySets() async {
@@ -42,9 +112,8 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen> {
       final lastCustom = sets.isNotEmpty ? sets.first : null;
 
       setState(() {
-        _savedStudySets =
-            sets; // sets is already List<StudySet> from getAllStudySets()
-        _lastCustomSet = lastCustom; // lastCustom is already a StudySet
+        _savedStudySets = sets;
+        _lastCustomSet = lastCustom;
         _isLoading = false;
       });
     } catch (e) {
@@ -54,388 +123,371 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = context.tokens;
 
     return Scaffold(
-      backgroundColor: context.tokens.surface,
+      backgroundColor: tokens.surface,
       appBar: MindloadAppBarFactory.secondary(title: 'Select Study Set'),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+          ? Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Header with brain icon
-                  Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color:
-                                context.tokens.primary.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color:
-                                  context.tokens.primary.withValues(alpha: 0.3),
+                  CircularProgressIndicator(color: tokens.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading study sets...',
+                    style: TextStyle(color: tokens.textSecondary),
+                  ),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(20),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with brain icon
+                      Center(
+                        child: Column(
+                          children: [
+                            AnimatedBuilder(
+                              animation: _pulseAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _pulseAnimation.value,
+                                  child: Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          tokens.primary.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: tokens.primary
+                                            .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: BrainLogo(
+                                      size: 40,
+                                      color: tokens.primary,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                          child: BrainLogo(
-                            size: 40,
-                            color: context.tokens.primary,
-                          ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Choose your study material',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: tokens.textPrimary,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Select from saved sets or create a new one',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: tokens.textSecondary,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Create New Custom Set Card
+                      _buildCreateNewCard(),
+                      const SizedBox(height: 24),
+
+                      // Saved Study Sets Section
+                      if (_savedStudySets.isNotEmpty) ...[
+                        Text(
+                          'Recent Study Sets',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: tokens.textPrimary,
+                                  ),
                         ),
                         const SizedBox(height: 16),
-                        Text(
-                          'Choose your study material',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        Text(
-                          'Select a study set to focus on during your Ultra Mode session',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: context.tokens.textSecondary,
-                                  ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Last Custom Set (if available)
-                  if (_lastCustomSet != null) ...[
-                    Text(
-                      'Quick Start',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildStudySetCard(
-                      _lastCustomSet!,
-                      'Use My Last Custom Set',
-                      Icons.history,
-                      isQuickStart: true,
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-
-                  // Saved Study Sets
-                  if (_savedStudySets.isNotEmpty) ...[
-                    Row(
-                      children: [
-                        Text(
-                          'Saved Sets',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.primaryColor,
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: _savedStudySets.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child:
+                                    _buildStudySetCard(_savedStudySets[index]),
+                              );
+                            },
                           ),
                         ),
-                        const Spacer(),
-                        Text(
-                          '${_savedStudySets.length} sets',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                      ] else ...[
+                        Expanded(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.folder_open,
+                                  size: 64,
+                                  color: tokens.textTertiary,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No saved study sets yet',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: tokens.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Create your first study set to get started',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: tokens.textTertiary,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 16),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _savedStudySets.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final studySet = _savedStudySets[index];
-                        return _buildStudySetCard(
-                          studySet,
-                          studySet.title,
-                          _getSubjectIcon(studySet.title),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-
-                  // Create New Custom Set
-                  Text(
-                    'Create New',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildCreateNewCard(),
-                ],
+                ),
               ),
             ),
     );
   }
 
-  Widget _buildStudySetCard(StudySet studySet, String title, IconData icon,
-      {bool isQuickStart = false}) {
-    final theme = Theme.of(context);
+  Widget _buildCreateNewCard() {
+    final tokens = context.tokens;
 
-    return Card(
-      elevation: 0,
-      color: theme.cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isQuickStart
-              ? theme.primaryColor.withValues(alpha: 0.3)
-              : Colors.grey.withValues(alpha: 0.2),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: tokens.surfaceAlt,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tokens.borderMuted,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.shadow.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          widget.onStudySetSelected(studySet);
-          Navigator.pop(context);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isQuickStart
-                          ? theme.primaryColor.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: isQuickStart
-                          ? theme.primaryColor
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                      size: 20,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _showCustomizeDialog,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: tokens.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    color: tokens.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Create New Custom Set',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: tokens.textPrimary,
+                                ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Design your own quiz and flashcard counts',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: tokens.textSecondary,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: tokens.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: tokens.primary.withValues(alpha: 0.3),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          studySet.title,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  child: Text(
+                    'NEW',
+                    style: TextStyle(
+                      color: tokens.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  if (studySet.quizzes.isNotEmpty) ...[
-                    Icon(Icons.quiz,
-                        size: 14,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.7)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${studySet.quizzes.length} quiz',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                  if (studySet.quizzes.isNotEmpty &&
-                      studySet.flashcards.isNotEmpty)
-                    Text(
-                      ' • ',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  if (studySet.flashcards.isNotEmpty) ...[
-                    Icon(Icons.style,
-                        size: 14,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.7)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${studySet.flashcards.length} cards',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCreateNewCard() {
-    final theme = Theme.of(context);
+  Widget _buildStudySetCard(StudySet studySet) {
+    final tokens = context.tokens;
+    final totalItems =
+        studySet.flashcards.length + studySet.quizQuestions.length;
 
-    return Card(
-      elevation: 0,
-      color: theme.cardColor,
-      shape: RoundedRectangleBorder(
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: tokens.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.grey.withValues(alpha: 0.2),
+        border: Border.all(
+          color: tokens.borderMuted,
         ),
       ),
-      child: InkWell(
-        onTap: _showCustomizeDialog,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => widget.onStudySetSelected(studySet),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _getStudySetColor(studySet).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getStudySetIcon(studySet),
+                    color: _getStudySetColor(studySet),
+                    size: 20,
+                  ),
                 ),
-                child: Icon(
-                  Icons.add,
-                  color: theme.primaryColor,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        studySet.title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: tokens.textPrimary,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$totalItems items • ${_formatDate(studySet.lastStudied)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: tokens.textSecondary,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: tokens.textTertiary,
                   size: 20,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Create New Custom Set',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Design your own quiz and flashcard counts',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getCreditCostColor(),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  _getCreditCostText(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Color _getCreditCostColor() {
-    if (_creditService.isUnlimited) {
-      return Colors.green;
-    } else if (_creditService.creditsRemaining >= 2) {
-      return Colors.blue;
+  Color _getStudySetColor(StudySet studySet) {
+    final tokens = context.tokens;
+
+    if (studySet.flashcards.isNotEmpty && studySet.quizQuestions.isNotEmpty) {
+      return tokens.primary;
+    } else if (studySet.flashcards.isNotEmpty) {
+      return tokens.secondary;
     } else {
-      return Colors.orange;
+      return tokens.accent;
     }
   }
 
-  String _getCreditCostText() {
-    if (_creditService.isUnlimited) {
-      return 'Unlimited';
+  IconData _getStudySetIcon(StudySet studySet) {
+    if (studySet.flashcards.isNotEmpty && studySet.quizQuestions.isNotEmpty) {
+      return Icons.auto_stories;
+    } else if (studySet.flashcards.isNotEmpty) {
+      return Icons.style;
     } else {
-      return 'Up to 2 credits';
+      return Icons.quiz;
     }
   }
 
-  IconData _getSubjectIcon(String subject) {
-    switch (subject.toLowerCase()) {
-      case 'math':
-      case 'mathematics':
-        return Icons.calculate;
-      case 'science':
-        return Icons.science;
-      case 'history':
-        return Icons.history_edu;
-      case 'english':
-      case 'literature':
-        return Icons.menu_book;
-      case 'language':
-        return Icons.translate;
-      case 'computer science':
-      case 'programming':
-        return Icons.computer;
-      case 'art':
-        return Icons.palette;
-      case 'music':
-        return Icons.music_note;
-      default:
-        return Icons.school;
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
     }
   }
 
   void _showCustomizeDialog() {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) => CustomizeStudySetDialog(
         topicDifficulty: 'medium',
+        sourceContent: widget.sourceContent,
         onGenerate: (quizCount, flashcardCount) async {
           await _generateCustomStudySet(quizCount, flashcardCount);
         },
@@ -445,121 +497,152 @@ class _StudySetSelectionScreenState extends State<StudySetSelectionScreen> {
 
   Future<void> _generateCustomStudySet(
       int quizCount, int flashcardCount) async {
-    // Determine study set type
-    StudySetType type;
-    if (quizCount > 0 && flashcardCount > 0) {
-      type = StudySetType.both;
-    } else if (quizCount > 0) {
-      type = StudySetType.quiz;
-    } else {
-      type = StudySetType.flashcards;
-    }
+    setState(() => _isGenerating = true);
 
-    // Check if user can generate this study set
-    final canGenerate = await _creditService.canGenerateStudySet(type);
-    if (!canGenerate) {
+    try {
+      // Create generation request
+      final request = GenerationRequest(
+        sourceContent: widget.sourceContent ?? '',
+        sourceCharCount: widget.sourceContent?.length ?? 0,
+        isRecreate: false,
+        lastAttemptFailed: false,
+      );
+
+      // Check if user can generate this study set
+      final enforcement = _economyService.canGenerateContent(request);
+      if (!enforcement.canProceed) {
+        _showErrorSnackBar(
+            enforcement.blockReason ?? 'Cannot generate content');
+        return;
+      }
+
+      // Show loading
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Not enough credits to generate this study set'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.tokens.textInverse,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text('Generating your custom study set...'),
+                ),
+              ],
+            ),
+            backgroundColor: context.tokens.primary,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 10),
           ),
         );
       }
-      return;
-    }
 
-    // Show loading
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Generating your custom study set...',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    try {
       // Use credits
-      final success = await _creditService.useCreditsForStudySet(
-          type, quizCount, flashcardCount);
-
-      if (!success) {
+      final creditsUsed =
+          await _economyService.useCreditsForGeneration(request);
+      if (!creditsUsed) {
         throw Exception('Failed to use credits');
       }
 
       // Generate sample study set (replace with actual generation logic)
-      final customStudySet = StudySet(
-        id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
-        title: 'Custom Study Set',
-        content: 'Custom generated study content',
-        flashcards: [], // Will be generated by AI service
-        quizzes: quizCount > 0 ? [_generateSampleQuiz(quizCount)] : [],
+      final studySet = StudySet(
+        id: 'study_${DateTime.now().millisecondsSinceEpoch}',
+        title: widget.sourceTitle ?? 'Custom Study Set',
+        content: widget.sourceContent ?? '',
+        flashcards: List.generate(
+          flashcardCount,
+          (index) => Flashcard(
+            id: 'flashcard_$index',
+            question: 'Sample question ${index + 1}?',
+            answer: 'Sample answer ${index + 1}',
+          ),
+        ),
+        quizQuestions: List.generate(
+          quizCount,
+          (index) => QuizQuestion(
+            id: 'quiz_$index',
+            question: 'Sample quiz question ${index + 1}?',
+            options: ['Option A', 'Option B', 'Option C', 'Option D'],
+            correctAnswer: 'Option A',
+          ),
+        ),
         createdDate: DateTime.now(),
         lastStudied: DateTime.now(),
+        category: 'Custom',
+        description: 'Custom generated study set',
+        sourceType: 'text',
+        sourceLength: widget.sourceContent?.length ?? 0,
+        tags: ['custom', 'generated'],
+        type: quizCount > 0 && flashcardCount > 0
+            ? StudySetType.both
+            : quizCount > 0
+                ? StudySetType.quiz
+                : StudySetType.flashcards,
       );
 
-      // Save as last custom set
-      await EnhancedStorageService.instance
-          .saveLastCustomStudySet(customStudySet.toMetadata());
+      // Save the study set
+      await EnhancedStorageService.instance.addStudySet(studySet);
 
+      // Reload study sets
+      await _loadStudySets();
+
+      // Success feedback
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
-        Navigator.pop(context); // Close selection screen
-        widget.onStudySetSelected(customStudySet);
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate study set: $e'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: context.tokens.textInverse),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Study set created successfully!'),
+                ),
+              ],
+            ),
+            backgroundColor: context.tokens.success,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
           ),
         );
+
+        // Navigate to the new study set
+        widget.onStudySetSelected(studySet);
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to generate study set: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isGenerating = false);
       }
     }
   }
 
-  Quiz _generateSampleQuiz(int count) {
-    if (count == 0) throw ArgumentError('Quiz count must be greater than 0');
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
 
-    final limitedCount =
-        count > 5 ? 5 : count; // Limit sample questions to 5 max
-    final questions = List.generate(
-        limitedCount,
-        (index) => QuizQuestion(
-              id: 'q_${index + 1}',
-              question:
-                  'Sample question ${index + 1}: What is the main concept?',
-              options: [
-                'Understanding key principles',
-                'Memorizing unrelated facts',
-                'Ignoring important details',
-                'Avoiding the topic entirely',
-              ],
-              correctAnswer: 'Understanding key principles',
-              type: QuestionType.multipleChoice,
-            ));
-
-    return Quiz(
-      id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
-      title: 'Custom Quiz',
-      type: QuestionType.multipleChoice,
-      questions: questions,
-      results: [],
-      createdDate: DateTime.now(),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error, color: context.tokens.textInverse),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: context.tokens.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 }

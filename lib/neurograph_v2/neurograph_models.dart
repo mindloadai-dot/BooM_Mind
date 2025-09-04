@@ -118,16 +118,22 @@ class Attempt {
 class Session {
   final String userId;
   final DateTime startedAt;
-  final DateTime? endedAt;
+  final DateTime endedAt;
   final int itemsSeen;
   final int itemsCorrect;
+  final String? testId;
+  final String? sessionType;
+  final String? subject;
 
   const Session({
     required this.userId,
     required this.startedAt,
-    this.endedAt,
+    required this.endedAt,
     required this.itemsSeen,
     required this.itemsCorrect,
+    this.testId,
+    this.sessionType,
+    this.subject,
   });
 
   factory Session.fromFirestore(DocumentSnapshot doc) {
@@ -135,18 +141,24 @@ class Session {
     return Session(
       userId: data['userId'] ?? '',
       startedAt: (data['startedAt'] as Timestamp).toDate(),
-      endedAt: data['endedAt'] != null ? (data['endedAt'] as Timestamp).toDate() : null,
+      endedAt: (data['endedAt'] as Timestamp).toDate(),
       itemsSeen: data['itemsSeen'] ?? 0,
       itemsCorrect: data['itemsCorrect'] ?? 0,
+      testId: data['testId'],
+      sessionType: data['sessionType'],
+      subject: data['subject'],
     );
   }
 
   Map<String, dynamic> toFirestore() => {
         'userId': userId,
         'startedAt': Timestamp.fromDate(startedAt),
-        'endedAt': endedAt != null ? Timestamp.fromDate(endedAt!) : null,
+        'endedAt': Timestamp.fromDate(endedAt),
         'itemsSeen': itemsSeen,
         'itemsCorrect': itemsCorrect,
+        'testId': testId,
+        'sessionType': sessionType,
+        'subject': subject,
       };
 }
 
@@ -155,11 +167,15 @@ class Question {
   final String questionId;
   final String topicId;
   final String? bloom;
+  final int? difficulty;
+  final String? text;
 
   const Question({
     required this.questionId,
     required this.topicId,
     this.bloom,
+    this.difficulty,
+    this.text,
   });
 
   factory Question.fromFirestore(DocumentSnapshot doc) {
@@ -168,6 +184,8 @@ class Question {
       questionId: data['questionId'] ?? '',
       topicId: data['topicId'] ?? '',
       bloom: data['bloom'],
+      difficulty: data['difficulty'],
+      text: data['text'],
     );
   }
 
@@ -175,6 +193,8 @@ class Question {
         'questionId': questionId,
         'topicId': topicId,
         'bloom': bloom,
+        'difficulty': difficulty,
+        'text': text,
       };
 }
 
@@ -332,7 +352,8 @@ class CalibrationSummary {
       CalibrationSummary(
         bins: bins ?? this.bins,
         brierScore: brierScore ?? this.brierScore,
-        expectedCalibrationError: expectedCalibrationError ?? this.expectedCalibrationError,
+        expectedCalibrationError:
+            expectedCalibrationError ?? this.expectedCalibrationError,
       );
 }
 

@@ -1112,23 +1112,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => Dialog(
-        backgroundColor: context.tokens.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          child: CustomizeStudySetDialog(
-            topicDifficulty: 'medium',
-            onGenerate: (quizCount, flashcardCount) {
-              Navigator.pop(context);
-              _processContentWithCounts(
-                  content, title, quizCount, flashcardCount);
-            },
-          ),
-        ),
+      builder: (context) => CustomizeStudySetDialog(
+        topicDifficulty: 'medium',
+        sourceContent: content,
+        onGenerate: (quizCount, flashcardCount) {
+          Navigator.pop(context);
+          _processContentWithCounts(content, title, quizCount, flashcardCount);
+        },
       ),
     );
   }
@@ -1332,6 +1322,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         await AchievementTrackerService.instance
             .trackCardsCreated(flashcards.length);
       }
+
+      // Check and fire first study set creation micro notification
+      MindLoadNotificationService.checkAndFireFirstStudySetNotification();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -2505,8 +2498,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       await AuthService.instance.signOut();
 
                       if (mounted) {
-                        Navigator.of(context)
-                            .pushReplacementNamed('/social-auth');
+                        Navigator.of(context).pushReplacementNamed('/auth');
                       }
                     } catch (e) {
                       if (mounted) {

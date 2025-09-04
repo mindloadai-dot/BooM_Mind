@@ -13,6 +13,9 @@ import {
   cleanupYouTubeCache 
 } from './youtube';
 
+// Import and export URL study set generation functions
+export { generateStudySetFromUrl, onStudySetCreated } from './url-study-set-generator';
+
 // Import and export OpenAI functions
 export { generateFlashcards, generateQuiz, generateStudyMaterial, testOpenAI } from './openai';
 // Import and export AI processing functions (keeping processWithAI from ai-processing)

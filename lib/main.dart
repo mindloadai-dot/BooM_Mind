@@ -20,11 +20,12 @@ import 'package:mindload/services/biometric_auth_service.dart';
 import 'package:mindload/services/user_specific_storage_service.dart';
 import 'package:mindload/services/pdf_export_service.dart';
 import 'package:mindload/models/notification_preferences.dart';
+import 'package:mindload/services/unified_storage_service.dart';
 import 'package:mindload/firebase_options.dart';
 import 'package:mindload/config/environment_config.dart';
 
-import 'package:mindload/screens/social_auth_screen.dart';
 import 'package:mindload/screens/home_screen.dart';
+import 'package:mindload/auth/auth_gate.dart';
 import 'package:mindload/screens/biometric_login_screen.dart';
 import 'package:mindload/screens/modern_onboarding_screen.dart';
 import 'package:mindload/screens/logic_packs_screen.dart';
@@ -210,6 +211,16 @@ void _initializeHeavyServicesAsync() {
       print('Notification Preferences Service initialization failed: $e');
     }
   });
+
+            Future.microtask(() async {
+            try {
+              // Unified Storage Service (for all study sets)
+              await UnifiedStorageService.instance.initialize();
+              print('Unified Storage Service initialized successfully');
+            } catch (e) {
+              print('Unified Storage Service initialization failed: $e');
+            }
+          });
 }
 
 class MindLoadApp extends StatelessWidget {
@@ -258,7 +269,7 @@ class MindLoadApp extends StatelessWidget {
             theme: themeManager.lightTheme,
             home: const AppInitializer(),
             routes: {
-              '/social-auth': (context) => const SocialAuthScreen(),
+              '/auth': (context) => const AuthGate(),
               '/home': (context) => const HomeScreen(),
               '/biometric-login': (context) => const BiometricLoginScreen(),
               '/onboarding': (context) => const ModernOnboardingScreen(),
@@ -595,8 +606,8 @@ class AppInitializerState extends State<AppInitializer>
         // 🔐 CRITICAL: Authentication is ALWAYS first priority - NO EXCEPTIONS!
         if (authService.currentUser == null) {
           debugPrint(
-              '🔐 AppInitializer: User not authenticated - showing SocialAuthScreen');
-          return const SocialAuthScreen();
+              '🔐 AppInitializer: User not authenticated - showing AuthGate');
+          return const AuthGate();
         }
 
         debugPrint(

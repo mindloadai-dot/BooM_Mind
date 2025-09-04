@@ -5,9 +5,11 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart' as ftz;
 import 'neurograph_config.dart';
 import 'neurograph_models.dart';
+import 'neurograph_local_storage.dart';
 
 /// Repository layer for NeuroGraph V2 analytics
-/// Handles Firestore queries with offline-first approach and dynamic timezone support
+/// Completely offline-first approach using local SQLite storage
+/// Firestore is used only for optional background sync
 class NeuroGraphRepository {
   static final NeuroGraphRepository _instance =
       NeuroGraphRepository._internal();
@@ -15,6 +17,7 @@ class NeuroGraphRepository {
   static NeuroGraphRepository get instance => _instance;
   NeuroGraphRepository._internal();
 
+  final NeuroGraphLocalStorage _localStorage = NeuroGraphLocalStorage.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _cachedTimezone;
 
@@ -67,7 +70,7 @@ class NeuroGraphRepository {
     NeuroGraphFilters? filters,
   }) async {
     debugPrint('🔍 Querying attempts for user: $uid');
-    
+
     // Build query
     Query query =
         _firestore.collection('attempts').where('userId', isEqualTo: uid);
@@ -386,7 +389,7 @@ class NeuroGraphRepository {
         startedAt: (data['startedAt'] as Timestamp).toDate(),
         endedAt: data['endedAt'] != null
             ? (data['endedAt'] as Timestamp).toDate()
-            : null,
+            : (data['startedAt'] as Timestamp).toDate().add(const Duration(minutes: 30)),
         itemsSeen: data['itemsSeen'] ?? 0,
         itemsCorrect: data['itemsCorrect'] ?? 0,
       );
@@ -493,14 +496,14 @@ class NeuroGraphRepository {
   /// Create sample data for testing purposes
   Future<void> createSampleData(String uid) async {
     debugPrint('🧪 Creating sample data for user: $uid');
-    
+
     final batch = _firestore.batch();
     final now = DateTime.now();
-    
+
     // Create sample topics and tests
     final topics = ['math', 'science', 'history', 'literature'];
     final tests = ['quiz_1', 'quiz_2', 'midterm', 'final'];
-    
+
     // Generate 50 sample attempts over the last 30 days
     for (int i = 0; i < 50; i++) {
       final daysAgo = i % 30;
@@ -508,12 +511,12 @@ class NeuroGraphRepository {
       final topicId = topics[i % topics.length];
       final testId = tests[i % tests.length];
       final questionId = 'q_${i}_$topicId';
-      
+
       // Simulate learning curve - better performance over time
       final progressFactor = (30 - daysAgo) / 30.0;
       final baseAccuracy = 0.6 + (progressFactor * 0.3); // 60% to 90%
       final isCorrect = (i / 50.0) < baseAccuracy;
-      
+
       final attemptRef = _firestore.collection('attempts').doc();
       batch.set(attemptRef, {
         'userId': uid,
@@ -522,18 +525,20 @@ class NeuroGraphRepository {
         'topicId': topicId,
         'bloom': ['remember', 'understand', 'apply', 'analyze'][i % 4],
         'isCorrect': isCorrect,
-        'score': isCorrect ? (0.8 + (0.2 * (i / 50.0))) : (0.2 + (0.3 * (i / 50.0))),
+        'score':
+            isCorrect ? (0.8 + (0.2 * (i / 50.0))) : (0.2 + (0.3 * (i / 50.0))),
         'responseMs': 2000 + (i * 100), // Response time varies
         'ts': Timestamp.fromDate(timestamp),
-        'confidence': isCorrect ? (0.7 + (0.3 * (i / 50.0))) : (0.3 + (0.4 * (i / 50.0))),
+        'confidence':
+            isCorrect ? (0.7 + (0.3 * (i / 50.0))) : (0.3 + (0.4 * (i / 50.0))),
       });
     }
-    
+
     // Create sample questions
     for (int i = 0; i < 20; i++) {
       final topicId = topics[i % topics.length];
       final questionId = 'q_${i}_$topicId';
-      
+
       final questionRef = _firestore.collection('questions').doc(questionId);
       batch.set(questionRef, {
         'questionId': questionId,
@@ -543,13 +548,13 @@ class NeuroGraphRepository {
         'text': 'Sample question ${i + 1} for $topicId',
       });
     }
-    
+
     // Create sample sessions
     for (int i = 0; i < 10; i++) {
       final daysAgo = i * 3;
       final startTime = now.subtract(Duration(days: daysAgo, hours: 1));
       final endTime = startTime.add(const Duration(minutes: 30));
-      
+
       final sessionRef = _firestore.collection('sessions').doc();
       batch.set(sessionRef, {
         'userId': uid,
@@ -560,7 +565,7 @@ class NeuroGraphRepository {
         'sessionType': ['study', 'quiz', 'review'][i % 3],
       });
     }
-    
+
     await batch.commit();
     debugPrint('✅ Sample data created successfully for user: $uid');
   }

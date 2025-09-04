@@ -14,14 +14,14 @@ export declare const testOpenAI: import("firebase-functions/v2/https").CallableF
  */
 export declare const generateFlashcards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     flashcards: any;
-    usage: OpenAI.Completions.CompletionUsage | undefined;
+    usage: any;
 }>>;
 /**
  * Generate quiz questions from content
  */
 export declare const generateQuiz: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     questions: any;
-    usage: OpenAI.Completions.CompletionUsage | undefined;
+    usage: any;
 }>>;
 /**
  * Generate study material from content

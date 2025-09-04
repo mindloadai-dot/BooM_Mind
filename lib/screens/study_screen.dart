@@ -16,6 +16,7 @@ import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
 import 'package:mindload/services/achievement_tracker_service.dart';
 import 'package:mindload/services/neurograph_service.dart';
+import 'package:mindload/services/neurograph_offline_bridge_service.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/widgets/edit_flashcard_dialog.dart';
@@ -366,14 +367,32 @@ class _StudyScreenState extends State<StudyScreen>
     final Quiz quiz = _currentQuiz!;
     int correctAnswers = 0;
     final List<String> incorrectQuestionIds = [];
+    final List<Map<String, dynamic>> questionAttempts = [];
 
     for (int i = 0; i < quiz.questions.length; i++) {
       final question = quiz.questions[i];
-      if (_userAnswers[i] == question.correctAnswer) {
+      final isCorrect = _userAnswers[i] == question.correctAnswer;
+
+      if (isCorrect) {
         correctAnswers++;
       } else {
         incorrectQuestionIds.add(question.id);
       }
+
+      // Collect individual question attempt data for NeuroGraph V2
+      questionAttempts.add({
+        'questionId': question.id,
+        'questionText': question.question,
+        'questionType': quiz.type.toString(),
+        'isCorrect': isCorrect,
+        'userAnswer': _userAnswers[i],
+        'correctAnswer': question.correctAnswer,
+        'responseTimeMs':
+            3000, // Default response time - could be tracked more precisely
+        'timestamp': DateTime.now()
+            .subtract(Duration(seconds: (quiz.questions.length - i) * 3)),
+        'difficulty': question.difficulty.index ?? 2,
+      });
     }
 
     // Calculate quiz difficulty based on performance
@@ -387,12 +406,18 @@ class _StudyScreenState extends State<StudyScreen>
       responseTime: DateTime.now().difference(_quizStartTime),
     );
 
+    // Save individual attempts to NeuroGraph V2
+    _saveQuizAttemptsToNeuroGraphV2(quiz, questionAttempts);
+
     // Track quiz session in NeuroGraph
     _trackQuizSessionInNeuroGraph(correctAnswers, quiz.questions.length);
 
     // Provide adaptive feedback
     _provideAdaptiveFeedback(
         correctAnswers, quiz.questions.length, overallDifficulty);
+
+    // Check and fire first quiz completion micro notification
+    MindLoadNotificationService.checkAndFireFirstQuizNotification();
 
     setState(() {
       _showResults = true;
@@ -3070,6 +3095,12 @@ class _StudyScreenState extends State<StudyScreen>
         accuracyRate: accuracyRate,
       );
       debugPrint('Study session tracked');
+
+      // Check and fire first flashcard set viewing micro notification
+      // Only fire if this study set has flashcards
+      if (_currentStudySet.flashcards.isNotEmpty) {
+        MindLoadNotificationService.checkAndFireFirstFlashcardSetNotification();
+      }
     } catch (e) {
       debugPrint('Failed to track study session: $e');
     }
@@ -3083,6 +3114,23 @@ class _StudyScreenState extends State<StudyScreen>
       debugPrint('Study time tracked: $minutes minutes');
     } catch (e) {
       debugPrint('Failed to track study time: $e');
+    }
+  }
+
+  /// Save individual quiz attempts to NeuroGraph V2
+  void _saveQuizAttemptsToNeuroGraphV2(
+      Quiz quiz, List<Map<String, dynamic>> questionAttempts) async {
+    try {
+      await NeuroGraphOfflineBridgeService.instance.saveQuizAttempts(
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        questionAttempts: questionAttempts,
+        quizStartTime: _quizStartTime,
+        quizEndTime: DateTime.now(),
+      );
+      debugPrint('✅ Quiz attempts saved to NeuroGraph V2');
+    } catch (e) {
+      debugPrint('❌ Failed to save quiz attempts to NeuroGraph V2: $e');
     }
   }
 
@@ -3119,6 +3167,47 @@ class _StudyScreenState extends State<StudyScreen>
     }
   }
 
+  /// Save flashcard session attempts to NeuroGraph V2
+  void _saveFlashcardAttemptsToNeuroGraphV2() async {
+    if (_flashcardsReviewed > 0 && _flashcardSessionStart != null) {
+      try {
+        final flashcardAttempts = <Map<String, dynamic>>[];
+
+        // Create attempts for reviewed flashcards
+        for (int i = 0;
+            i < _flashcardsReviewed && i < _currentStudySet.flashcards.length;
+            i++) {
+          final flashcard = _currentStudySet.flashcards[i];
+          final responseTime = i < _flashcardResponseTimes.length
+              ? _flashcardResponseTimes[i] * 1000 // Convert to ms
+              : 5000.0;
+
+          flashcardAttempts.add({
+            'flashcardId': flashcard.id,
+            'front': flashcard.question,
+            'back': flashcard.answer,
+            'wasCorrect': true, // Assume correct for flashcards (self-reported)
+            'responseTimeMs': responseTime.toInt(),
+            'timestamp': _flashcardSessionStart!.add(Duration(minutes: i * 2)),
+            'difficulty': flashcard.difficulty.index,
+          });
+        }
+
+        await NeuroGraphOfflineBridgeService.instance.saveFlashcardAttempts(
+          studySetId: _currentStudySet.id,
+          studySetTitle: _currentStudySet.title,
+          flashcardAttempts: flashcardAttempts,
+          sessionStartTime: _flashcardSessionStart!,
+          sessionEndTime: DateTime.now(),
+        );
+
+        debugPrint('✅ Flashcard attempts saved to NeuroGraph V2');
+      } catch (e) {
+        debugPrint('❌ Failed to save flashcard attempts to NeuroGraph V2: $e');
+      }
+    }
+  }
+
   /// Track flashcard session data in NeuroGraph
   void _trackFlashcardSessionInNeuroGraph() async {
     // Track every 5 cards or at end of session
@@ -3126,6 +3215,9 @@ class _StudyScreenState extends State<StudyScreen>
         (_flashcardsReviewed % 5 == 0 ||
             _flashcardsReviewed >= _currentStudySet.flashcards.length)) {
       try {
+        // Save to NeuroGraph V2 first
+        _saveFlashcardAttemptsToNeuroGraphV2();
+
         final now = DateTime.now();
         final sessionDuration = _flashcardSessionStart != null
             ? now.difference(_flashcardSessionStart!).inMinutes.clamp(1, 120)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import 'neurograph_config.dart';
 import 'neurograph_models.dart';
 
@@ -8,6 +9,7 @@ import 'neurograph_models.dart';
 class NeuroGraphWidgets {
   /// Learning Curve Chart with EMA and goal band
   static Widget learningCurveChart({
+    required BuildContext context,
     required List<DailyPoint> dailyPoints,
     required List<double> emaValues,
     required double goalMin,
@@ -18,7 +20,8 @@ class NeuroGraphWidgets {
     required Color goalColor,
   }) {
     if (dailyPoints.isEmpty) {
-      return _buildEmptyChart('No learning data available', chartHeight);
+      return _buildEmptyChart(
+          context, 'No learning data available', chartHeight);
     }
 
     return Container(
@@ -37,6 +40,7 @@ class NeuroGraphWidgets {
           const SizedBox(height: 16),
           Expanded(
             child: _buildSimpleLineChart(
+              context,
               dailyPoints.map((p) => p.accuracy).toList(),
               emaValues,
               primaryColor,
@@ -56,6 +60,7 @@ class NeuroGraphWidgets {
 
   /// Spaced Review / Forgetting Curve Panel
   static Widget spacedReviewPanel({
+    required BuildContext context,
     required Map<String, RecallModel> recallModels,
     required double chartHeight,
     required Color primaryColor,
@@ -75,6 +80,7 @@ class NeuroGraphWidgets {
             children: [
               Expanded(
                 child: _buildSummaryCard(
+                  context,
                   'Due Today',
                   dueItems.toString(),
                   accentColor,
@@ -84,6 +90,7 @@ class NeuroGraphWidgets {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildSummaryCard(
+                  context,
                   'Total Items',
                   totalItems.toString(),
                   primaryColor,
@@ -118,13 +125,15 @@ class NeuroGraphWidgets {
 
   /// Retrieval Practice Meter
   static Widget retrievalPracticeMeter({
+    required BuildContext context,
     required List<WeekPoint> weekPoints,
     required double chartHeight,
     required Color primaryColor,
     required Color secondaryColor,
   }) {
     if (weekPoints.isEmpty) {
-      return _buildEmptyChart('No retrieval practice data', chartHeight);
+      return _buildEmptyChart(
+          context, 'No retrieval practice data', chartHeight);
     }
 
     return Container(
@@ -143,6 +152,7 @@ class NeuroGraphWidgets {
           const SizedBox(height: 16),
           Expanded(
             child: _buildSimpleBarChart(
+              context,
               weekPoints.map((p) => p.retrievalSessions.toDouble()).toList(),
               primaryColor,
             ),
@@ -159,13 +169,15 @@ class NeuroGraphWidgets {
 
   /// Calibration Plot
   static Widget calibrationPlot({
+    required BuildContext context,
     required CalibrationSummary calibration,
     required double chartHeight,
     required Color primaryColor,
     required Color errorColor,
   }) {
     if (calibration.bins.isEmpty) {
-      return _buildEmptyChart('No confidence data available', chartHeight);
+      return _buildEmptyChart(
+          context, 'No confidence data available', chartHeight);
     }
 
     return Container(
@@ -178,16 +190,18 @@ class NeuroGraphWidgets {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildMetricBadge(
+                  context,
                   'ECE',
                   calibration.expectedCalibrationError.toStringAsFixed(3),
                   errorColor),
-              _buildMetricBadge('Brier',
+              _buildMetricBadge(context, 'Brier',
                   calibration.brierScore.toStringAsFixed(3), primaryColor),
             ],
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _buildSimpleScatterPlot(calibration.bins, primaryColor),
+            child: _buildSimpleScatterPlot(
+                context, calibration.bins, primaryColor),
           ),
         ],
       ),
@@ -196,6 +210,7 @@ class NeuroGraphWidgets {
 
   /// Mastery Progress Stacked Area Chart
   static Widget masteryProgressChart({
+    required BuildContext context,
     required List<WeekStack> weekStacks,
     required double chartHeight,
     required Color newColor,
@@ -203,7 +218,8 @@ class NeuroGraphWidgets {
     required Color masteredColor,
   }) {
     if (weekStacks.isEmpty) {
-      return _buildEmptyChart('No mastery data available', chartHeight);
+      return _buildEmptyChart(
+          context, 'No mastery data available', chartHeight);
     }
 
     return Container(
@@ -222,6 +238,7 @@ class NeuroGraphWidgets {
           const SizedBox(height: 16),
           Expanded(
             child: _buildSimpleStackedChart(
+              context,
               weekStacks,
               newColor,
               practicingColor,
@@ -241,12 +258,14 @@ class NeuroGraphWidgets {
 
   /// Consistency Heatmap
   static Widget consistencyHeatmap({
+    required BuildContext context,
     required Map<DateTime, ConsistencyHeat> heatData,
     required double chartHeight,
     required Color primaryColor,
   }) {
     if (heatData.isEmpty) {
-      return _buildEmptyChart('No consistency data available', chartHeight);
+      return _buildEmptyChart(
+          context, 'No consistency data available', chartHeight);
     }
 
     // Group by weeks for display
@@ -262,7 +281,7 @@ class NeuroGraphWidgets {
           const SizedBox(height: 16),
           // Heatmap grid
           Expanded(
-            child: _buildHeatmapGrid(weeks, primaryColor),
+            child: _buildHeatmapGrid(context, weeks, primaryColor),
           ),
         ],
       ),
@@ -271,7 +290,9 @@ class NeuroGraphWidgets {
 
   // Helper methods
 
-  static Widget _buildEmptyChart(String message, double height) {
+  static Widget _buildEmptyChart(
+      BuildContext context, String message, double height) {
+    final tokens = context.tokens;
     return Container(
       height: height,
       padding: const EdgeInsets.all(NeuroGraphConfig.chartPadding),
@@ -282,13 +303,13 @@ class NeuroGraphWidgets {
             Icon(
               Icons.bar_chart,
               size: 48,
-              color: Colors.grey[400],
+              color: tokens.textTertiary,
             ),
             const SizedBox(height: 16),
             Text(
               message,
               style: TextStyle(
-                color: Colors.grey[600],
+                color: tokens.textSecondary,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -300,8 +321,9 @@ class NeuroGraphWidgets {
     );
   }
 
-  static Widget _buildSummaryCard(
-      String title, String value, Color color, IconData icon) {
+  static Widget _buildSummaryCard(BuildContext context, String title,
+      String value, Color color, IconData icon) {
+    final tokens = context.tokens;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -325,7 +347,7 @@ class NeuroGraphWidgets {
             title,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: tokens.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -351,44 +373,126 @@ class NeuroGraphWidgets {
     );
   }
 
-  static Widget _buildSimpleLineChart(List<double> values,
+  static Widget _buildSimpleLineChart(BuildContext context, List<double> values,
       List<double> emaValues, Color primaryColor, Color secondaryColor) {
+    final tokens = context.tokens;
+
+    if (values.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: tokens.borderMuted),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            'No data available',
+            style: TextStyle(color: tokens.textSecondary),
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        border: Border.all(color: tokens.borderMuted),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Center(
-        child: Text(
-          'Line Chart\n${values.length} data points',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: primaryColor),
-        ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            'Learning Progress',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: tokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: tokens.borderMuted.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: CustomPaint(
+                painter: SimpleLineChartPainter(
+                  values: values,
+                  emaValues: emaValues,
+                  primaryColor: primaryColor,
+                  secondaryColor: secondaryColor,
+                  gridColor: tokens.borderMuted.withOpacity(0.2),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  static Widget _buildSimpleBarChart(List<double> values, Color color) {
+  static Widget _buildSimpleBarChart(
+      BuildContext context, List<double> values, Color color) {
+    final tokens = context.tokens;
+
+    if (values.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: tokens.borderMuted),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            'No data available',
+            style: TextStyle(color: tokens.textSecondary),
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        border: Border.all(color: tokens.borderMuted),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Center(
-        child: Text(
-          'Bar Chart\n${values.length} weeks',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: color),
-        ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            'Retrieval Sessions',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: tokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: tokens.borderMuted.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: CustomPaint(
+                painter: SimpleBarChartPainter(
+                  values: values,
+                  barColor: color,
+                  gridColor: tokens.borderMuted.withOpacity(0.2),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   static Widget _buildSimpleScatterPlot(
-      List<CalibrationBin> bins, Color color) {
+      BuildContext context, List<CalibrationBin> bins, Color color) {
+    final tokens = context.tokens;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        border: Border.all(color: tokens.borderMuted),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
@@ -401,11 +505,16 @@ class NeuroGraphWidgets {
     );
   }
 
-  static Widget _buildSimpleStackedChart(List<WeekStack> weekStacks,
-      Color newColor, Color practicingColor, Color masteredColor) {
+  static Widget _buildSimpleStackedChart(
+      BuildContext context,
+      List<WeekStack> weekStacks,
+      Color newColor,
+      Color practicingColor,
+      Color masteredColor) {
+    final tokens = context.tokens;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        border: Border.all(color: tokens.borderMuted),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
@@ -418,7 +527,9 @@ class NeuroGraphWidgets {
     );
   }
 
-  static Widget _buildMetricBadge(String label, String value, Color color) {
+  static Widget _buildMetricBadge(
+      BuildContext context, String label, String value, Color color) {
+    final tokens = context.tokens;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -432,7 +543,7 @@ class NeuroGraphWidgets {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: Colors.grey[600],
+              color: tokens.textSecondary,
             ),
           ),
           Text(
@@ -478,7 +589,8 @@ class NeuroGraphWidgets {
   }
 
   static Widget _buildHeatmapGrid(
-      List<List<ConsistencyHeat?>> weeks, Color color) {
+      BuildContext context, List<List<ConsistencyHeat?>> weeks, Color color) {
+    final tokens = context.tokens;
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7, // Days of week
@@ -492,12 +604,12 @@ class NeuroGraphWidgets {
         final dayIndex = index % 7;
 
         if (weekIndex >= weeks.length || dayIndex >= weeks[weekIndex].length) {
-          return Container(color: Colors.grey[100]);
+          return Container(color: tokens.surfaceAlt);
         }
 
         final heat = weeks[weekIndex][dayIndex];
         if (heat == null) {
-          return Container(color: Colors.grey[100]);
+          return Container(color: tokens.surfaceAlt);
         }
 
         return Container(
@@ -510,7 +622,9 @@ class NeuroGraphWidgets {
               heat.attempts.toString(),
               style: TextStyle(
                 fontSize: 8,
-                color: heat.intensity > 0.5 ? Colors.white : Colors.black87,
+                color: heat.intensity > 0.5
+                    ? tokens.textInverse
+                    : tokens.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -604,4 +718,195 @@ class _LegendItem {
   final Color color;
 
   _LegendItem(this.label, this.color);
+}
+
+class SimpleLineChartPainter extends CustomPainter {
+  final List<double> values;
+  final List<double> emaValues;
+  final Color primaryColor;
+  final Color secondaryColor;
+  final Color gridColor;
+
+  SimpleLineChartPainter({
+    required this.values,
+    required this.emaValues,
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.gridColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) return;
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    final emaPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final gridPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5
+      ..color = gridColor;
+
+    // Draw grid lines
+    for (int i = 0; i <= 5; i++) {
+      final y = size.height * i / 5;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    for (int i = 0; i <= 10; i++) {
+      final x = size.width * i / 10;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+
+    // Draw primary line
+    if (values.length > 1) {
+      paint.color = primaryColor;
+      final path = Path();
+
+      for (int i = 0; i < values.length; i++) {
+        final x = size.width * i / (values.length - 1);
+        final y = size.height * (1 - values[i]);
+
+        if (i == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
+      }
+
+      canvas.drawPath(path, paint);
+    }
+
+    // Draw EMA line
+    if (emaValues.length > 1) {
+      emaPaint.color = secondaryColor;
+      final emaPath = Path();
+
+      for (int i = 0; i < emaValues.length; i++) {
+        final x = size.width * i / (emaValues.length - 1);
+        final y = size.height * (1 - emaValues[i]);
+
+        if (i == 0) {
+          emaPath.moveTo(x, y);
+        } else {
+          emaPath.lineTo(x, y);
+        }
+      }
+
+      canvas.drawPath(emaPath, emaPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class SimpleBarChartPainter extends CustomPainter {
+  final List<double> values;
+  final Color barColor;
+  final Color gridColor;
+
+  SimpleBarChartPainter({
+    required this.values,
+    required this.barColor,
+    required this.gridColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) return;
+
+    final barPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = barColor;
+
+    final gridPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5
+      ..color = gridColor;
+
+    // Draw grid lines
+    for (int i = 0; i <= 5; i++) {
+      final y = size.height * i / 5;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Find max value for scaling
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    if (maxValue <= 0) return;
+
+    // Draw bars
+    final barWidth = size.width / values.length * 0.8;
+    final barSpacing = size.width / values.length * 0.2;
+
+    for (int i = 0; i < values.length; i++) {
+      final barHeight = (values[i] / maxValue) * size.height * 0.8;
+      final x = i * (barWidth + barSpacing) + barSpacing / 2;
+      final y = size.height - barHeight;
+
+      final rect = Rect.fromLTWH(x, y, barWidth, barHeight);
+      canvas.drawRect(rect, barPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class SimpleScatterPlotPainter extends CustomPainter {
+  final List<CalibrationBin> bins;
+  final Color pointColor;
+  final Color gridColor;
+
+  SimpleScatterPlotPainter({
+    required this.bins,
+    required this.pointColor,
+    required this.gridColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (bins.isEmpty) return;
+
+    final pointPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = pointColor;
+
+    final gridPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5
+      ..color = gridColor;
+
+    // Draw grid lines
+    for (int i = 0; i <= 5; i++) {
+      final x = size.width * i / 5;
+      final y = size.height * i / 5;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Draw diagonal line (perfect calibration)
+    final diagonalPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..color = gridColor.withOpacity(0.5);
+    canvas.drawLine(
+        Offset(0, size.height), Offset(size.width, 0), diagonalPaint);
+
+    // Draw points
+    for (final bin in bins) {
+      final x = ((bin.confidenceMin + bin.confidenceMax) / 2) * size.width;
+      final y = (1 - bin.actualAccuracy) * size.height;
+
+      canvas.drawCircle(Offset(x, y), 3, pointPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

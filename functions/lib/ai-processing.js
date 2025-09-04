@@ -30,7 +30,7 @@ exports.generateFlashcards = (0, https_1.onCall)({ secrets: [openaiApiKey] }, as
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-5-mini',
                 messages: [
                     {
                         role: 'system',
@@ -93,7 +93,7 @@ exports.generateQuiz = (0, https_1.onCall)({ secrets: [openaiApiKey] }, async (r
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-5-mini',
                 messages: [
                     {
                         role: 'system',
@@ -202,7 +202,7 @@ async function generateAISummary(content, customInstructions) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-5-mini',
                 messages: [
                     {
                         role: 'system',
@@ -240,7 +240,7 @@ async function generateFlashcardsDirectly(content, count) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: 'gpt-5-mini',
                 messages: [
                     {
                         role: 'system',
@@ -289,7 +289,7 @@ async function generateQuizQuestionsDirectly(content, count) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: 'gpt-5-mini',
                 messages: [
                     {
                         role: 'system',

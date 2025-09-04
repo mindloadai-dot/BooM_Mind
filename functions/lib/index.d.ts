@@ -1,3 +1,4 @@
+export { generateStudySetFromUrl, onStudySetCreated } from './url-study-set-generator';
 export { generateFlashcards, generateQuiz, generateStudyMaterial, testOpenAI } from './openai';
 export { processWithAI } from './ai-processing';
 export { youtubePreview, youtubeIngest, cleanupYouTubeRateLimit, resetUserRateLimits, getRateLimitStatus, cleanupYouTubeCache } from './youtube';

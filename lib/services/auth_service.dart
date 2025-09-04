@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-// import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:io' show Platform; // Guarded usage
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
@@ -18,6 +17,7 @@ import 'package:mindload/services/local_image_storage_service.dart';
 
 import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
+import 'package:mindload/services/user_specific_storage_service.dart';
 
 enum AuthProvider {
   google,
@@ -102,7 +102,7 @@ class AuthService extends ChangeNotifier {
     try {
       // Initialize Google Sign-In
       // _googleSignIn = GoogleSignIn();
-      
+
       // Listen to auth state changes with proper error handling
       _firebaseAuth.authStateChanges().listen(
         (User? user) async {
@@ -269,17 +269,20 @@ class AuthService extends ChangeNotifier {
         }
 
         // Sign in with provider using timeout
-        final UserCredential userCredential = await _firebaseAuth.signInWithProvider(provider).timeout(
+        final UserCredential userCredential =
+            await _firebaseAuth.signInWithProvider(provider).timeout(
           const Duration(seconds: 60),
           onTimeout: () {
-            throw TimeoutException('Google Sign-In timed out. Please try again.');
+            throw TimeoutException(
+                'Google Sign-In timed out. Please try again.');
           },
         );
 
         final user = userCredential.user;
 
         if (user == null) {
-          throw Exception('Failed to get user from Firebase after Google Sign-In');
+          throw Exception(
+              'Failed to get user from Firebase after Google Sign-In');
         }
 
         _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
@@ -913,6 +916,18 @@ class AuthService extends ChangeNotifier {
       await _clearUserData();
       if (kDebugMode) {
         print('✅ Local user data cleared');
+      }
+
+      // Step 4.5: Clear user-specific storage data
+      try {
+        await UserSpecificStorageService.instance.clearUserData();
+        if (kDebugMode) {
+          print('✅ User-specific storage data cleared');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Could not clear user-specific storage data: $e');
+        }
       }
 
       // Step 5: Clear user profile service data
