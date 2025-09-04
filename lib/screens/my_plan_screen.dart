@@ -4,9 +4,9 @@ import 'package:mindload/models/mindload_economy_models.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/in_app_purchase_service.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
-
 import 'package:mindload/theme.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class MyPlanScreen extends StatefulWidget {
   const MyPlanScreen({super.key});
@@ -39,29 +39,29 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
             backgroundColor: Theme.of(context).colorScheme.surface,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(20),
+              padding: UnifiedSpacing.screenPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Current Plan Overview
                   _buildCurrentPlanCard(userEconomy),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UnifiedSpacing.lg),
 
                   // MindLoad Tokens Status
                   _buildTokensStatusCard(userEconomy),
-                  const SizedBox(height: 20),
+                  SizedBox(height: UnifiedSpacing.lg),
 
                   // Available Plans Section
                   _buildAvailablePlansSection(userEconomy),
-                  const SizedBox(height: 24),
+                  SizedBox(height: UnifiedSpacing.lg),
 
                   // Logic Packs Section
                   _buildLogicPacksSection(),
-                  const SizedBox(height: 24),
+                  SizedBox(height: UnifiedSpacing.lg),
 
                   // Account Information
                   _buildAccountInformationCard(userEconomy),
-                  const SizedBox(height: 100), // Bottom padding
+                  SizedBox(height: UnifiedSpacing.xxxl), // Bottom padding
                 ],
               ),
             ),
@@ -75,27 +75,27 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
     final tokens = context.tokens;
     final tierConfig = MindloadEconomyConfig.tierConfigs[userEconomy.tier];
 
-    return Card(
+    return UnifiedCard(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
+                UnifiedIcon(
                   Icons.workspace_premium,
                   color: userEconomy.tier.color,
                   size: 32,
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: UnifiedSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      UnifiedText(
                         '${userEconomy.tier.displayName} Plan',
                         style:
                             Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -103,7 +103,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                                   color: tokens.textPrimary,
                                 ),
                       ),
-                      Text(
+                      UnifiedText(
                         userEconomy.tier.subtitle,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: tokens.textSecondary,
@@ -114,7 +114,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: UnifiedSpacing.md),
 
             // Plan Features
             _buildFeatureRow('Monthly Tokens',
@@ -133,7 +133,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                     : 'Not available'),
 
             if (userEconomy.tier != MindloadTier.free) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: UnifiedSpacing.sm),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -143,7 +143,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                   border:
                       Border.all(color: tokens.success.withValues(alpha: 0.3)),
                 ),
-                child: Text(
+                child: UnifiedText(
                   'Active until ${_formatDate(userEconomy.nextResetDate)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: tokens.success,
@@ -165,19 +165,19 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
     final used = monthlyQuota - userEconomy.creditsRemaining;
     final percentage = monthlyQuota > 0 ? (used / monthlyQuota) : 0.0;
 
-    return Card(
+    return UnifiedCard(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.token, color: tokens.primary, size: 28),
-                const SizedBox(width: 12),
-                Text(
+                UnifiedIcon(Icons.token, color: tokens.primary, size: 28),
+                SizedBox(width: UnifiedSpacing.sm),
+                UnifiedText(
                   'MindLoad Tokens',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -186,7 +186,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: UnifiedSpacing.sm),
 
             // Token Progress
             Row(
@@ -195,7 +195,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      UnifiedText(
                         '${userEconomy.creditsRemaining}',
                         style: Theme.of(context)
                             .textTheme
@@ -205,7 +205,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                               color: tokens.primary,
                             ),
                       ),
-                      Text(
+                      UnifiedText(
                         'remaining',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: tokens.textSecondary,
@@ -217,13 +217,13 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
+                    UnifiedText(
                       '/ $monthlyQuota',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: tokens.textSecondary,
                           ),
                     ),
-                    Text(
+                    UnifiedText(
                       'monthly',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: tokens.textSecondary,
@@ -233,7 +233,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: UnifiedSpacing.sm),
 
             // Progress Bar
             LinearProgressIndicator(
@@ -243,9 +243,9 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                 percentage > 0.8 ? tokens.warning : tokens.primary,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: UnifiedSpacing.xs),
 
-            Text(
+            UnifiedText(
               '$used tokens used this month',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: tokens.textSecondary,
@@ -253,7 +253,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
             ),
 
             if (userEconomy.rolloverCredits > 0) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: UnifiedSpacing.sm),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -263,7 +263,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                   border:
                       Border.all(color: tokens.primary.withValues(alpha: 0.3)),
                 ),
-                child: Text(
+                child: UnifiedText(
                   '${userEconomy.rolloverCredits} rollover tokens available',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: tokens.primary,
@@ -284,14 +284,14 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'Available Plans',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: tokens.textPrimary,
               ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: UnifiedSpacing.sm),
 
         // Plan Cards
         ...MindloadTier.values
@@ -309,40 +309,38 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
     final isCurrentTier = tier == currentTier;
     final isUpgrade = tier.index > currentTier.index;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return UnifiedCard(
+      margin: EdgeInsets.only(bottom: UnifiedSpacing.sm),
       elevation: isCurrentTier ? 4 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: isCurrentTier
-            ? BorderSide(color: tier.color, width: 2)
-            : BorderSide.none,
-      ),
+      borderRadius: UnifiedBorderRadius.lgRadius,
+             border: isCurrentTier
+           ? Border.all(color: tier.color, width: 2)
+           : null,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
+                UnifiedIcon(
                   Icons.workspace_premium,
                   color: tier.color,
                   size: 28,
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: UnifiedSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      UnifiedText(
                         tier.displayName,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: tokens.textPrimary,
                             ),
                       ),
-                      Text(
+                      UnifiedText(
                         tier.subtitle,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: tokens.textSecondary,
@@ -359,7 +357,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                       color: tier.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
+                    child: UnifiedText(
                       'Current',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: tier.color,
@@ -369,7 +367,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: UnifiedSpacing.sm),
 
             // Plan Features
             _buildFeatureRow('Monthly Tokens',
@@ -388,10 +386,10 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                     : 'Not available'),
 
             if (tierConfig?.tierPrice != null && tierConfig!.tierPrice > 0) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: UnifiedSpacing.sm),
               Row(
                 children: [
-                  Text(
+                  UnifiedText(
                     '\$${tierConfig.tierPrice.toStringAsFixed(2)}/month',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
@@ -408,7 +406,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                         foregroundColor:
                             isUpgrade ? tokens.onPrimary : tokens.onMuted,
                       ),
-                      child: Text(isUpgrade ? 'Upgrade' : 'Downgrade'),
+                      child: UnifiedText(isUpgrade ? 'Upgrade' : 'Downgrade'),
                     ),
                 ],
               ),
@@ -425,21 +423,21 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'Logic Packs',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: tokens.textPrimary,
               ),
         ),
-        const SizedBox(height: 8),
-        Text(
+        SizedBox(height: UnifiedSpacing.xs),
+        UnifiedText(
           'One-time purchases for additional MindLoad tokens',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: tokens.textSecondary,
               ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: UnifiedSpacing.sm),
 
         // Logic Pack Cards
         _buildLogicPackCard(
@@ -458,28 +456,28 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
       String name, String description, double price, IconData icon) {
     final tokens = context.tokens;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return UnifiedCard(
+      margin: EdgeInsets.only(bottom: UnifiedSpacing.sm),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.cardPadding,
         child: Row(
           children: [
-            Icon(icon, color: tokens.primary, size: 32),
-            const SizedBox(width: 16),
+            UnifiedIcon(icon, color: tokens.primary, size: 32),
+            SizedBox(width: UnifiedSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  UnifiedText(
                     name,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: tokens.textPrimary,
                         ),
                   ),
-                  Text(
+                  UnifiedText(
                     description,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: tokens.textSecondary,
@@ -491,7 +489,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
+                UnifiedText(
                   '\$${price.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -504,7 +502,7 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
                     backgroundColor: tokens.primary,
                     foregroundColor: tokens.onPrimary,
                   ),
-                  child: const Text('Buy'),
+                  child: UnifiedText('Buy'),
                 ),
               ],
             ),
@@ -517,22 +515,22 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
   Widget _buildAccountInformationCard(MindloadUserEconomy userEconomy) {
     final tokens = context.tokens;
 
-    return Card(
+    return UnifiedCard(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            UnifiedText(
               'Account Information',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: tokens.textPrimary,
                   ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: UnifiedSpacing.sm),
             _buildInfoRow('User ID', userEconomy.userId),
             _buildInfoRow(
                 'Plan Status', userEconomy.isActive ? 'Active' : 'Inactive'),
@@ -556,19 +554,19 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
     final tokens = context.tokens;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: UnifiedSpacing.sm),
       child: Row(
         children: [
-          Icon(Icons.check_circle, color: tokens.success, size: 16),
-          const SizedBox(width: 8),
-          Text(
+          UnifiedIcon(Icons.check_circle, color: tokens.success, size: 16),
+          SizedBox(width: UnifiedSpacing.xs),
+          UnifiedText(
             feature,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: tokens.textPrimary,
                 ),
           ),
           const Spacer(),
-          Text(
+          UnifiedText(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: tokens.textSecondary,
@@ -584,17 +582,17 @@ class _MyPlanScreenState extends State<MyPlanScreen> {
     final tokens = context.tokens;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: UnifiedSpacing.sm),
       child: Row(
         children: [
-          Text(
+          UnifiedText(
             '$label:',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: tokens.textSecondary,
                 ),
           ),
           const Spacer(),
-          Text(
+          UnifiedText(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: tokens.textPrimary,

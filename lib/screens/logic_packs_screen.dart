@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/services/in_app_purchase_service.dart';
 import 'package:mindload/widgets/mindload_app_bar.dart';
-
 import 'package:mindload/theme.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
+import 'package:mindload/widgets/unified_design_system.dart';
 
 class LogicPacksScreen extends StatefulWidget {
   const LogicPacksScreen({super.key});
@@ -33,29 +33,29 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: UnifiedSpacing.screenPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Section
                 _buildHeaderSection(),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // Current Token Status
                 _buildCurrentTokenStatus(userEconomy),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // Logic Packs Grid
                 _buildLogicPacksGrid(),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // How It Works Section
                 _buildHowItWorksSection(),
-                const SizedBox(height: 24),
+                SizedBox(height: UnifiedSpacing.lg),
 
                 // FAQ Section
                 _buildFAQSection(),
-                const SizedBox(height: 100), // Bottom padding
+                SizedBox(height: UnifiedSpacing.xxxl), // Bottom padding
               ],
             ),
           );
@@ -70,37 +70,33 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'Logic Packs',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+          style: UnifiedTypography.headlineLarge.copyWith(
                 fontWeight: FontWeight.bold,
                 color: tokens.textPrimary,
               ),
         ),
-        const SizedBox(height: 8),
-        Text(
+        SizedBox(height: UnifiedSpacing.sm),
+        UnifiedText(
           'One-time purchases for additional MindLoad tokens. Perfect for exam weeks, intensive study sessions, or when you need extra processing power.',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          style: UnifiedTypography.bodyLarge.copyWith(
                 color: tokens.textSecondary,
                 height: 1.5,
               ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: tokens.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: tokens.primary.withValues(alpha: 0.3)),
-          ),
+        SizedBox(height: UnifiedSpacing.md),
+        UnifiedCard(
+          padding: UnifiedSpacing.cardPadding,
+          borderRadius: UnifiedBorderRadius.mdRadius,
           child: Row(
             children: [
-              Icon(Icons.lightbulb_outline, color: tokens.primary, size: 24),
-              const SizedBox(width: 12),
+              UnifiedIcon(Icons.lightbulb_outline, color: tokens.primary, size: 24),
+              SizedBox(width: UnifiedSpacing.sm),
               Expanded(
-                child: Text(
+                child: UnifiedText(
                   'Logic Packs never expire and can be used alongside your monthly subscription tokens.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  style: UnifiedTypography.bodyMedium.copyWith(
                         color: tokens.primary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -118,44 +114,44 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
     final tierConfig = MindloadEconomyConfig.tierConfigs[userEconomy.tier];
     final monthlyQuota = tierConfig?.monthlyTokens ?? 0;
 
-    return Card(
+    return UnifiedCard(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: UnifiedSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.account_balance_wallet,
+                UnifiedIcon(Icons.account_balance_wallet,
                     color: tokens.primary, size: 28),
-                const SizedBox(width: 12),
-                Text(
+                SizedBox(width: UnifiedSpacing.sm),
+                UnifiedText(
                   'Your Token Balance',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  style: UnifiedTypography.titleLarge.copyWith(
                         fontWeight: FontWeight.bold,
                         color: tokens.textPrimary,
                       ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: UnifiedSpacing.md),
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      UnifiedText(
                         'Monthly Allowance',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        style: UnifiedTypography.bodyMedium.copyWith(
                               color: tokens.textSecondary,
                             ),
                       ),
-                      Text(
+                      UnifiedText(
                         '${userEconomy.creditsRemaining} / $monthlyQuota',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        style: UnifiedTypography.titleLarge.copyWith(
                               fontWeight: FontWeight.bold,
                               color: tokens.primary,
                             ),
@@ -167,15 +163,15 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      UnifiedText(
                         'Rollover Tokens',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        style: UnifiedTypography.bodyMedium.copyWith(
                               color: tokens.textSecondary,
                             ),
                       ),
-                      Text(
+                      UnifiedText(
                         '${userEconomy.rolloverCredits}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        style: UnifiedTypography.titleLarge.copyWith(
                               fontWeight: FontWeight.bold,
                               color: tokens.primary,
                             ),
@@ -186,19 +182,14 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
               ],
             ),
             if (userEconomy.rolloverCredits > 0) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: tokens.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border:
-                      Border.all(color: tokens.primary.withValues(alpha: 0.3)),
-                ),
-                child: Text(
+                             SizedBox(height: UnifiedSpacing.sm),
+               UnifiedCard(
+                 padding: EdgeInsets.all(UnifiedSpacing.sm),
+                 borderRadius: UnifiedBorderRadius.mdRadius,
+                 border: Border.all(color: tokens.primary.withValues(alpha: 0.3)),
+                 child: UnifiedText(
                   'You have ${userEconomy.rolloverCredits} rollover tokens from previous months!',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  style: UnifiedTypography.bodySmall.copyWith(
                         color: tokens.primary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -217,14 +208,14 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'Available Logic Packs',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: UnifiedTypography.titleLarge.copyWith(
                 fontWeight: FontWeight.bold,
                 color: tokens.textPrimary,
               ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: UnifiedSpacing.md),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -302,39 +293,32 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
   ) {
     final tokens = context.tokens;
 
-    return Card(
+    return UnifiedCard(
       elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      borderRadius: UnifiedBorderRadius.lgRadius,
       child: InkWell(
         onTap: () => _handleLogicPackPurchase(name, price),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: UnifiedBorderRadius.lgRadius,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: UnifiedSpacing.cardPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: color, size: 24),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
+                                     UnifiedCard(
+                     padding: EdgeInsets.all(UnifiedSpacing.sm),
+                     borderRadius: UnifiedBorderRadius.mdRadius,
+                     child: UnifiedIcon(icon, color: color, size: 24),
+                   ),
+                   SizedBox(width: UnifiedSpacing.sm),
+                   UnifiedCard(
+                     padding: EdgeInsets.all(UnifiedSpacing.sm),
+                     borderRadius: UnifiedBorderRadius.mdRadius,
+                     child: UnifiedText(
                       tokenCount,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      style: UnifiedTypography.labelSmall.copyWith(
                             color: color,
                             fontWeight: FontWeight.bold,
                           ),
@@ -343,77 +327,77 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              SizedBox(height: UnifiedSpacing.md),
 
               // Title and Price
-              Text(
+              UnifiedText(
                 name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: UnifiedTypography.titleMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: tokens.textPrimary,
                     ),
               ),
-              const SizedBox(height: 4),
-              Text(
+              SizedBox(height: UnifiedSpacing.sm),
+              UnifiedText(
                 '\$${price.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: UnifiedTypography.titleLarge.copyWith(
                       fontWeight: FontWeight.bold,
                       color: color,
                     ),
               ),
 
-              const SizedBox(height: 8),
+              SizedBox(height: UnifiedSpacing.sm),
 
               // Description
-              Text(
+              UnifiedText(
                 description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                style: UnifiedTypography.bodySmall.copyWith(
                       color: tokens.textSecondary,
                     ),
               ),
 
-              const Spacer(),
+              SizedBox(height: UnifiedSpacing.sm),
 
               // Features
-              ...features.map((feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: color, size: 14),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: tokens.textSecondary,
-                                    ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
+                              ...features.map((feature) => Padding(
+                     padding: EdgeInsets.only(bottom: UnifiedSpacing.xs),
+                     child: Row(
+                       children: [
+                         UnifiedIcon(Icons.check_circle, color: color, size: 14),
+                         SizedBox(width: UnifiedSpacing.sm),
+                         Expanded(
+                           child: UnifiedText(
+                             feature,
+                             style:
+                                 UnifiedTypography.bodySmall.copyWith(
+                                       color: tokens.textSecondary,
+                                     ),
+                           ),
+                         ),
+                       ],
+                     ),
+                   )),
 
-              const SizedBox(height: 12),
+               SizedBox(height: UnifiedSpacing.md),
 
-              // Buy Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => _handleLogicPackPurchase(name, price),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: context.tokens.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Buy Now',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
+               // Buy Button
+               SizedBox(
+                 width: double.infinity,
+                 child: ElevatedButton(
+                   onPressed: () => _handleLogicPackPurchase(name, price),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: color,
+                     foregroundColor: context.tokens.onPrimary,
+                     shape: RoundedRectangleBorder(
+                       borderRadius: UnifiedBorderRadius.mdRadius,
+                     ),
+                   ),
+                   child: const Text(
+                     'Buy Now',
+                     style: TextStyle(fontWeight: FontWeight.bold),
+                   ),
+                 ),
+               ),
             ],
           ),
         ),
@@ -427,14 +411,14 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'How Logic Packs Work',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: UnifiedTypography.titleLarge.copyWith(
                 fontWeight: FontWeight.bold,
                 color: tokens.textPrimary,
               ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: UnifiedSpacing.md),
         _buildHowItWorksStep(
           1,
           'Purchase',
@@ -467,53 +451,53 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
       int step, String title, String description, IconData icon) {
     final tokens = context.tokens;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: tokens.primary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Center(
-              child: Text(
-                '$step',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: tokens.primary,
-                    ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: tokens.textPrimary,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: tokens.textSecondary,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          Icon(icon, color: tokens.primary, size: 24),
-        ],
-      ),
-    );
+          return Padding(
+       padding: EdgeInsets.only(bottom: UnifiedSpacing.md),
+       child: Row(
+         children: [
+           Container(
+             width: 40,
+             height: 40,
+             decoration: BoxDecoration(
+               color: tokens.primary.withValues(alpha: 0.2),
+               borderRadius: UnifiedBorderRadius.mdRadius,
+             ),
+             child: Center(
+               child: UnifiedText(
+                 '$step',
+                 style: UnifiedTypography.titleMedium.copyWith(
+                       fontWeight: FontWeight.bold,
+                       color: tokens.primary,
+                     ),
+               ),
+             ),
+           ),
+           SizedBox(width: UnifiedSpacing.md),
+           Expanded(
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 UnifiedText(
+                   title,
+                   style: UnifiedTypography.titleMedium.copyWith(
+                         fontWeight: FontWeight.bold,
+                         color: tokens.textPrimary,
+                       ),
+                 ),
+                 SizedBox(height: UnifiedSpacing.sm),
+                 UnifiedText(
+                   description,
+                   style: UnifiedTypography.bodyMedium.copyWith(
+                         color: tokens.textSecondary,
+                       ),
+                 ),
+               ],
+             ),
+           ),
+           UnifiedIcon(icon, color: tokens.primary, size: 24),
+         ],
+       ),
+     );
   }
 
   Widget _buildFAQSection() {
@@ -522,14 +506,14 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        UnifiedText(
           'Frequently Asked Questions',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: UnifiedTypography.titleLarge.copyWith(
                 fontWeight: FontWeight.bold,
                 color: tokens.textPrimary,
               ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: UnifiedSpacing.md),
         _buildFAQItem(
           'Do Logic Pack tokens expire?',
           'No, Logic Pack tokens never expire. They remain in your account until you use them.',
@@ -557,27 +541,27 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
   Widget _buildFAQItem(String question, String answer) {
     final tokens = context.tokens;
 
-    return ExpansionTile(
-      title: Text(
-        question,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: tokens.textPrimary,
-            ),
-      ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Text(
-            answer,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: tokens.textSecondary,
-                  height: 1.5,
-                ),
-          ),
-        ),
-      ],
-    );
+        return ExpansionTile(
+     title: UnifiedText(
+       question,
+       style: UnifiedTypography.titleMedium.copyWith(
+             fontWeight: FontWeight.w600,
+             color: tokens.textPrimary,
+           ),
+     ),
+     children: [
+       Padding(
+         padding: EdgeInsets.fromLTRB(UnifiedSpacing.md, 0, UnifiedSpacing.md, UnifiedSpacing.md),
+         child: UnifiedText(
+           answer,
+           style: UnifiedTypography.bodyMedium.copyWith(
+                 color: tokens.textSecondary,
+                 height: 1.5,
+               ),
+         ),
+       ),
+     ],
+   );
   }
 
   Future<void> _handleLogicPackPurchase(String packName, double price) async {
@@ -592,14 +576,14 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
       // This would typically integrate with your IAP service
       Navigator.pushNamed(context, '/my-plan');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Purchase failed: ${e.toString()}'),
-            backgroundColor: context.tokens.error,
-          ),
-        );
-      }
+            if (mounted) {
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(
+           content: UnifiedText('Purchase failed: ${e.toString()}'),
+           backgroundColor: context.tokens.error,
+         ),
+       );
+     }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -611,17 +595,17 @@ class _LogicPacksScreenState extends State<LogicPacksScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Confirm Purchase'),
-            content: Text(
+            title: UnifiedText('Confirm Purchase'),
+            content: UnifiedText(
                 'Are you sure you want to purchase the $packName for \$${price.toStringAsFixed(2)}?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text('Cancel'),
+                child: UnifiedText('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Purchase'),
+                child: UnifiedText('Purchase'),
               ),
             ],
           ),
