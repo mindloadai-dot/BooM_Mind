@@ -9,7 +9,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:mindload/services/document_processor.dart';
@@ -52,7 +51,7 @@ class FirebaseClientService extends ChangeNotifier {
   // Service instances
   late FirestoreRepository _repository;
   late LocalAuthentication _localAuth;
-  late GoogleSignIn _googleSignIn;
+  // GoogleSignIn not needed - using Firebase Auth GoogleAuthProvider directly
 
   // State management
   bool _isInitialized = false;
@@ -86,8 +85,8 @@ class FirebaseClientService extends ChangeNotifier {
       _remoteConfig = FirebaseRemoteConfig.instance;
       _analytics = FirebaseAnalytics.instance;
 
-      // Initialize Google Sign-In
-      // _googleSignIn = GoogleSignIn();
+      // Google Sign-In initialization not needed
+      // Using Firebase Auth GoogleAuthProvider directly
 
       // Initialize other services
       _repository = FirestoreRepository.instance;
@@ -562,14 +561,8 @@ class FirebaseClientService extends ChangeNotifier {
       // Sign out from Firebase Auth
       await _auth.signOut();
       
-      // Sign out from Google to clear Google session tokens
-      try {
-        // await _googleSignIn.signOut();
-        debugPrint('✅ Google Sign-In session cleared (temporarily disabled)');
-      } catch (e) {
-        debugPrint('⚠️ Google Sign-In sign out warning: $e');
-        // Continue with sign out even if Google sign out fails
-      }
+      // Google Sign-In session clearing handled by Firebase Auth
+      debugPrint('✅ Google Sign-In session managed by Firebase Auth');
 
       _currentUser = null;
       notifyListeners();

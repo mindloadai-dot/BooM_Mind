@@ -82,7 +82,8 @@ class AuthService extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final FirebaseFunctions _functions =
       FirebaseFunctions.instanceFor(region: 'us-central1');
-  // late final GoogleSignIn _googleSignIn;
+  // GoogleSignIn is not needed for Firebase Auth Google Sign-In
+  // We use GoogleAuthProvider directly
 
   // Microsoft OAuth configuration
   static const String _microsoftClientId =
@@ -100,8 +101,8 @@ class AuthService extends ChangeNotifier {
 
   Future<void> initialize() async {
     try {
-      // Initialize Google Sign-In
-      // _googleSignIn = GoogleSignIn();
+      // Google Sign-In initialization not needed
+      // We use Firebase Auth GoogleAuthProvider directly
 
       // Listen to auth state changes with proper error handling
       _firebaseAuth.authStateChanges().listen(
@@ -893,17 +894,10 @@ class AuthService extends ChangeNotifier {
         print('✅ Firebase sign out completed');
       }
 
-      // Step 2: Sign out from Google to clear Google session tokens
-      try {
-        // await _googleSignIn.signOut();
-        if (kDebugMode) {
-          print('✅ Google Sign-In session cleared (temporarily disabled)');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('⚠️ Google Sign-In sign out warning: $e');
-        }
-        // Continue with sign out even if Google sign out fails
+      // Step 2: Google Sign-In session clearing not needed
+      // Firebase Auth handles Google session management automatically
+      if (kDebugMode) {
+        print('✅ Google Sign-In session handled by Firebase Auth');
       }
 
       // Step 3: Clear current user state
