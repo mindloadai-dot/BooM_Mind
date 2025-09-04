@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+// import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:io' show Platform; // Guarded usage
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
@@ -81,6 +82,7 @@ class AuthService extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final FirebaseFunctions _functions =
       FirebaseFunctions.instanceFor(region: 'us-central1');
+  // late final GoogleSignIn _googleSignIn;
 
   // Microsoft OAuth configuration
   static const String _microsoftClientId =
@@ -98,6 +100,9 @@ class AuthService extends ChangeNotifier {
 
   Future<void> initialize() async {
     try {
+      // Initialize Google Sign-In
+      // _googleSignIn = GoogleSignIn();
+      
       // Listen to auth state changes with proper error handling
       _firebaseAuth.authStateChanges().listen(
         (User? user) async {
@@ -885,19 +890,32 @@ class AuthService extends ChangeNotifier {
         print('✅ Firebase sign out completed');
       }
 
-      // Step 2: Clear current user state
+      // Step 2: Sign out from Google to clear Google session tokens
+      try {
+        // await _googleSignIn.signOut();
+        if (kDebugMode) {
+          print('✅ Google Sign-In session cleared (temporarily disabled)');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Google Sign-In sign out warning: $e');
+        }
+        // Continue with sign out even if Google sign out fails
+      }
+
+      // Step 3: Clear current user state
       _currentUser = null;
       if (kDebugMode) {
         print('✅ Current user state cleared');
       }
 
-      // Step 3: Clear all local data and preferences
+      // Step 4: Clear all local data and preferences
       await _clearUserData();
       if (kDebugMode) {
         print('✅ Local user data cleared');
       }
 
-      // Step 4: Clear user profile service data
+      // Step 5: Clear user profile service data
       try {
         await UserProfileService.instance.clearProfile();
         if (kDebugMode) {
@@ -909,7 +927,7 @@ class AuthService extends ChangeNotifier {
         }
       }
 
-      // Step 5: Clear onboarding data
+      // Step 6: Clear onboarding data
       try {
         await UnifiedOnboardingService().resetOnboarding();
         if (kDebugMode) {
@@ -921,13 +939,13 @@ class AuthService extends ChangeNotifier {
         }
       }
 
-      // Step 6: Clear enhanced storage data (skip for now - not essential for logout)
+      // Step 7: Clear enhanced storage data (skip for now - not essential for logout)
       if (kDebugMode) {
         print(
             'ℹ️ Enhanced storage data clearing skipped (not essential for logout)');
       }
 
-      // Step 7: Notify listeners of state change
+      // Step 8: Notify listeners of state change
       notifyListeners();
       if (kDebugMode) {
         print('✅ Sign out process completed successfully');

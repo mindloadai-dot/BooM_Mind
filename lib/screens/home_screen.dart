@@ -1808,7 +1808,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     try {
       // Use the new PDF export system with MindLoad branding
-      final pdfService = PdfExportService();
+      final pdfService = PdfExportService.instance;
       final options = PdfExportOptions(
         setId: studySet.id,
         includeFlashcards: true,
@@ -1891,7 +1891,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     try {
       // Use the new PDF export system with MindLoad branding
-      final pdfService = PdfExportService();
+      final pdfService = PdfExportService.instance;
       final options = PdfExportOptions(
         setId: studySet.id,
         includeFlashcards: false,

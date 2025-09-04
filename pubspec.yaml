@@ -1,7 +1,7 @@
 name: mindload
 description: "Mindload - AI Study Companion for focused learning with flashcards, quizzes, and ultra study mode with binaural beats"
 publish_to: "none"
-version: 1.0.0+19
+version: 1.0.0+20
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
@@ -51,6 +51,9 @@ dependencies:
   cached_network_image: ^3.3.1
   connectivity_plus: ^6.0.5
   uuid: ^4.1.0
+  
+  # App Information
+  package_info_plus: ^8.0.2
   
   # Notifications - Stable Versions
   flutter_local_notifications: ^19.4.1

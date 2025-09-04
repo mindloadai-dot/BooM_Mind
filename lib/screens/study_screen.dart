@@ -502,7 +502,7 @@ class _StudyScreenState extends State<StudyScreen>
 
     try {
       // Use the new PDF export system with MindLoad branding
-      final pdfService = PdfExportService();
+      final pdfService = PdfExportService.instance;
       final options = PdfExportOptions(
         setId: _currentStudySet.id,
         includeFlashcards: true,
@@ -575,7 +575,7 @@ class _StudyScreenState extends State<StudyScreen>
 
     try {
       // Use the new PDF export system with MindLoad branding
-      final pdfService = PdfExportService();
+      final pdfService = PdfExportService.instance;
       final options = PdfExportOptions(
         setId: _currentStudySet.id,
         includeFlashcards: false,

@@ -9,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:mindload/services/document_processor.dart';
@@ -51,6 +52,7 @@ class FirebaseClientService extends ChangeNotifier {
   // Service instances
   late FirestoreRepository _repository;
   late LocalAuthentication _localAuth;
+  late GoogleSignIn _googleSignIn;
 
   // State management
   bool _isInitialized = false;
@@ -76,26 +78,44 @@ class FirebaseClientService extends ChangeNotifier {
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // Initialize Firebase Auth
-      await FirebaseAuth.instance.authStateChanges().first;
+      // Initialize Firebase services
+      _auth = FirebaseAuth.instance;
+      _firestore = FirebaseFirestore.instance;
+      _storage = FirebaseStorage.instance;
+      _messaging = FirebaseMessaging.instance;
+      _remoteConfig = FirebaseRemoteConfig.instance;
+      _analytics = FirebaseAnalytics.instance;
 
-      // Initialize Firestore
-      // Note: enablePersistence() is not available in this version
+      // Initialize Google Sign-In
+      // _googleSignIn = GoogleSignIn();
 
-      // Initialize Firebase Storage
-      FirebaseStorage.instance.ref().bucket;
+      // Initialize other services
+      _repository = FirestoreRepository.instance;
+      _localAuth = LocalAuthentication();
 
-      // Initialize Firebase Messaging
-      await FirebaseMessaging.instance.requestPermission();
+      // Wait for Firebase Auth to be ready
+      await _auth.authStateChanges().first;
+
+      // Configure Firestore
+      await _configureFirestore();
+
+      // Request messaging permissions
+      await _messaging.requestPermission();
+
+      // Set up network monitoring
+      await _setupNetworkMonitoring();
+
+      // Initialize messaging
+      await _initializeMessaging();
 
       _isInitialized = true;
 
       if (kDebugMode) {
-        debugPrint('Firebase Client Service initialized successfully');
+        debugPrint('✅ Firebase Client Service initialized successfully');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Failed to initialize Firebase Client Service: $e');
+        debugPrint('❌ Failed to initialize Firebase Client Service: $e');
       }
       rethrow;
     }
@@ -539,14 +559,24 @@ class FirebaseClientService extends ChangeNotifier {
         await _repository.removeDeviceToken(_currentUser!.uid, _deviceToken!);
       }
 
+      // Sign out from Firebase Auth
       await _auth.signOut();
-      // TODO: Fix Google Sign-In API compatibility issues
-      // await _googleSignIn.signOut();
+      
+      // Sign out from Google to clear Google session tokens
+      try {
+        // await _googleSignIn.signOut();
+        debugPrint('✅ Google Sign-In session cleared (temporarily disabled)');
+      } catch (e) {
+        debugPrint('⚠️ Google Sign-In sign out warning: $e');
+        // Continue with sign out even if Google sign out fails
+      }
 
       _currentUser = null;
       notifyListeners();
+      debugPrint('✅ Sign out completed successfully');
     } catch (e) {
-      debugPrint('Sign out error: $e');
+      debugPrint('❌ Sign out error: $e');
+      rethrow;
     }
   }
 

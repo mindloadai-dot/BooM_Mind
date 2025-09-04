@@ -114,7 +114,7 @@ class _MindloadExportDialogState extends State<MindloadExportDialog> {
   }
 
   Future<String> _generatePdf(StudySet studySet, ExportRequest request) async {
-    final pdfService = PdfExportService();
+    final pdfService = PdfExportService.instance;
 
     // Determine export options based on request
     final options = PdfExportOptions(

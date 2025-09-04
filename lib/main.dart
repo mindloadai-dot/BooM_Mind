@@ -18,6 +18,8 @@ import 'package:mindload/services/unified_onboarding_service.dart';
 import 'package:mindload/services/enhanced_storage_service.dart';
 import 'package:mindload/services/biometric_auth_service.dart';
 import 'package:mindload/services/user_specific_storage_service.dart';
+import 'package:mindload/services/pdf_export_service.dart';
+import 'package:mindload/models/notification_preferences.dart';
 import 'package:mindload/firebase_options.dart';
 import 'package:mindload/config/environment_config.dart';
 
@@ -188,6 +190,26 @@ void _initializeHeavyServicesAsync() {
       print('Ultra Audio Controller initialization failed: $e');
     }
   });
+
+  Future.microtask(() async {
+    try {
+      // PDF Export Service (loads package info)
+      await PdfExportService.instance.initialize();
+      print('PDF Export Service initialized successfully');
+    } catch (e) {
+      print('PDF Export Service initialization failed: $e');
+    }
+  });
+
+  Future.microtask(() async {
+    try {
+      // Notification Preferences Service
+      await NotificationPreferencesService.instance.initialize();
+      print('Notification Preferences Service initialized successfully');
+    } catch (e) {
+      print('Notification Preferences Service initialization failed: $e');
+    }
+  });
 }
 
 class MindLoadApp extends StatelessWidget {
@@ -214,6 +236,9 @@ class MindLoadApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<UnifiedOnboardingService>.value(
           value: UnifiedOnboardingService(),
+        ),
+        ChangeNotifierProvider<NotificationPreferencesService>.value(
+          value: NotificationPreferencesService.instance,
         ),
         ChangeNotifierProvider<EnhancedStorageService>.value(
           value: EnhancedStorageService.instance,
@@ -244,12 +269,11 @@ class MindLoadApp extends StatelessWidget {
               '/profile': (context) => const ProfileScreen(),
               '/app-icon-demo': (context) => const AppIconDemoScreen(),
               '/neurograph': (context) => NeuroGraphV2Screen(
-                userId: AuthService.instance.currentUserId ?? 'anonymous'),
+                  userId: AuthService.instance.currentUserId ?? 'anonymous'),
               '/notification-debug': (context) =>
                   const NotificationDebugScreen(),
-              '/profile/insights/neurograph': (context) =>
-                  NeuroGraphV2Screen(
-                userId: AuthService.instance.currentUserId ?? 'anonymous'),
+              '/profile/insights/neurograph': (context) => NeuroGraphV2Screen(
+                  userId: AuthService.instance.currentUserId ?? 'anonymous'),
             },
           );
         },

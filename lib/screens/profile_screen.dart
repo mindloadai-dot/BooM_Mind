@@ -8,6 +8,7 @@ import 'package:mindload/services/biometric_auth_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/haptic_feedback_service.dart';
 import 'package:mindload/services/user_profile_service.dart';
+import 'package:mindload/models/notification_preferences.dart';
 
 import 'package:mindload/services/local_image_storage_service.dart';
 
@@ -605,7 +606,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: 24),
             _buildSettingsSection(),
             const SizedBox(height: 24),
-            // _buildProfileActions(context), // TODO: Implement this method
+            _buildProfileActions(context),
           ],
         ),
       ),
@@ -1517,6 +1518,243 @@ class _ProfileScreenState extends State<ProfileScreen>
       builder: (context) => ChangePasswordDialog(),
     );
   }
+
+  /// Build profile actions section
+  Widget _buildProfileActions(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.tokens.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.tokens.outline.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: context.tokens.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Profile Actions',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: context.tokens.textPrimary,
+                ),
+          ),
+          const SizedBox(height: 16),
+          _buildProfileActionItem(
+            context,
+            'Export Profile Data',
+            'Download your complete profile and study data',
+            Icons.download,
+            context.tokens.primary,
+            _exportProfileData,
+          ),
+          const SizedBox(height: 12),
+          _buildProfileActionItem(
+            context,
+            'Account Settings',
+            'Manage account security and preferences',
+            Icons.security,
+            context.tokens.secondary,
+            _openAccountSettings,
+          ),
+          const SizedBox(height: 12),
+          _buildProfileActionItem(
+            context,
+            'Privacy Settings',
+            'Control your data privacy and visibility',
+            Icons.privacy_tip,
+            context.tokens.accent,
+            _openPrivacySettings,
+          ),
+          const SizedBox(height: 12),
+          _buildProfileActionItem(
+            context,
+            'Backup & Sync',
+            'Manage your data backup and synchronization',
+            Icons.cloud_sync,
+            Colors.blue,
+            _openBackupSettings,
+          ),
+          const SizedBox(height: 12),
+          _buildProfileActionItem(
+            context,
+            'Delete Account',
+            'Permanently delete your account and all data',
+            Icons.delete_forever,
+            context.tokens.error,
+            _confirmDeleteAccount,
+            isDestructive: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual profile action item
+  Widget _buildProfileActionItem(
+    BuildContext context,
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedbackService().lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDestructive
+                ? color.withOpacity(0.05)
+                : color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: color.withOpacity(0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color:
+                            isDestructive ? color : context.tokens.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: context.tokens.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: context.tokens.textSecondary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Profile action handlers
+  void _exportProfileData() {
+    // TODO: Implement profile data export
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Profile data export will be available soon'),
+        backgroundColor: context.tokens.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _openAccountSettings() {
+    Navigator.pushNamed(context, '/settings');
+  }
+
+  void _openPrivacySettings() {
+    // TODO: Implement privacy settings screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Privacy settings will be available soon'),
+        backgroundColor: context.tokens.secondary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _openBackupSettings() {
+    // TODO: Implement backup settings screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Backup settings will be available soon'),
+        backgroundColor: Colors.blue,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _confirmDeleteAccount() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Account'),
+          content: const Text(
+            'Are you sure you want to permanently delete your account? '
+            'This action cannot be undone and all your data will be lost.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteAccount();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: context.tokens.error,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteAccount() {
+    // TODO: Implement account deletion
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Account deletion will be implemented soon'),
+        backgroundColor: context.tokens.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 }
 
 /// Simplified Edit Profile Dialog with core functionality
@@ -2059,17 +2297,17 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           ),
           const SizedBox(height: 12),
           _buildCategoryToggle('Study Reminders', 'Study session notifications',
-              Icons.school, true),
+              Icons.school, 'studyReminders'),
           _buildCategoryToggle('Streak Alerts', 'Daily streak maintenance',
-              Icons.local_fire_department, true),
-          _buildCategoryToggle(
-              'Exam Deadlines', 'Important exam reminders', Icons.event, true),
+              Icons.local_fire_department, 'streakAlerts'),
+          _buildCategoryToggle('Exam Deadlines', 'Important exam reminders',
+              Icons.event, 'examDeadlines'),
           _buildCategoryToggle('Inactivity Nudges', 'Gentle reminders to study',
-              Icons.notifications_active, false),
+              Icons.notifications_active, 'inactivityNudges'),
           _buildCategoryToggle('Event Triggers', 'Special event notifications',
-              Icons.celebration, true),
-          _buildCategoryToggle(
-              'Promotional', 'App updates and features', Icons.campaign, false),
+              Icons.celebration, 'eventTriggers'),
+          _buildCategoryToggle('Promotional', 'App updates and features',
+              Icons.campaign, 'promotional'),
         ],
       ),
     );
@@ -2077,50 +2315,66 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
   /// Build individual category toggle
   Widget _buildCategoryToggle(
-      String title, String description, IconData icon, bool defaultValue) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: context.tokens.primary, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: context.tokens.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+      String title, String description, IconData icon, String categoryKey) {
+    return Consumer<NotificationPreferencesService>(
+      builder: (context, prefsService, child) {
+        if (!prefsService.isLoaded) {
+          return const SizedBox(height: 56); // Placeholder while loading
+        }
+
+        final isEnabled = prefsService.getPreference(categoryKey);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Icon(icon, color: context.tokens.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: context.tokens.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        color: context.tokens.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  description,
-                  style: TextStyle(
-                    color: context.tokens.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              Switch(
+                value: isEnabled,
+                onChanged: (value) async {
+                  await prefsService.updatePreference(categoryKey, value);
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content:
+                            Text('$title ${value ? 'enabled' : 'disabled'}'),
+                        backgroundColor: context.tokens.primary,
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                activeColor: context.tokens.primary,
+              ),
+            ],
           ),
-          Switch(
-            value: defaultValue,
-            onChanged: (value) {
-              // TODO: Implement category toggle
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$title ${value ? 'enabled' : 'disabled'}'),
-                  backgroundColor: context.tokens.primary,
-                ),
-              );
-            },
-            activeColor: context.tokens.primary,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
