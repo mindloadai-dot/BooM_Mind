@@ -53,12 +53,12 @@ class AuthUser {
   }
 
   Map<String, dynamic> toJson() => {
-        'uid': uid,
-        'email': email,
-        'displayName': displayName,
-        'photoURL': photoURL,
-        'provider': provider.name,
-      };
+    'uid': uid,
+    'email': email,
+    'displayName': displayName,
+    'photoURL': photoURL,
+    'provider': provider.name,
+  };
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
@@ -80,15 +80,16 @@ class AuthService extends ChangeNotifier {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final FirebaseFunctions _functions =
-      FirebaseFunctions.instanceFor(region: 'us-central1');
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    region: 'us-central1',
+  );
   // GoogleSignIn is not needed for Firebase Auth Google Sign-In
   // We use GoogleAuthProvider directly
 
   // Microsoft OAuth configuration
   static const String _microsoftClientId =
       'your-microsoft-client-id'; // Replace with your actual client ID
-  static const String _microsoftRedirectUri = 'com.cogniflow.mindload://auth';
+  static const String _microsoftRedirectUri = 'msauth.com.MindLoad.ios://auth';
   static const String _microsoftAuthUrl =
       'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
   static const String _microsoftTokenUrl =
@@ -194,22 +195,22 @@ class AuthService extends ChangeNotifier {
               });
 
               // Bootstrap entitlements for new user (non-blocking)
-              EntitlementService.instance
-                  .bootstrapNewUser(user.uid)
-                  .catchError((e) {
-                if (kDebugMode) {
-                  print('⚠️ Entitlement bootstrap failed: $e');
-                }
-              });
+              EntitlementService.instance.bootstrapNewUser(user.uid).catchError(
+                (e) {
+                  if (kDebugMode) {
+                    print('⚠️ Entitlement bootstrap failed: $e');
+                  }
+                },
+              );
 
               // Migrate preferences to user-specific storage (non-blocking)
               PreferenceMigrationService.instance
                   .migratePreferences()
                   .catchError((e) {
-                if (kDebugMode) {
-                  print('⚠️ Preference migration failed: $e');
-                }
-              });
+                    if (kDebugMode) {
+                      print('⚠️ Preference migration failed: $e');
+                    }
+                  });
             } else {
               if (kDebugMode) {
                 print('🔐 User signed out');
@@ -290,7 +291,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Google Sign-In using Firebase Auth federated authentication
+  /// Google Sign-In using native implementation for iOS/Android, web popup for web
   /// Following Firebase Flutter documentation: https://firebase.google.com/docs/auth/flutter/federated-auth
   Future<AuthUser?> signInWithGoogle() async {
     try {
@@ -298,20 +299,33 @@ class AuthService extends ChangeNotifier {
         debugPrint('🔍 Starting Google Sign-In...');
       }
 
-      // Create Google provider
-      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-      
       UserCredential userCredential;
-      
+
       if (kIsWeb) {
         if (kDebugMode) {
           debugPrint('🌐 Web Google Sign-In via popup...');
         }
+        // Keep existing web popup flow
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
         userCredential = await _firebaseAuth.signInWithPopup(googleProvider);
       } else {
         if (kDebugMode) {
-          debugPrint('📱 Mobile Google Sign-In using signInWithProvider...');
+          debugPrint('📱 Mobile Google Sign-In using Firebase provider...');
         }
+        // Mobile: Use Firebase provider with enhanced error handling
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+
+        // iOS-specific configuration to prevent crashes
+        if (Platform.isIOS) {
+          googleProvider.setCustomParameters({
+            'prompt': 'select_account',
+            'access_type': 'offline',
+            'include_granted_scopes': 'true',
+          });
+        }
+
         userCredential = await _firebaseAuth.signInWithProvider(googleProvider);
       }
 
@@ -332,29 +346,43 @@ class AuthService extends ChangeNotifier {
       return _currentUser;
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+          '❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}',
+        );
       }
-      
+
       // Handle specific error codes with user-friendly messages
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
+          throw Exception(
+            'An account already exists with a different sign-in method. Please use a different sign-in method.',
+          );
         case 'invalid-credential':
-          throw Exception('The Google credentials are invalid. Please try again.');
+          throw Exception(
+            'The Google credentials are invalid. Please try again.',
+          );
         case 'operation-not-allowed':
           throw Exception('Google Sign-In is not enabled for this app.');
         case 'user-disabled':
-          throw Exception('This account has been disabled. Please contact support.');
+          throw Exception(
+            'This account has been disabled. Please contact support.',
+          );
         case 'user-not-found':
           throw Exception('No account found with this email.');
         case 'network-request-failed':
-          throw Exception('Network error. Please check your internet connection and try again.');
+          throw Exception(
+            'Network error. Please check your internet connection and try again.',
+          );
         case 'too-many-requests':
-          throw Exception('Too many sign-in attempts. Please wait a moment and try again.');
+          throw Exception(
+            'Too many sign-in attempts. Please wait a moment and try again.',
+          );
         case 'user-token-expired':
           throw Exception('Your session has expired. Please sign in again.');
         default:
-          throw Exception(e.message ?? 'Google Sign-In failed. Please try again.');
+          throw Exception(
+            e.message ?? 'Google Sign-In failed. Please try again.',
+          );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -370,7 +398,7 @@ class AuthService extends ChangeNotifier {
     if (!(Platform.isIOS || Platform.isMacOS)) {
       throw UnsupportedError('Apple Sign-In is only available on iOS/macOS');
     }
-    
+
     try {
       if (kDebugMode) {
         debugPrint('🍎 Starting Apple Sign-In...');
@@ -378,9 +406,9 @@ class AuthService extends ChangeNotifier {
 
       // Create Apple provider
       final AppleAuthProvider appleProvider = AppleAuthProvider();
-      
+
       UserCredential userCredential;
-      
+
       if (kIsWeb) {
         if (kDebugMode) {
           debugPrint('🌐 Web Apple Sign-In via popup...');
@@ -404,46 +432,63 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (kDebugMode) {
-        debugPrint('✅ Apple Sign-In successful for user: ${user.email ?? 'No email'}');
+        debugPrint(
+          '✅ Apple Sign-In successful for user: ${user.email ?? 'No email'}',
+        );
       }
 
       return _currentUser;
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+          '❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}',
+        );
       }
-      
+
       // Handle specific error codes with user-friendly messages
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
+          throw Exception(
+            'An account already exists with a different sign-in method. Please use a different sign-in method.',
+          );
         case 'invalid-credential':
-          throw Exception('The Apple credentials are invalid. Please try again.');
+          throw Exception(
+            'The Apple credentials are invalid. Please try again.',
+          );
         case 'operation-not-allowed':
           throw Exception('Apple Sign-In is not enabled for this app.');
         case 'user-disabled':
-          throw Exception('This account has been disabled. Please contact support.');
+          throw Exception(
+            'This account has been disabled. Please contact support.',
+          );
         case 'user-not-found':
           throw Exception('No account found with this email.');
         case 'network-request-failed':
-          throw Exception('Network error. Please check your internet connection and try again.');
+          throw Exception(
+            'Network error. Please check your internet connection and try again.',
+          );
         case 'too-many-requests':
-          throw Exception('Too many sign-in attempts. Please wait a moment and try again.');
+          throw Exception(
+            'Too many sign-in attempts. Please wait a moment and try again.',
+          );
         case 'user-token-expired':
           throw Exception('Your session has expired. Please sign in again.');
         default:
-          throw Exception(e.message ?? 'Apple Sign-In failed. Please try again.');
+          throw Exception(
+            e.message ?? 'Apple Sign-In failed. Please try again.',
+          );
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Unexpected Apple Sign-In error: $e');
       }
-      
+
       // Handle Apple-specific errors
-      if (e.toString().contains('cancelled') || e.toString().contains('canceled')) {
+      if (e.toString().contains('cancelled') ||
+          e.toString().contains('canceled')) {
         throw Exception('Apple Sign-In was cancelled.');
       }
-      
+
       throw Exception('Apple Sign-In failed: ${e.toString()}');
     }
   }
@@ -460,9 +505,9 @@ class AuthService extends ChangeNotifier {
 
       // Create Microsoft provider
       final MicrosoftAuthProvider microsoftProvider = MicrosoftAuthProvider();
-      
+
       UserCredential userCredential;
-      
+
       if (kIsWeb) {
         if (kDebugMode) {
           debugPrint('🌐 Web Microsoft Sign-In via popup...');
@@ -472,7 +517,9 @@ class AuthService extends ChangeNotifier {
         if (kDebugMode) {
           debugPrint('📱 Mobile Microsoft Sign-In using signInWithProvider...');
         }
-        userCredential = await _firebaseAuth.signInWithProvider(microsoftProvider);
+        userCredential = await _firebaseAuth.signInWithProvider(
+          microsoftProvider,
+        );
       }
 
       final user = userCredential.user;
@@ -492,29 +539,43 @@ class AuthService extends ChangeNotifier {
       return _currentUser;
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Firebase auth error during Microsoft Sign-In: ${e.code} - ${e.message}');
+        debugPrint(
+          '❌ Firebase auth error during Microsoft Sign-In: ${e.code} - ${e.message}',
+        );
       }
-      
+
       // Handle specific error codes with user-friendly messages
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
+          throw Exception(
+            'An account already exists with a different sign-in method. Please use a different sign-in method.',
+          );
         case 'invalid-credential':
-          throw Exception('The Microsoft credentials are invalid. Please try again.');
+          throw Exception(
+            'The Microsoft credentials are invalid. Please try again.',
+          );
         case 'operation-not-allowed':
           throw Exception('Microsoft Sign-In is not enabled for this app.');
         case 'user-disabled':
-          throw Exception('This account has been disabled. Please contact support.');
+          throw Exception(
+            'This account has been disabled. Please contact support.',
+          );
         case 'user-not-found':
           throw Exception('No account found with this email.');
         case 'network-request-failed':
-          throw Exception('Network error. Please check your internet connection and try again.');
+          throw Exception(
+            'Network error. Please check your internet connection and try again.',
+          );
         case 'too-many-requests':
-          throw Exception('Too many sign-in attempts. Please wait a moment and try again.');
+          throw Exception(
+            'Too many sign-in attempts. Please wait a moment and try again.',
+          );
         case 'user-token-expired':
           throw Exception('Your session has expired. Please sign in again.');
         default:
-          throw Exception(e.message ?? 'Microsoft Sign-In failed. Please try again.');
+          throw Exception(
+            e.message ?? 'Microsoft Sign-In failed. Please try again.',
+          );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -525,19 +586,20 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<AuthUser?> signUpWithEmail(
-      String email, String password, String displayName) async {
+    String email,
+    String password,
+    String displayName,
+  ) async {
     try {
       // Check if Firebase is properly configured
       if (!_isFirebaseConfigured()) {
         throw Exception(
-            'Firebase setup incomplete. Please configure Firebase for this platform.');
+          'Firebase setup incomplete. Please configure Firebase for this platform.',
+        );
       }
 
-      final UserCredential userCredential =
-          await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final UserCredential userCredential = await _firebaseAuth
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       if (userCredential.user != null) {
         await userCredential.user!.updateDisplayName(displayName);
@@ -547,13 +609,16 @@ class AuthService extends ChangeNotifier {
           await userCredential.user!.sendEmailVerification();
         } catch (_) {}
 
-        _currentUser =
-            AuthUser.fromFirebaseUser(userCredential.user!, AuthProvider.email);
+        _currentUser = AuthUser.fromFirebaseUser(
+          userCredential.user!,
+          AuthProvider.email,
+        );
         await _saveUserData();
 
         // Bootstrap entitlements for new user (20 tokens monthly allowance)
-        await EntitlementService.instance
-            .bootstrapNewUser(userCredential.user!.uid);
+        await EntitlementService.instance.bootstrapNewUser(
+          userCredential.user!.uid,
+        );
 
         notifyListeners();
         return _currentUser;
@@ -574,23 +639,24 @@ class AuthService extends ChangeNotifier {
     try {
       if (!_isFirebaseConfigured()) {
         throw Exception(
-            'Firebase setup incomplete. Please configure Firebase for this platform.');
+          'Firebase setup incomplete. Please configure Firebase for this platform.',
+        );
       }
 
-      final UserCredential userCredential =
-          await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final UserCredential userCredential = await _firebaseAuth
+          .signInWithEmailAndPassword(email: email, password: password);
 
       if (userCredential.user != null) {
-        _currentUser =
-            AuthUser.fromFirebaseUser(userCredential.user!, AuthProvider.email);
+        _currentUser = AuthUser.fromFirebaseUser(
+          userCredential.user!,
+          AuthProvider.email,
+        );
         await _saveUserData();
 
         // Bootstrap entitlements for new user (20 tokens monthly allowance)
-        await EntitlementService.instance
-            .bootstrapNewUser(userCredential.user!.uid);
+        await EntitlementService.instance.bootstrapNewUser(
+          userCredential.user!.uid,
+        );
 
         notifyListeners();
         return _currentUser;
@@ -643,15 +709,17 @@ class AuthService extends ChangeNotifier {
 
       // Try to sign in first
       try {
-        final userCredential =
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: adminEmail,
-          password: adminPassword,
-        );
+        final userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+              email: adminEmail,
+              password: adminPassword,
+            );
 
         if (userCredential.user != null) {
           _currentUser = AuthUser.fromFirebaseUser(
-              userCredential.user!, AuthProvider.email);
+            userCredential.user!,
+            AuthProvider.email,
+          );
           await _saveUserData();
           notifyListeners();
           return _currentUser;
@@ -659,18 +727,20 @@ class AuthService extends ChangeNotifier {
       } catch (e) {
         // If sign in fails, try to create the account
         try {
-          final userCredential =
-              await FirebaseAuth.instance.createUserWithEmailAndPassword(
-            email: adminEmail,
-            password: adminPassword,
-          );
+          final userCredential = await FirebaseAuth.instance
+              .createUserWithEmailAndPassword(
+                email: adminEmail,
+                password: adminPassword,
+              );
 
           if (userCredential.user != null) {
             // Update display name
             await userCredential.user!.updateDisplayName(adminDisplayName);
 
             _currentUser = AuthUser.fromFirebaseUser(
-                userCredential.user!, AuthProvider.email);
+              userCredential.user!,
+              AuthProvider.email,
+            );
             await _saveUserData();
 
             // Set up local admin subscription
@@ -821,7 +891,8 @@ class AuthService extends ChangeNotifier {
       // Step 7: Clear enhanced storage data (skip for now - not essential for logout)
       if (kDebugMode) {
         print(
-            'ℹ️ Enhanced storage data clearing skipped (not essential for logout)');
+          'ℹ️ Enhanced storage data clearing skipped (not essential for logout)',
+        );
       }
 
       // Step 8: Notify listeners of state change
@@ -965,8 +1036,10 @@ class AuthService extends ChangeNotifier {
     const charset =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
-        .join();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 
   String _sha256ofString(String input) {
@@ -1078,8 +1151,10 @@ class AuthService extends ChangeNotifier {
       await FirestoreRepository.instance.updateUserLastLogin(user.uid);
 
       // Create admin credit usage with 1000 tokens
-      await FirestoreRepository.instance
-          .resetDailyCredits(user.uid, 1000); // Admin gets 1000 tokens
+      await FirestoreRepository.instance.resetDailyCredits(
+        user.uid,
+        1000,
+      ); // Admin gets 1000 tokens
     } catch (e) {
       if (kDebugMode) {
         print('Error syncing admin user to Firestore: $e');
@@ -1119,14 +1194,16 @@ class AuthService extends ChangeNotifier {
       if (result.data != null && result.data['success'] == true) {
         if (kDebugMode) {
           print(
-              '✅ User profile created via Cloud Function: ${result.data['message']}');
+            '✅ User profile created via Cloud Function: ${result.data['message']}',
+          );
         }
       }
     } catch (e) {
       if (kDebugMode) {
         print('⚠️ Cloud Function createUserProfile failed: $e');
         print(
-            'ℹ️ User profile creation will continue via local Firestore sync');
+          'ℹ️ User profile creation will continue via local Firestore sync',
+        );
       }
       // Don't rethrow - this is not critical as we have local Firestore sync as fallback
     }
@@ -1147,7 +1224,8 @@ class AuthService extends ChangeNotifier {
     }
 
     throw Exception(
-        'Apple Web Client ID not configured. Set APPLE_WEB_CLIENT_ID environment variable.');
+      'Apple Web Client ID not configured. Set APPLE_WEB_CLIENT_ID environment variable.',
+    );
   }
 
   /// Get Apple Redirect URI from environment or configuration
@@ -1161,11 +1239,13 @@ class AuthService extends ChangeNotifier {
     // For development, use a default
     if (kDebugMode) {
       debugPrint(
-          '⚠️ APPLE_REDIRECT_URI not set, using default for development');
+        '⚠️ APPLE_REDIRECT_URI not set, using default for development',
+      );
       return 'https://mindload.app/auth/apple';
     }
 
     throw Exception(
-        'Apple Redirect URI not configured. Set APPLE_REDIRECT_URI environment variable.');
+      'Apple Redirect URI not configured. Set APPLE_REDIRECT_URI environment variable.',
+    );
   }
 }

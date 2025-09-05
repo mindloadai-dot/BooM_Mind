@@ -114,14 +114,13 @@
 				<string>com.googleusercontent.apps.884947669542-qp3ijvvdd9vacvpjp6ldp5r9pf8okejk</string>
 			</array>
 		</dict>
-		<!-- Custom App URL Scheme -->
+		<!-- Microsoft Sign-In URL Scheme -->
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>mindload-auth</string>
+			<string>microsoft-signin</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>mindload</string>
-				<string>com.cogniflow.mindload</string>
+				<string>msauth.com.MindLoad.ios</string>
 			</array>
 		</dict>
 		<!-- YouTube Links Handler -->
