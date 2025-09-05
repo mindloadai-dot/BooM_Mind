@@ -162,9 +162,9 @@ class LocalAIFallbackService {
       Future(() => _extractConcepts(content)),
     ]);
 
-    final keyTopics = extractionResults[0] as List<String>;
-    final importantFacts = extractionResults[1] as List<String>;
-    final concepts = extractionResults[2] as List<String>;
+    final keyTopics = extractionResults[0];
+    final importantFacts = extractionResults[1];
+    final concepts = extractionResults[2];
 
     debugPrint(
         '🧠 Extracted ${keyTopics.length} topics, ${importantFacts.length} facts, ${concepts.length} concepts');
@@ -222,10 +222,10 @@ class LocalAIFallbackService {
       Future(() => _extractProcesses(content)),
     ]);
 
-    final keyTopics = extractionResults[0] as List<String>;
-    final importantFacts = extractionResults[1] as List<String>;
-    final concepts = extractionResults[2] as List<String>;
-    final processes = extractionResults[3] as List<String>;
+    final keyTopics = extractionResults[0];
+    final importantFacts = extractionResults[1];
+    final concepts = extractionResults[2];
+    final processes = extractionResults[3];
 
     debugPrint(
         '🧠 Extracted ${keyTopics.length} topics, ${processes.length} processes for quiz generation');
