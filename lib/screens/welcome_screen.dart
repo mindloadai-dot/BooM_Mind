@@ -98,7 +98,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Future<void> _handleGoogleSignIn() async {
     _setLoading(true);
     try {
-      final user = await AuthService.instance.signInWithGoogle();
+      final user = await AuthService.instance.signInWithGoogleSafe();
       if (user != null) {
         _navigateToHome();
       } else {

@@ -325,46 +325,29 @@ class AuthService extends ChangeNotifier {
         return _currentUser;
       }
 
-      // Mobile implementation - Following Firebase documentation best practices
+      // Mobile implementation - Use Firebase Auth with better error handling
       if (kDebugMode) {
-        debugPrint('📱 Mobile Google Sign-In using Firebase Auth provider...');
+        debugPrint('📱 Mobile Google Sign-In using Firebase Auth...');
       }
 
       try {
-        // Use Firebase Auth provider approach (recommended by Firebase docs)
-        if (kDebugMode) {
-          debugPrint('🔐 Starting Firebase Auth Google Sign-In...');
-        }
-
         // Create Google provider with proper scopes
         final provider = GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
 
-        // iOS-specific configuration to prevent crashes
-        if (Platform.isIOS) {
-          provider.setCustomParameters({
-            'prompt': 'select_account',
-            'access_type': 'offline',
-            'include_granted_scopes': 'true',
-          });
-        }
-
-        // Sign in with provider using timeout
-        final UserCredential userCredential =
-            await _firebaseAuth.signInWithProvider(provider).timeout(
-          const Duration(seconds: 60),
+        // Sign in with provider using timeout and better error handling
+        final UserCredential userCredential = await _firebaseAuth.signInWithProvider(provider).timeout(
+          const Duration(seconds: 30),
           onTimeout: () {
-            throw TimeoutException(
-                'Google Sign-In timed out. Please try again.');
+            throw TimeoutException('Google Sign-In timed out. Please try again.');
           },
         );
 
         final user = userCredential.user;
 
         if (user == null) {
-          throw Exception(
-              'Failed to get user from Firebase after Google Sign-In');
+          throw Exception('Failed to get user from Firebase after Google Sign-In');
         }
 
         _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
@@ -377,28 +360,24 @@ class AuthService extends ChangeNotifier {
 
         return _currentUser;
       } catch (e) {
-        // Enhanced error handling for the stable implementation
+        // Enhanced error handling for the google_sign_in implementation
         if (kDebugMode) {
-          debugPrint('❌ Stable Google Sign-In failed: $e');
+          debugPrint('❌ Google Sign-In failed: $e');
         }
 
         if (e is TimeoutException) {
-          throw Exception(
-              'Google Sign-In timed out. Please check your internet connection and try again.');
+          throw Exception('Google Sign-In timed out. Please check your internet connection and try again.');
         }
 
-        if (e.toString().contains('network') ||
-            e.toString().contains('connection')) {
-          throw Exception(
-              'Network error during Google Sign-In. Please check your internet connection.');
+        if (e.toString().contains('network') || e.toString().contains('connection')) {
+          throw Exception('Network error during Google Sign-In. Please check your internet connection.');
         }
 
         if (e.toString().contains('cancelled')) {
           throw Exception('Google Sign-In was cancelled.');
         }
 
-        if (e.toString().contains('configuration') ||
-            e.toString().contains('GoogleService')) {
+        if (e.toString().contains('configuration') || e.toString().contains('GoogleService')) {
           throw Exception('Google Sign-In configuration error. Please ensure:\n'
               '1. GoogleService-Info.plist is in ios/Runner\n'
               '2. URL schemes are configured in Info.plist\n'

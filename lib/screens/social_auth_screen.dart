@@ -122,7 +122,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                   '⚠️ Firebase client Google Sign-In failed, trying auth service: $e');
             }
           }
-          user = await authService.signInWithGoogle();
+          user = await authService.signInWithGoogleSafe();
           break;
         case AuthProvider.apple:
           print('🍎 Attempting Apple Sign-In...');
