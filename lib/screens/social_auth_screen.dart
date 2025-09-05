@@ -700,7 +700,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: Text(
-                      'v1.0.0+23 • SECURE NEURAL NETWORK',
+                      'v1.0.0+24 • SECURE NEURAL NETWORK',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: context.tokens.textSecondary,
                             letterSpacing: 1,

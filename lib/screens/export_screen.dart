@@ -617,7 +617,7 @@ class _ExportScreenState extends State<ExportScreen> {
 
   Future<String> _getAppVersion() async {
     // In a real app, you'd use the package_info_plus plugin
-    return '1.0.0+23';
+    return '1.0.0+24';
   }
 
   void _showSuccessSnackBar(String message) {

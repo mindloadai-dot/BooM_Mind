@@ -62,7 +62,7 @@ class PdfExportService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Failed to load app version: $e');
       // Fallback to default version
-      _cachedAppVersion = '1.0.0+23';
+      _cachedAppVersion = '1.0.0+24';
       _cachedBuildNumber = '1';
     }
   }
@@ -617,7 +617,7 @@ class PdfExportService extends ChangeNotifier {
 
   // Get app version
   String getAppVersion() {
-    return _cachedAppVersion ?? '1.0.0+23';
+    return _cachedAppVersion ?? '1.0.0+24';
   }
   
   // Get full app version with build number
@@ -625,7 +625,7 @@ class PdfExportService extends ChangeNotifier {
     if (_cachedAppVersion != null && _cachedBuildNumber != null) {
       return '$_cachedAppVersion+$_cachedBuildNumber';
     }
-    return _cachedAppVersion ?? '1.0.0+23';
+    return _cachedAppVersion ?? '1.0.0+24';
   }
 
   // Clean up old export files
