@@ -1,7 +1,7 @@
 name: mindload
 description: "Mindload - AI Study Companion for focused learning with flashcards, quizzes, and ultra study mode with binaural beats"
 publish_to: "none"
-version: 1.0.0+24
+version: 1.0.0+25
 
 environment:
   sdk: '>=3.9.0 <4.0.0'

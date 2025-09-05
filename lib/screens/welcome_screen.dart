@@ -747,7 +747,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                     // Bottom info - identical to social auth screen
                     Text(
-                      'v1.0.0+24 • SECURE NEURAL NETWORK',
+                      'v1.0.0+25 • SECURE NEURAL NETWORK',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context)
                                 .colorScheme

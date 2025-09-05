@@ -450,7 +450,7 @@ class _PdfExportProgressDialogState extends State<PdfExportProgressDialog> {
       final result = await PdfExportService.instance.exportToPdf(
         uid: 'user_${DateTime.now().millisecondsSinceEpoch}',
         setId: widget.options.setId,
-        appVersion: '1.0.0+24',
+        appVersion: '1.0.0+25',
         itemCounts: {'flashcards': 10, 'quizzes': 5},
         options: widget.options,
         onProgress: (progress) {
