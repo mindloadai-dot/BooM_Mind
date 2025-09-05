@@ -97,6 +97,9 @@
 		<string>sms</string>
 		<string>youtube</string>
 		<string>youtu</string>
+		<string>google</string>
+		<string>com.google</string>
+		<string>com.googleusercontent.apps.884947669542-qp3ijvvdd9vacvpjp6ldp5r9pf8okejk</string>
 	</array>
 	
 	<!-- URL Schemes for Authentication -->

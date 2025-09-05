@@ -325,9 +325,9 @@ class AuthService extends ChangeNotifier {
         return _currentUser;
       }
 
-      // Mobile implementation - Use Firebase Auth with better error handling
+      // Mobile implementation - Use Firebase Auth with iOS-specific handling
       if (kDebugMode) {
-        debugPrint('📱 Mobile Google Sign-In using Firebase Auth...');
+        debugPrint('📱 Mobile Google Sign-In using Firebase Auth with iOS fixes...');
       }
 
       try {
@@ -336,9 +336,17 @@ class AuthService extends ChangeNotifier {
         provider.addScope('email');
         provider.addScope('profile');
 
+        // iOS-specific: Add custom parameters for better compatibility
+        if (Platform.isIOS) {
+          provider.setCustomParameters({
+            'prompt': 'select_account',
+            'response_type': 'code',
+          });
+        }
+
         // Sign in with provider using timeout and better error handling
         final UserCredential userCredential = await _firebaseAuth.signInWithProvider(provider).timeout(
-          const Duration(seconds: 30),
+          const Duration(seconds: 45), // Increased timeout for iOS
           onTimeout: () {
             throw TimeoutException('Google Sign-In timed out. Please try again.');
           },
@@ -382,7 +390,34 @@ class AuthService extends ChangeNotifier {
               '1. GoogleService-Info.plist is in ios/Runner\n'
               '2. URL schemes are configured in Info.plist\n'
               '3. Google Sign-In is enabled in Firebase Console\n'
-              '4. Bundle ID matches Firebase configuration');
+              '4. Bundle ID matches Firebase configuration\n'
+              '5. Client ID is correctly configured\n'
+              '6. iOS deployment target is 16.0+');
+        }
+
+        if (e.toString().contains('sign_in_canceled') || e.toString().contains('cancelled')) {
+          throw Exception('Google Sign-In was cancelled.');
+        }
+
+        if (e.toString().contains('network_error') || e.toString().contains('network')) {
+          throw Exception('Network error during Google Sign-In. Please check your internet connection.');
+        }
+
+        if (e.toString().contains('sign_in_failed') || e.toString().contains('sign_in_required')) {
+          throw Exception('Google Sign-In failed. Please try again.');
+        }
+
+        // iOS-specific error handling
+        if (Platform.isIOS) {
+          if (e.toString().contains('user_cancelled') || e.toString().contains('cancelled')) {
+            throw Exception('Google Sign-In was cancelled by user.');
+          }
+          if (e.toString().contains('no_internet') || e.toString().contains('network')) {
+            throw Exception('No internet connection. Please check your network and try again.');
+          }
+          if (e.toString().contains('invalid_client')) {
+            throw Exception('Google Sign-In configuration error. Please contact support.');
+          }
         }
 
         throw Exception('Google Sign-In failed: ${e.toString()}');
