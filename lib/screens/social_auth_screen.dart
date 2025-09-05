@@ -362,8 +362,8 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
     // Safety check for animation controllers - check if they're properly initialized
     try {
       // Test if controllers are working by accessing their value
-      final _ = _particleController.value;
-      final __ = _glowController.value;
+      final particleValue = _particleController.value;
+      final glowValue = _glowController.value;
     } catch (e) {
       print('⚠️ Animation controllers not properly initialized: $e');
       return Scaffold(
