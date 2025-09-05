@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'dart:io' show Platform; // Guarded usage
 import 'package:cloud_functions/cloud_functions.dart';
@@ -291,194 +290,71 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Google Sign-In - Enhanced iOS-compatible implementation
-  /// Following pub.dev firebase_auth and google_sign_in best practices
+  /// Google Sign-In using Firebase Auth federated authentication
+  /// Following Firebase Flutter documentation: https://firebase.google.com/docs/auth/flutter/federated-auth
   Future<AuthUser?> signInWithGoogle() async {
     try {
       if (kDebugMode) {
         debugPrint('🔍 Starting Google Sign-In...');
       }
 
+      // Create Google provider
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      
+      UserCredential userCredential;
+      
       if (kIsWeb) {
         if (kDebugMode) {
           debugPrint('🌐 Web Google Sign-In via popup...');
         }
-        final provider = GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-
-        final cred = await _firebaseAuth.signInWithPopup(provider);
-        final user = cred.user;
-
-        if (user == null) {
-          throw Exception('Failed to get user from Google Sign-In');
-        }
-
-        _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
-        await _saveUserData();
-        notifyListeners();
-
+        userCredential = await _firebaseAuth.signInWithPopup(googleProvider);
+      } else {
         if (kDebugMode) {
-          debugPrint('✅ Web Google Sign-In successful for user: ${user.email}');
+          debugPrint('📱 Mobile Google Sign-In using signInWithProvider...');
         }
-
-        return _currentUser;
+        userCredential = await _firebaseAuth.signInWithProvider(googleProvider);
       }
 
-      // Mobile implementation - Use Firebase Auth with iOS-specific handling
+      final user = userCredential.user;
+
+      if (user == null) {
+        throw Exception('Failed to get user from Google Sign-In');
+      }
+
+      _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
+      await _saveUserData();
+      notifyListeners();
+
       if (kDebugMode) {
-        debugPrint('📱 Mobile Google Sign-In using Firebase Auth with iOS fixes...');
+        debugPrint('✅ Google Sign-In successful for user: ${user.email}');
       }
 
-      try {
-        // Create Google provider with proper scopes
-        final provider = GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-
-        // iOS-specific: Add custom parameters for better compatibility
-        if (Platform.isIOS) {
-          provider.setCustomParameters({
-            'prompt': 'select_account',
-            'response_type': 'code',
-          });
-        }
-
-        // Sign in with provider using timeout and better error handling
-        final UserCredential userCredential = await _firebaseAuth.signInWithProvider(provider).timeout(
-          const Duration(seconds: 45), // Increased timeout for iOS
-          onTimeout: () {
-            throw TimeoutException('Google Sign-In timed out. Please try again.');
-          },
-        );
-
-        final user = userCredential.user;
-
-        if (user == null) {
-          throw Exception('Failed to get user from Firebase after Google Sign-In');
-        }
-
-        _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.google);
-        await _saveUserData();
-        notifyListeners();
-
-        if (kDebugMode) {
-          debugPrint('✅ Google Sign-In successful for user: ${user.email}');
-        }
-
-        return _currentUser;
-      } catch (e) {
-        // Enhanced error handling for the google_sign_in implementation
-        if (kDebugMode) {
-          debugPrint('❌ Google Sign-In failed: $e');
-        }
-
-        if (e is TimeoutException) {
-          throw Exception('Google Sign-In timed out. Please check your internet connection and try again.');
-        }
-
-        if (e.toString().contains('network') || e.toString().contains('connection')) {
-          throw Exception('Network error during Google Sign-In. Please check your internet connection.');
-        }
-
-        if (e.toString().contains('cancelled')) {
-          throw Exception('Google Sign-In was cancelled.');
-        }
-
-        if (e.toString().contains('configuration') || e.toString().contains('GoogleService')) {
-          throw Exception('Google Sign-In configuration error. Please ensure:\n'
-              '1. GoogleService-Info.plist is in ios/Runner\n'
-              '2. URL schemes are configured in Info.plist\n'
-              '3. Google Sign-In is enabled in Firebase Console\n'
-              '4. Bundle ID matches Firebase configuration\n'
-              '5. Client ID is correctly configured\n'
-              '6. iOS deployment target is 16.0+');
-        }
-
-        if (e.toString().contains('sign_in_canceled') || e.toString().contains('cancelled')) {
-          throw Exception('Google Sign-In was cancelled.');
-        }
-
-        if (e.toString().contains('network_error') || e.toString().contains('network')) {
-          throw Exception('Network error during Google Sign-In. Please check your internet connection.');
-        }
-
-        if (e.toString().contains('sign_in_failed') || e.toString().contains('sign_in_required')) {
-          throw Exception('Google Sign-In failed. Please try again.');
-        }
-
-        // iOS-specific error handling
-        if (Platform.isIOS) {
-          if (e.toString().contains('user_cancelled') || e.toString().contains('cancelled')) {
-            throw Exception('Google Sign-In was cancelled by user.');
-          }
-          if (e.toString().contains('no_internet') || e.toString().contains('network')) {
-            throw Exception('No internet connection. Please check your network and try again.');
-          }
-          if (e.toString().contains('invalid_client')) {
-            throw Exception('Google Sign-In configuration error. Please contact support.');
-          }
-        }
-
-        throw Exception('Google Sign-In failed: ${e.toString()}');
-      }
-    } on TimeoutException {
-      if (kDebugMode) {
-        debugPrint('❌ Google Sign-In timeout');
-      }
-      throw Exception('Google Sign-In timed out. Please try again.');
+      return _currentUser;
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint(
-            '❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
+        debugPrint('❌ Firebase auth error during Google Sign-In: ${e.code} - ${e.message}');
       }
-
+      
       // Handle specific error codes with user-friendly messages
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception(
-              'An account already exists with a different sign-in method. Please use a different sign-in method.');
+          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
         case 'invalid-credential':
-          throw Exception(
-              'The Google credentials are invalid. Please try again.');
+          throw Exception('The Google credentials are invalid. Please try again.');
         case 'operation-not-allowed':
           throw Exception('Google Sign-In is not enabled for this app.');
         case 'user-disabled':
-          throw Exception(
-              'This account has been disabled. Please contact support.');
+          throw Exception('This account has been disabled. Please contact support.');
         case 'user-not-found':
           throw Exception('No account found with this email.');
-        case 'wrong-password':
-          throw Exception('Invalid password.');
         case 'network-request-failed':
-          throw Exception(
-              'Network error. Please check your internet connection and try again.');
+          throw Exception('Network error. Please check your internet connection and try again.');
         case 'too-many-requests':
-          throw Exception(
-              'Too many sign-in attempts. Please wait a moment and try again.');
+          throw Exception('Too many sign-in attempts. Please wait a moment and try again.');
         case 'user-token-expired':
           throw Exception('Your session has expired. Please sign in again.');
         default:
-          throw Exception(
-              e.message ?? 'Google Sign-In failed. Please try again.');
-      }
-    } on PlatformException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ Platform error during Google Sign-In: ${e.code} - ${e.message}');
-      }
-
-      // Handle Google Sign-In specific platform errors
-      switch (e.code) {
-        case 'sign_in_canceled':
-          throw Exception('Google Sign-In was cancelled.');
-        case 'sign_in_failed':
-          throw Exception('Google Sign-In failed. Please try again.');
-        case 'network_error':
-          throw Exception('Network error. Please check your connection.');
-        default:
-          throw Exception(
-              'Google Sign-In failed: ${e.message ?? 'Unknown error'}');
+          throw Exception(e.message ?? 'Google Sign-In failed. Please try again.');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -488,188 +364,39 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Apple Sign-In - Enhanced implementation following pub.dev sign_in_with_apple best practices
+  /// Apple Sign-In using Firebase Auth federated authentication
+  /// Following Firebase Flutter documentation: https://firebase.google.com/docs/auth/flutter/federated-auth
   Future<AuthUser?> signInWithApple() async {
     if (!(Platform.isIOS || Platform.isMacOS)) {
       throw UnsupportedError('Apple Sign-In is only available on iOS/macOS');
     }
+    
     try {
       if (kDebugMode) {
         debugPrint('🍎 Starting Apple Sign-In...');
       }
 
-      // Check if Apple Sign-In is available
-      bool isAvailable = false;
-      try {
-        isAvailable = await SignInWithApple.isAvailable();
-      } catch (e) {
+      // Create Apple provider
+      final AppleAuthProvider appleProvider = AppleAuthProvider();
+      
+      UserCredential userCredential;
+      
+      if (kIsWeb) {
         if (kDebugMode) {
-          debugPrint('⚠️ Error checking Apple Sign-In availability: $e');
+          debugPrint('🌐 Web Apple Sign-In via popup...');
         }
-        // On iOS 13+, Sign in with Apple should always be available
-        if (Platform.isIOS) {
-          isAvailable = true; // Assume available on iOS
-        }
-      }
-
-      if (!isAvailable) {
-        throw Exception(
-            'Apple Sign-In is not available on this device. Please ensure you are running iOS 13.0 or later.');
-      }
-
-      if (kDebugMode) {
-        debugPrint('🍎 Apple Sign-In is available, generating nonce...');
-      }
-
-      final rawNonce = _generateNonce();
-      final nonce = _sha256ofString(rawNonce);
-
-      if (kDebugMode) {
-        debugPrint('🍎 Requesting Apple ID credential...');
-      }
-
-      AuthorizationCredentialAppleID appleCredential;
-
-      try {
-        // iOS-specific Apple Sign-In with enhanced error handling
-        appleCredential = await SignInWithApple.getAppleIDCredential(
-          scopes: [
-            AppleIDAuthorizationScopes.email,
-            AppleIDAuthorizationScopes.fullName,
-          ],
-          nonce: nonce,
-          // iOS-specific configuration to prevent crashes
-          webAuthenticationOptions: kIsWeb
-              ? WebAuthenticationOptions(
-                  clientId: _getAppleWebClientId(),
-                  redirectUri: Uri.parse(_getAppleRedirectUri()),
-                )
-              : null,
-        ).timeout(
-          const Duration(seconds: 60), // Increased timeout for Apple Sign-In
-          onTimeout: () {
-            throw TimeoutException(
-                'Apple Sign-In timed out. Please try again.');
-          },
-        );
-      } catch (e) {
+        userCredential = await _firebaseAuth.signInWithPopup(appleProvider);
+      } else {
         if (kDebugMode) {
-          debugPrint('❌ Error getting Apple credential: $e');
+          debugPrint('📱 Mobile Apple Sign-In using signInWithProvider...');
         }
-
-        // Handle specific Apple Sign-In errors
-        if (e is SignInWithAppleAuthorizationException) {
-          switch (e.code) {
-            case AuthorizationErrorCode.canceled:
-              throw Exception('Apple Sign-In was cancelled');
-            case AuthorizationErrorCode.failed:
-              throw Exception('Apple Sign-In failed. Please try again.');
-            case AuthorizationErrorCode.invalidResponse:
-              throw Exception('Invalid response from Apple Sign-In');
-            case AuthorizationErrorCode.notHandled:
-              throw Exception('Apple Sign-In request not handled');
-            case AuthorizationErrorCode.unknown:
-              throw Exception('Unknown error during Apple Sign-In');
-            default:
-              throw Exception('Apple Sign-In error: ${e.message}');
-          }
-        }
-
-        if (e is TimeoutException) {
-          throw Exception('Apple Sign-In timed out. Please try again.');
-        }
-
-        // Handle iOS-specific Apple Sign-In errors
-        if (e.toString().contains('cancelled') ||
-            e.toString().contains('canceled')) {
-          throw Exception('Apple Sign-In was cancelled.');
-        }
-
-        if (e.toString().contains('not_handled') ||
-            e.toString().contains('notHandled')) {
-          throw Exception(
-              'Apple Sign-In is not available on this device. Please ensure:\n'
-              '1. You are running iOS 13.0 or later\n'
-              '2. Sign In with Apple is enabled in Settings\n'
-              '3. You are signed in to iCloud');
-        }
-
-        if (e.toString().contains('invalid_response') ||
-            e.toString().contains('invalidResponse')) {
-          throw Exception(
-              'Invalid response from Apple Sign-In. Please try again.');
-        }
-
-        if (e.toString().contains('unknown') ||
-            e.toString().contains('Unknown')) {
-          throw Exception(
-              'Unknown error during Apple Sign-In. Please try again.');
-        }
-
-        // Re-throw with more context
-        throw Exception('Apple Sign-In failed. Please ensure:\n'
-            '1. You are signed in to iCloud\n'
-            '2. Sign In with Apple is enabled in Settings\n'
-            '3. Two-factor authentication is enabled for your Apple ID\n'
-            '4. You are running iOS 13.0 or later');
+        userCredential = await _firebaseAuth.signInWithProvider(appleProvider);
       }
-
-      if (kDebugMode) {
-        debugPrint(
-            '🍎 Apple credential received, creating Firebase credential...');
-      }
-
-      // Validate that we received the required tokens
-      if (appleCredential.identityToken == null) {
-        throw Exception('Failed to get Apple ID token');
-      }
-
-      // Create the OAuth credential for Firebase
-      final oAuth = OAuthProvider('apple.com');
-      final credential = oAuth.credential(
-        idToken: appleCredential.identityToken,
-        rawNonce: rawNonce,
-      );
-
-      if (kDebugMode) {
-        debugPrint('🍎 Signing in with Firebase...');
-      }
-
-      // Sign in to Firebase with timeout
-      final UserCredential userCredential =
-          await _firebaseAuth.signInWithCredential(credential).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Firebase Apple authentication timed out');
-        },
-      );
 
       final user = userCredential.user;
 
       if (user == null) {
-        throw Exception('Failed to create Firebase user from Apple credential');
-      }
-
-      // Update display name if provided by Apple and not already set
-      if (appleCredential.givenName != null ||
-          appleCredential.familyName != null) {
-        final displayName =
-            '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
-                .trim();
-        if (displayName.isNotEmpty &&
-            (user.displayName == null || user.displayName!.isEmpty)) {
-          try {
-            await user.updateDisplayName(displayName);
-            await user.reload();
-            if (kDebugMode) {
-              debugPrint('🍎 Updated display name to: $displayName');
-            }
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint('⚠️ Could not update display name: $e');
-            }
-          }
-        }
+        throw Exception('Failed to get user from Apple Sign-In');
       }
 
       _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.apple);
@@ -677,104 +404,123 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       if (kDebugMode) {
-        debugPrint(
-            '✅ Apple Sign-In successful for user: ${user.email ?? 'private email'}');
+        debugPrint('✅ Apple Sign-In successful for user: ${user.email ?? 'No email'}');
       }
 
       return _currentUser;
-    } on TimeoutException {
-      if (kDebugMode) {
-        debugPrint('❌ Apple Sign-In timeout');
-      }
-      throw Exception('Apple Sign-In timed out. Please try again.');
-    } on SignInWithAppleAuthorizationException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ Apple Sign-In authorization error: ${e.code} - ${e.message}');
-      }
-
-      switch (e.code) {
-        case AuthorizationErrorCode.canceled:
-          throw Exception('Apple Sign-In was cancelled.');
-        case AuthorizationErrorCode.failed:
-          throw Exception('Apple Sign-In failed. Please try again.');
-        case AuthorizationErrorCode.invalidResponse:
-          throw Exception('Invalid response from Apple. Please try again.');
-        case AuthorizationErrorCode.notHandled:
-          throw Exception(
-              'Apple Sign-In was not handled properly. Please try again.');
-        case AuthorizationErrorCode.unknown:
-        default:
-          throw Exception(
-              'Apple Sign-In failed: ${e.message ?? 'Unknown error'}');
-      }
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint(
-            '❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
+        debugPrint('❌ Firebase auth error during Apple Sign-In: ${e.code} - ${e.message}');
       }
-
-      // Handle specific Firebase errors for Apple Sign-In
+      
+      // Handle specific error codes with user-friendly messages
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception(
-              'An account already exists with a different sign-in method. Please use a different sign-in method.');
+          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
         case 'invalid-credential':
-          throw Exception(
-              'The Apple credentials are invalid. Please try again.');
+          throw Exception('The Apple credentials are invalid. Please try again.');
         case 'operation-not-allowed':
           throw Exception('Apple Sign-In is not enabled for this app.');
         case 'user-disabled':
-          throw Exception(
-              'This account has been disabled. Please contact support.');
+          throw Exception('This account has been disabled. Please contact support.');
+        case 'user-not-found':
+          throw Exception('No account found with this email.');
         case 'network-request-failed':
-          throw Exception(
-              'Network error. Please check your internet connection and try again.');
+          throw Exception('Network error. Please check your internet connection and try again.');
+        case 'too-many-requests':
+          throw Exception('Too many sign-in attempts. Please wait a moment and try again.');
+        case 'user-token-expired':
+          throw Exception('Your session has expired. Please sign in again.');
         default:
-          throw Exception(
-              e.message ?? 'Apple Sign-In failed. Please try again.');
+          throw Exception(e.message ?? 'Apple Sign-In failed. Please try again.');
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Unexpected Apple Sign-In error: $e');
       }
+      
+      // Handle Apple-specific errors
+      if (e.toString().contains('cancelled') || e.toString().contains('canceled')) {
+        throw Exception('Apple Sign-In was cancelled.');
+      }
+      
       throw Exception('Apple Sign-In failed: ${e.toString()}');
     }
   }
 
-  /// Microsoft Sign-In using Firebase OAuth Provider
-  /// Default scopes include basic profile and email.
+  /// Microsoft Sign-In using Firebase Auth federated authentication
+  /// Following Firebase Flutter documentation: https://firebase.google.com/docs/auth/flutter/federated-auth
   Future<AuthUser?> signInWithMicrosoft({
     List<String> scopes = const ['User.Read', 'email', 'openid', 'profile'],
   }) async {
-    final microsoft = OAuthProvider('microsoft.com');
-    for (final s in scopes) {
-      microsoft.addScope(s);
-    }
-    microsoft.setCustomParameters({'prompt': 'consent'});
-
     try {
-      if (kIsWeb) {
-        final cred = await _firebaseAuth.signInWithPopup(microsoft);
-        final user = cred.user;
-        if (user == null) return null;
-        _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.microsoft);
-        await _saveUserData();
-        notifyListeners();
-        return _currentUser;
+      if (kDebugMode) {
+        debugPrint('🔷 Starting Microsoft Sign-In...');
       }
-      final cred = await _firebaseAuth.signInWithProvider(microsoft);
-      final user = cred.user;
-      if (user == null) return null;
+
+      // Create Microsoft provider
+      final MicrosoftAuthProvider microsoftProvider = MicrosoftAuthProvider();
+      
+      UserCredential userCredential;
+      
+      if (kIsWeb) {
+        if (kDebugMode) {
+          debugPrint('🌐 Web Microsoft Sign-In via popup...');
+        }
+        userCredential = await _firebaseAuth.signInWithPopup(microsoftProvider);
+      } else {
+        if (kDebugMode) {
+          debugPrint('📱 Mobile Microsoft Sign-In using signInWithProvider...');
+        }
+        userCredential = await _firebaseAuth.signInWithProvider(microsoftProvider);
+      }
+
+      final user = userCredential.user;
+
+      if (user == null) {
+        throw Exception('Failed to get user from Microsoft Sign-In');
+      }
+
       _currentUser = AuthUser.fromFirebaseUser(user, AuthProvider.microsoft);
       await _saveUserData();
       notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('✅ Microsoft Sign-In successful for user: ${user.email}');
+      }
+
       return _currentUser;
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
-        debugPrint('Microsoft sign-in failed: ${e.code}');
+        debugPrint('❌ Firebase auth error during Microsoft Sign-In: ${e.code} - ${e.message}');
       }
-      throw Exception(e.message ?? 'Microsoft sign-in failed');
+      
+      // Handle specific error codes with user-friendly messages
+      switch (e.code) {
+        case 'account-exists-with-different-credential':
+          throw Exception('An account already exists with a different sign-in method. Please use a different sign-in method.');
+        case 'invalid-credential':
+          throw Exception('The Microsoft credentials are invalid. Please try again.');
+        case 'operation-not-allowed':
+          throw Exception('Microsoft Sign-In is not enabled for this app.');
+        case 'user-disabled':
+          throw Exception('This account has been disabled. Please contact support.');
+        case 'user-not-found':
+          throw Exception('No account found with this email.');
+        case 'network-request-failed':
+          throw Exception('Network error. Please check your internet connection and try again.');
+        case 'too-many-requests':
+          throw Exception('Too many sign-in attempts. Please wait a moment and try again.');
+        case 'user-token-expired':
+          throw Exception('Your session has expired. Please sign in again.');
+        default:
+          throw Exception(e.message ?? 'Microsoft Sign-In failed. Please try again.');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Unexpected Microsoft Sign-In error: $e');
+      }
+      throw Exception('Microsoft Sign-In failed: ${e.toString()}');
     }
   }
 
