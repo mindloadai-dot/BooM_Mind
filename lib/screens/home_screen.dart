@@ -1189,6 +1189,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         debugPrint(
             'AI generation success check: flashcards=${flashcards.length}, quiz=${quiz?.questions.length ?? 0}, succeeded=$aiGenerationSucceeded');
 
+        // If AI generation failed, show helpful message
+        if (!aiGenerationSucceeded) {
+          debugPrint(
+              '⚠️ AI generation failed - will create empty study set for manual editing');
+        }
+
         // Haptic feedback for AI generation completion
         if (aiGenerationSucceeded) {
           HapticFeedbackService().success();
@@ -1221,12 +1227,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Icon(Icons.info, color: tokens.onPrimary),
                 const SizedBox(width: Spacing.sm),
                 Expanded(
-                  child: Text(
-                    'AI generation unavailable. Created a working study set with sample questions for your content.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: tokens.onPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Study set created successfully!',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: tokens.onPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'AI generation is temporarily unavailable. You can manually add flashcards and quiz questions.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: tokens.onPrimary.withValues(alpha: 0.9),
+                            ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1235,7 +1254,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 5),
           ),
         );
 
@@ -3000,89 +3019,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: CreditsStateBanners(),
             ),
 
-            // Welcome section with unified design
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: UnifiedSpacing.screenPadding,
-                child: UnifiedCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          UnifiedIcon(
-                            Icons.psychology,
-                            size: 32,
-                            color: tokens.primary,
-                          ),
-                          const SizedBox(width: UnifiedSpacing.sm),
-                          Expanded(
-                            child: UnifiedText(
-                              'Welcome to MindLoad',
-                              style: UnifiedTypography.headlineSmall.copyWith(
-                                color: tokens.textPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: UnifiedSpacing.sm),
-                      UnifiedText(
-                        'Your AI-powered study companion is ready to help you learn smarter.',
-                        style: UnifiedTypography.bodyMedium.copyWith(
-                          color: tokens.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Quick actions section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: UnifiedSpacing.screenPadding,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    UnifiedText(
-                      'Quick Actions',
-                      style: UnifiedTypography.titleMedium.copyWith(
-                        color: tokens.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: UnifiedSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: UnifiedButton(
-                            onPressed: () => _uploadDocument(),
-                            variant: ButtonVariant.primary,
-                            fullWidth: true,
-                            icon: Icons.file_upload,
-                            child: const UnifiedText('Upload Document'),
-                          ),
-                        ),
-                        const SizedBox(width: UnifiedSpacing.sm),
-                        Expanded(
-                          child: UnifiedButton(
-                            onPressed: () => _showPasteTextDialog(),
-                            variant: ButtonVariant.outline,
-                            fullWidth: true,
-                            icon: Icons.paste,
-                            child: const UnifiedText('Paste Text'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             // Header content
             SliverToBoxAdapter(
               child: Padding(
@@ -3131,14 +3067,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            _buildUsageIndicator(
-                              economyService,
-                              'Monthly Allowance',
-                              economyService.userEconomy?.creditsRemaining ?? 0,
-                              economyService.userEconomy?.monthlyQuota ?? 0,
-                              tokens.primary,
                             ),
                           ],
                         );
@@ -3678,78 +3606,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCompactUsageIndicator(String usageType, bool canPerformAction) {
-    return Consumer<MindloadEconomyService>(
-      builder: (context, economyService, child) {
-        final tokens = context.tokens;
-        final userEconomy = economyService.userEconomy;
-
-        if (userEconomy == null) {
-          return const SizedBox.shrink();
-        }
-
-        int remaining;
-        int total;
-        Color color;
-
-        switch (usageType) {
-          case 'quiz':
-            remaining = userEconomy.creditsRemaining;
-            total = userEconomy.monthlyQuota;
-            color = tokens.primary;
-            break;
-          case 'flashcard':
-            remaining = userEconomy.creditsRemaining;
-            total = userEconomy.monthlyQuota;
-            color = tokens.success;
-            break;
-          case 'upload':
-            remaining = userEconomy.creditsRemaining;
-            total = userEconomy.monthlyQuota;
-            color = tokens.warning;
-            break;
-          default:
-            return const SizedBox.shrink();
-        }
-
-        final isAtLimit = remaining <= 0;
-        final isLow = remaining <= (total * 0.2);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-          decoration: BoxDecoration(
-            color: isAtLimit
-                ? tokens.error.withValues(alpha: 0.1)
-                : isLow
-                    ? tokens.warning.withValues(alpha: 0.1)
-                    : color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isAtLimit
-                  ? tokens.error.withValues(alpha: 0.3)
-                  : isLow
-                      ? tokens.warning.withValues(alpha: 0.3)
-                      : color.withValues(alpha: 0.3),
-              width: 0.5,
-            ),
-          ),
-          child: Text(
-            '$remaining',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isAtLimit
-                      ? tokens.error
-                      : isLow
-                          ? tokens.warning
-                          : color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 6,
-                ),
-          ),
-        );
-      },
-    );
-  }
-
   /// Show paste text dialog as alternative to file upload
   void _showPasteTextDialog() {
     final tokens = context.tokens;
@@ -4164,55 +4020,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Implement proper achievement tracker access
     // For now, return null to avoid circular dependencies
     return null;
-  }
-
-  Widget _buildUsageIndicator(MindloadEconomyService economyService,
-      String label, int remaining, int total, Color color) {
-    final tokens = context.tokens;
-    final percentage = total > 0 ? (remaining / total) : 0.0;
-
-    return Row(
-      children: [
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CircularProgressIndicator(
-                value: percentage,
-              ),
-              Text(
-                '$remaining',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            Text(
-              '$total total',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: tokens.textSecondary,
-                  ),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 
   /// Test YouTube system functionality

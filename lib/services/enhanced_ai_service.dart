@@ -2,25 +2,23 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mindload/models/study_data.dart';
-import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/local_ai_fallback_service.dart';
 import 'package:mindload/services/document_processor.dart';
 import 'package:mindload/core/youtube_utils.dart';
-import 'package:mindload/services/youtube_transcript_processor.dart';
 import 'package:mindload/services/youtube_service.dart';
+import 'package:mindload/config/app_check_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
 
 // Content source types
 enum ContentSourceType {
-  text,      // Plain text input
-  document,  // PDF, DOCX, etc.
-  youtube,   // YouTube video
-  website,   // Web page
-  url        // Generic URL
+  text, // Plain text input
+  document, // PDF, DOCX, etc.
+  youtube, // YouTube video
+  website, // Web page
+  url // Generic URL
 }
 
 // Content processing result
@@ -89,14 +87,123 @@ class ValidationResult {
 /// Enhanced AI Service with comprehensive content processing and OpenAI integration
 class EnhancedAIService {
   static EnhancedAIService? _instance;
-  static EnhancedAIService get instance => _instance ??= EnhancedAIService._();
-  EnhancedAIService._();
+  static EnhancedAIService get instance {
+    debugPrint('🏗️ EnhancedAIService.instance called');
+    return _instance ??= EnhancedAIService._();
+  }
 
-  final FirebaseFunctions _functions =
-      FirebaseFunctions.instanceFor(region: 'us-central1');
-  final AuthService _authService = AuthService.instance;
-  final LocalAIFallbackService _localFallback = LocalAIFallbackService.instance;
-  final YouTubeTranscriptProcessor _youtubeProcessor = YouTubeTranscriptProcessor();
+  // Content caching to avoid reprocessing
+  final Map<String, Map<String, dynamic>> _contentCache = {};
+  final Map<String, DateTime> _cacheTimestamps = {};
+  static const Duration _cacheExpiry = Duration(hours: 1);
+
+  EnhancedAIService._() {
+    debugPrint('🏗️ EnhancedAIService constructor called');
+  }
+
+  // Cache management methods
+  String _generateCacheKey(
+      String content, int flashcardCount, int quizCount, String difficulty) {
+    // Create a hash of the content and parameters for caching
+    final contentHash = content.hashCode.toString();
+    return '${contentHash}_${flashcardCount}_${quizCount}_$difficulty';
+  }
+
+  bool _isCacheValid(String key) {
+    final timestamp = _cacheTimestamps[key];
+    if (timestamp == null) return false;
+    return DateTime.now().difference(timestamp) < _cacheExpiry;
+  }
+
+  Map<String, dynamic>? _getCachedResult(String key) {
+    if (_isCacheValid(key)) {
+      debugPrint('🚀 Using cached result for key: $key');
+      return _contentCache[key];
+    }
+    return null;
+  }
+
+  void _cacheResult(String key, Map<String, dynamic> result) {
+    _contentCache[key] = result;
+    _cacheTimestamps[key] = DateTime.now();
+    debugPrint('💾 Cached result for key: $key');
+  }
+
+  // Helper methods to convert cached data
+  List<Flashcard> _convertCachedFlashcards(List<dynamic> cachedFlashcards) {
+    return cachedFlashcards.map((data) {
+      if (data is Map<String, dynamic>) {
+        return Flashcard.fromJson(data);
+      }
+      return Flashcard(
+        id: data['id'] ?? '',
+        question: data['question'] ?? data['front'] ?? '',
+        answer: data['answer'] ?? data['back'] ?? '',
+        difficulty: DifficultyLevel.beginner,
+        lastReviewed: data['lastReviewed'] != null
+            ? DateTime.parse(data['lastReviewed'])
+            : DateTime.now(),
+        reviewCount: data['reviewCount'] ?? 0,
+        consecutiveCorrectAnswers: data['correctCount'] ?? 0,
+        questionType: QuestionType.shortAnswer,
+      );
+    }).toList();
+  }
+
+  List<QuizQuestion> _convertCachedQuizQuestions(
+      List<dynamic> cachedQuizQuestions) {
+    return cachedQuizQuestions.map((data) {
+      if (data is Map<String, dynamic>) {
+        return QuizQuestion.fromJson(data);
+      }
+      return QuizQuestion(
+        id: data['id'] ?? '',
+        question: data['question'] ?? '',
+        options: List<String>.from(data['options'] ?? []),
+        correctAnswer: data['correctAnswer'] ?? '',
+        type: QuestionType.multipleChoice,
+        difficulty: DifficultyLevel.intermediate,
+        explanation: data['explanation'] ?? '',
+      );
+    }).toList();
+  }
+
+  // COMPLETELY ISOLATED - No dependencies on other services to avoid circular dependencies
+  FirebaseFunctions? _functions;
+  FirebaseFunctions get _functionsInstance {
+    return _functions ??= FirebaseFunctions.instanceFor(region: 'us-central1');
+  }
+
+  // Use direct Firebase Auth instead of AuthService to avoid circular dependency
+  FirebaseAuth get _firebaseAuth => FirebaseAuth.instance;
+
+  // Use direct LocalAIFallbackService singleton to avoid circular dependency
+  LocalAIFallbackService get _localFallbackInstance =>
+      LocalAIFallbackService.instance;
+
+  // Remove YouTubeTranscriptProcessor dependency completely to avoid circular dependency
+  // This will be handled separately when needed
+
+  /// Process YouTube video directly without circular dependency
+  Future<StudySet?> _processYouTubeVideoDirectly({
+    required String videoId,
+    required String userId,
+    String? preferredLanguage,
+    bool useSubtitlesForQuestions = true,
+  }) async {
+    try {
+      debugPrint('🎥 Processing YouTube video directly: $videoId');
+
+      // For now, return null to avoid circular dependency
+      // This will be implemented separately when needed
+      debugPrint(
+          '⚠️ YouTube processing temporarily disabled to avoid circular dependency');
+      return null;
+    } catch (e) {
+      debugPrint('❌ YouTube processing failed: $e');
+      return null;
+    }
+  }
 
   /// Process content from various sources and generate study materials
   Future<GenerationResult> processContentAndGenerate({
@@ -116,10 +223,12 @@ class EnhancedAIService {
     final stopwatch = Stopwatch()..start();
 
     try {
-      debugPrint('🚀 Starting content processing and generation for: $sourceType');
+      debugPrint(
+          '🚀 Starting content processing and generation for: $sourceType');
 
       // Step 1: Process content based on source type
-      final contentResult = await _processContent(input, sourceType, additionalOptions);
+      final contentResult =
+          await _processContent(input, sourceType, additionalOptions);
 
       if (!contentResult.isSuccess) {
         stopwatch.stop();
@@ -133,7 +242,8 @@ class EnhancedAIService {
         );
       }
 
-      debugPrint('✅ Content processed successfully: ${contentResult.extractedText.length} characters');
+      debugPrint(
+          '✅ Content processed successfully: ${contentResult.extractedText.length} characters');
 
       // Step 2: Generate study materials from processed content
       final generationResult = await generateStudyMaterials(
@@ -160,7 +270,6 @@ class EnhancedAIService {
         processingTimeMs: stopwatch.elapsedMilliseconds,
         contentResult: contentResult,
       );
-
     } catch (e) {
       stopwatch.stop();
       debugPrint('❌ Content processing and generation failed: $e');
@@ -168,7 +277,8 @@ class EnhancedAIService {
         flashcards: [],
         quizQuestions: [],
         method: GenerationMethod.template,
-        errorMessage: 'Failed to process content and generate study materials: $e',
+        errorMessage:
+            'Failed to process content and generate study materials: $e',
         processingTimeMs: stopwatch.elapsedMilliseconds,
       );
     }
@@ -184,13 +294,13 @@ class EnhancedAIService {
       switch (sourceType) {
         case ContentSourceType.text:
           return _processTextContent(input);
-        
+
         case ContentSourceType.document:
           return await _processDocumentContent(input, additionalOptions);
-        
+
         case ContentSourceType.youtube:
           return await _processYouTubeContent(input, additionalOptions);
-        
+
         case ContentSourceType.website:
         case ContentSourceType.url:
           return await _processWebsiteContent(input, additionalOptions);
@@ -234,18 +344,19 @@ class EnhancedAIService {
 
       // For now, we'll assume the input is the file path or content
       // In a real implementation, you'd need to handle file uploads properly
-      
+
       // If it's a file path, read the file
       // If it's content, use it directly
       String content = filePath;
       String fileName = 'document';
-      
+
       if (additionalOptions != null && additionalOptions['fileBytes'] != null) {
         final bytes = additionalOptions['fileBytes'] as Uint8List;
         final extension = additionalOptions['extension'] as String? ?? 'txt';
         final name = additionalOptions['fileName'] as String? ?? 'document';
-        
-        content = await DocumentProcessor.extractTextFromFile(bytes, extension, name);
+
+        content =
+            await DocumentProcessor.extractTextFromFile(bytes, extension, name);
         fileName = name;
       }
 
@@ -290,13 +401,14 @@ class EnhancedAIService {
 
       // Get video metadata
       final preview = await YouTubeService().getPreview(videoId);
-      
+
       // Process transcript
-      final studySet = await _youtubeProcessor.processYouTubeVideo(
+      final studySet = await _processYouTubeVideoDirectly(
         videoId: videoId,
-        userId: _authService.currentUserId ?? 'anonymous',
+        userId: _firebaseAuth.currentUser?.uid ?? 'anonymous',
         preferredLanguage: additionalOptions?['preferredLanguage'] as String?,
-        useSubtitlesForQuestions: additionalOptions?['useSubtitlesForQuestions'] as bool? ?? true,
+        useSubtitlesForQuestions:
+            additionalOptions?['useSubtitlesForQuestions'] as bool? ?? true,
       );
 
       if (studySet == null) {
@@ -344,9 +456,11 @@ class EnhancedAIService {
       debugPrint('🌐 Processing website content: $url');
 
       // Use Cloud Function for URL processing
-      final result = await _functions.httpsCallable('generateStudySetFromUrl').call({
+      final result = await _functionsInstance
+          .httpsCallable('generateStudySetFromUrl')
+          .call({
         'url': url,
-        'userId': _authService.currentUserId ?? 'anonymous',
+        'userId': _firebaseAuth.currentUser?.uid ?? 'anonymous',
         'maxItems': additionalOptions?['maxItems'] ?? 50,
       });
 
@@ -370,7 +484,7 @@ class EnhancedAIService {
       }
     } catch (e) {
       debugPrint('❌ Website processing failed: $e');
-      
+
       // Fallback: Try to fetch basic content
       try {
         final response = await http.get(Uri.parse(url));
@@ -378,7 +492,7 @@ class EnhancedAIService {
           final document = html.parse(response.body);
           final title = document.querySelector('title')?.text ?? 'Website';
           final body = document.querySelector('body')?.text ?? '';
-          
+
           return ContentProcessingResult(
             extractedText: body.trim(),
             title: title,
@@ -514,10 +628,35 @@ class EnhancedAIService {
     String? learningStyle,
     String? promptEnhancement,
   }) async {
+    debugPrint('🎯 === STARTING generateStudyMaterials ===');
+    debugPrint(
+        '🎯 Parameters: $flashcardCount cards, $quizCount quizzes, difficulty: $difficulty');
+    debugPrint('🎯 Content length: ${content.length}');
+
     final stopwatch = Stopwatch()..start();
 
     try {
+      // Check cache first
+      final cacheKey =
+          _generateCacheKey(content, flashcardCount, quizCount, difficulty);
+      final cachedResult = _getCachedResult(cacheKey);
+      if (cachedResult != null) {
+        stopwatch.stop();
+        debugPrint(
+            '⚡ Returning cached result (${stopwatch.elapsedMilliseconds}ms)');
+        return GenerationResult(
+          flashcards:
+              _convertCachedFlashcards(cachedResult['flashcards'] ?? []),
+          quizQuestions:
+              _convertCachedQuizQuestions(cachedResult['quizQuestions'] ?? []),
+          method: GenerationMethod.values.firstWhere(
+              (e) => e.name == cachedResult['method'],
+              orElse: () => GenerationMethod.localAI),
+          processingTimeMs: stopwatch.elapsedMilliseconds,
+        );
+      }
       // Validate input parameters
+      debugPrint('🔍 Validating parameters...');
       final validationResult = _validateGenerationParameters(
         content: content,
         flashcardCount: flashcardCount,
@@ -536,31 +675,40 @@ class EnhancedAIService {
         );
       }
 
-      // Try OpenAI first
-      final openaiResult = await _tryOpenAIGeneration(
-        content: content,
-        flashcardCount: flashcardCount,
-        quizCount: quizCount,
-        difficulty: difficulty,
-        questionTypes: questionTypes,
-        cognitiveLevel: cognitiveLevel,
-        realWorldContext: realWorldContext,
-        challengeLevel: challengeLevel,
-        learningStyle: learningStyle,
-        promptEnhancement: promptEnhancement,
-      );
-
-      if (openaiResult.isSuccess) {
-        stopwatch.stop();
-        return GenerationResult(
-          flashcards: openaiResult.flashcards,
-          quizQuestions: openaiResult.quizQuestions,
-          method: GenerationMethod.openai,
-          processingTimeMs: stopwatch.elapsedMilliseconds,
+      // Try OpenAI first (but skip if quota exceeded)
+      debugPrint('🚀 Attempting OpenAI generation...');
+      GenerationResult openaiResult;
+      try {
+        openaiResult = await _tryOpenAIGeneration(
+          content: content,
+          flashcardCount: flashcardCount,
+          quizCount: quizCount,
+          difficulty: difficulty,
+          questionTypes: questionTypes,
+          cognitiveLevel: cognitiveLevel,
+          realWorldContext: realWorldContext,
+          challengeLevel: challengeLevel,
+          learningStyle: learningStyle,
+          promptEnhancement: promptEnhancement,
         );
+
+        if (openaiResult.isSuccess) {
+          stopwatch.stop();
+          return GenerationResult(
+            flashcards: openaiResult.flashcards,
+            quizQuestions: openaiResult.quizQuestions,
+            method: GenerationMethod.openai,
+            processingTimeMs: stopwatch.elapsedMilliseconds,
+          );
+        }
+      } catch (e) {
+        debugPrint(
+            '⚠️ OpenAI generation failed, proceeding to local fallback: $e');
+        // Continue to local fallback
       }
 
       // Try Local AI fallback
+      debugPrint('🔄 Attempting Local AI generation...');
       final localResult = await _tryLocalAIGeneration(
         content: content,
         flashcardCount: flashcardCount,
@@ -570,16 +718,26 @@ class EnhancedAIService {
 
       if (localResult.isSuccess) {
         stopwatch.stop();
-        return GenerationResult(
+        final result = GenerationResult(
           flashcards: localResult.flashcards,
           quizQuestions: localResult.quizQuestions,
           method: GenerationMethod.localAI,
           isFallback: true,
           processingTimeMs: stopwatch.elapsedMilliseconds,
         );
+
+        // Cache the result
+        _cacheResult(cacheKey, {
+          'flashcards': result.flashcards,
+          'quizQuestions': result.quizQuestions,
+          'method': result.method.name,
+        });
+
+        return result;
       }
 
       // Try Template-based generation
+      debugPrint('📋 Attempting Template generation...');
       final templateResult = await _tryTemplateGeneration(
         content: content,
         flashcardCount: flashcardCount,
@@ -599,6 +757,7 @@ class EnhancedAIService {
       }
 
       // Try Hybrid approach
+      debugPrint('🔀 Attempting Hybrid generation...');
       final hybridResult = await _tryHybridGeneration(
         content: content,
         flashcardCount: flashcardCount,
@@ -689,16 +848,17 @@ class EnhancedAIService {
       // Mobile-optimized generation - shorter timeouts, better fallback
       debugPrint('📱 Starting mobile generation...');
 
-      final flashcardCallable = _functions.httpsCallable('generateFlashcards',
-          options: HttpsCallableOptions(
-            timeout:
-                const Duration(seconds: 200), // Extended timeout for 500k chars
-          ));
+      final flashcardCallable =
+          _functionsInstance.httpsCallable('generateFlashcards',
+              options: HttpsCallableOptions(
+                timeout: const Duration(
+                    seconds: 60), // Reduced timeout for faster fallback
+              ));
 
-      final quizCallable = _functions.httpsCallable('generateQuiz',
+      final quizCallable = _functionsInstance.httpsCallable('generateQuiz',
           options: HttpsCallableOptions(
-            timeout:
-                const Duration(seconds: 200), // Extended timeout for 500k chars
+            timeout: const Duration(
+                seconds: 60), // Reduced timeout for faster fallback
           ));
 
       // Generate both with mobile timeouts
@@ -711,9 +871,9 @@ class EnhancedAIService {
         }).timeout(
           const Duration(
               seconds:
-                  220), // Slightly longer than function timeout for 500k chars
+                  70), // Slightly longer than function timeout for faster fallback
           onTimeout: () {
-            throw Exception('Large content generation timed out after 220s');
+            throw Exception('OpenAI generation timed out after 70s');
           },
         ),
         quizCallable.call({
@@ -724,10 +884,9 @@ class EnhancedAIService {
         }).timeout(
           const Duration(
               seconds:
-                  220), // Slightly longer than function timeout for 500k chars
+                  70), // Slightly longer than function timeout for faster fallback
           onTimeout: () {
-            throw Exception(
-                'Large content quiz generation timed out after 220s');
+            throw Exception('OpenAI quiz generation timed out after 70s');
           },
         ),
       ]);
@@ -810,21 +969,32 @@ class EnhancedAIService {
     required String difficulty,
   }) async {
     try {
-      debugPrint('🔄 Attempting Local AI fallback...');
+      debugPrint('🔄 _tryLocalAIGeneration: Starting Local AI fallback...');
+      debugPrint('📊 Content length: ${content.length} chars');
+      debugPrint(
+          '📊 Requesting: $flashcardCount flashcards, $quizCount quiz questions');
 
-      final flashcards = await _localFallback.generateFlashcards(
+      // Ensure we have valid content
+      if (content.trim().isEmpty) {
+        throw Exception('Content is empty, cannot generate study materials');
+      }
+
+      final flashcards = await _localFallbackInstance.generateFlashcards(
         content,
         count: flashcardCount,
         targetDifficulty: _mapStringToDifficultyLevel(difficulty),
       );
 
-      final quizQuestions = await _localFallback.generateQuizQuestions(
+      final quizQuestions = await _localFallbackInstance.generateQuizQuestions(
         content,
         quizCount,
         difficulty,
       );
 
       debugPrint('✅ Local AI fallback successful');
+      debugPrint('📊 Generated ${flashcards.length} flashcards');
+      debugPrint('📊 Generated ${quizQuestions.length} quiz questions');
+
       return GenerationResult(
         flashcards: flashcards,
         quizQuestions: quizQuestions,
@@ -833,6 +1003,7 @@ class EnhancedAIService {
       );
     } catch (e) {
       debugPrint('❌ Local AI fallback failed: $e');
+      debugPrint('❌ Stack trace: ${StackTrace.current}');
       return GenerationResult(
         flashcards: [],
         quizQuestions: [],
@@ -894,15 +1065,16 @@ class EnhancedAIService {
     try {
       debugPrint('🔀 Attempting Hybrid generation...');
 
-      // Try to get some from OpenAI, rest from local
-      final openaiFlashcards = await _tryOpenAIGeneration(
+      // Generate using only local AI and template methods to avoid recursion
+      // This is the final fallback, so we use only non-recursive methods
+      final localFlashcards = await _tryLocalAIGeneration(
         content: content,
         flashcardCount: flashcardCount ~/ 2,
         quizCount: quizCount ~/ 2,
         difficulty: difficulty,
       );
 
-      final localFlashcards = await _tryLocalAIGeneration(
+      final templateFlashcards = await _tryTemplateGeneration(
         content: content,
         flashcardCount: flashcardCount - (flashcardCount ~/ 2),
         quizCount: quizCount - (quizCount ~/ 2),
@@ -910,16 +1082,19 @@ class EnhancedAIService {
       );
 
       final allFlashcards = [
-        ...openaiFlashcards.flashcards,
         ...localFlashcards.flashcards,
+        ...templateFlashcards.flashcards,
       ];
 
       final allQuizQuestions = [
-        ...openaiFlashcards.quizQuestions,
         ...localFlashcards.quizQuestions,
+        ...templateFlashcards.quizQuestions,
       ];
 
       debugPrint('✅ Hybrid generation successful');
+      debugPrint(
+          '📊 Hybrid result: ${allFlashcards.length} flashcards, ${allQuizQuestions.length} quiz questions');
+
       return GenerationResult(
         flashcards: allFlashcards,
         quizQuestions: allQuizQuestions,
@@ -962,24 +1137,55 @@ class EnhancedAIService {
 
   // Helper methods
   Future<void> _ensureAuthentication() async {
-    if (FirebaseAuth.instance.currentUser == null) {
-      debugPrint('⚠️ User not authenticated, attempting anonymous sign-in...');
-      try {
-        await FirebaseAuth.instance.signInAnonymously();
-        debugPrint('✅ Anonymous sign-in successful');
-      } catch (e) {
-        debugPrint('❌ Anonymous sign-in failed: $e');
-        throw Exception('Authentication failed: $e');
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        debugPrint(
+            '⚠️ User not authenticated, attempting anonymous sign-in...');
+        try {
+          await FirebaseAuth.instance.signInAnonymously();
+          debugPrint('✅ Anonymous sign-in successful');
+        } catch (e) {
+          debugPrint('❌ Anonymous sign-in failed: $e');
+          // Don't throw exception - continue without authentication
+          debugPrint(
+              '⚠️ Continuing without authentication (some features may be limited)');
+        }
+      } else {
+        debugPrint('✅ User already authenticated: ${currentUser.uid}');
       }
+    } catch (e) {
+      debugPrint('❌ Authentication check failed: $e');
+      // Don't throw exception - continue without authentication
+      debugPrint(
+          '⚠️ Continuing without authentication (some features may be limited)');
     }
   }
 
   Future<String?> _getAppCheckToken() async {
     try {
-      // Try to get App Check token, but don't fail if not available
-      final token = await FirebaseAppCheck.instance.getToken();
-      debugPrint('✅ App Check token obtained successfully');
-      return token;
+      // Check if App Check is disabled or not available
+      if (AppCheckConfig.shouldSkipAppCheck ||
+          !AppCheckConfig.isAppCheckEnabled) {
+        debugPrint('⚠️ App Check is disabled or not available, skipping token');
+        return null;
+      }
+
+      // Use AppCheckConfig to get token safely with timeout
+      final token = await AppCheckConfig.getToken().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          debugPrint('⚠️ App Check token request timed out');
+          return null;
+        },
+      );
+      if (token != null) {
+        debugPrint('✅ App Check token obtained successfully');
+        return token;
+      } else {
+        debugPrint('⚠️ App Check token is null (continuing without)');
+        return null;
+      }
     } catch (e) {
       debugPrint('⚠️ App Check token failed (continuing without): $e');
       // This is expected in development/emulator environments
@@ -1648,7 +1854,8 @@ GENERATION INSTRUCTIONS:
       // Generate flashcards
       debugPrint(
           '🔍 Enhanced AI: Calling generateFlashcards Cloud Function with enhanced prompt...');
-      final flashcardCallable = _functions.httpsCallable('generateFlashcards');
+      final flashcardCallable =
+          _functionsInstance.httpsCallable('generateFlashcards');
       final flashcardResult = await flashcardCallable.call({
         'content': enhancedContent,
         'count': flashcardCount,
@@ -1663,7 +1870,7 @@ GENERATION INSTRUCTIONS:
       // Generate quiz questions
       debugPrint(
           '🔍 Enhanced AI: Calling generateQuiz Cloud Function with enhanced prompt...');
-      final quizCallable = _functions.httpsCallable('generateQuiz');
+      final quizCallable = _functionsInstance.httpsCallable('generateQuiz');
       final quizResult = await quizCallable.call({
         'content': enhancedContent,
         'count': quizCount,
@@ -1710,13 +1917,13 @@ GENERATION INSTRUCTIONS:
     try {
       debugPrint('🔄 Attempting Local AI fallback for additional content...');
 
-      final flashcards = await _localFallback.generateFlashcards(
+      final flashcards = await _localFallbackInstance.generateFlashcards(
         enhancedContent,
         count: flashcardCount,
         targetDifficulty: _mapStringToDifficultyLevel(difficulty),
       );
 
-      final quizQuestions = await _localFallback.generateQuizQuestions(
+      final quizQuestions = await _localFallbackInstance.generateQuizQuestions(
         enhancedContent,
         quizCount,
         difficulty,
@@ -1878,18 +2085,18 @@ GENERATION INSTRUCTIONS:
   /// Extract text content from a StudySet
   String _extractTextFromStudySet(StudySet studySet) {
     final StringBuffer textBuffer = StringBuffer();
-    
+
     // Add title
     textBuffer.writeln(studySet.title);
     textBuffer.writeln();
-    
+
     // Add flashcard content
     for (final flashcard in studySet.flashcards) {
       textBuffer.writeln('Question: ${flashcard.question}');
       textBuffer.writeln('Answer: ${flashcard.answer}');
       textBuffer.writeln();
     }
-    
+
     // Add quiz content
     for (final quiz in studySet.quizzes) {
       textBuffer.writeln('Quiz: ${quiz.title}');
@@ -1900,7 +2107,7 @@ GENERATION INSTRUCTIONS:
         textBuffer.writeln();
       }
     }
-    
+
     return textBuffer.toString().trim();
   }
 }

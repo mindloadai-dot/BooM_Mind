@@ -17,11 +17,15 @@ class YouTubeTranscriptProcessor {
   YouTubeTranscriptProcessor._internal();
 
   final YouTubeService _youtubeService = YouTubeService();
-  final EnhancedAIService _enhancedAIService = EnhancedAIService.instance;
   final LocalAIFallbackService _fallbackService =
       LocalAIFallbackService.instance;
-  final UnifiedStorageService _storageService =
-      UnifiedStorageService.instance;
+  final UnifiedStorageService _storageService = UnifiedStorageService.instance;
+
+  // Use lazy initialization to avoid circular dependency with EnhancedAIService
+  EnhancedAIService? _enhancedAIService;
+  EnhancedAIService get _enhancedAIServiceInstance {
+    return _enhancedAIService ??= EnhancedAIService.instance;
+  }
 
   /// Process YouTube video and create study materials with subtitle-based questions
   Future<StudySet?> processYouTubeVideo({
@@ -282,17 +286,19 @@ Generate flashcards that test understanding of the video content, focusing on:
 
       // Try EnhancedAIService first
       try {
-        final enhancedResult = await _enhancedAIService.generateStudyMaterials(
+        final enhancedResult =
+            await _enhancedAIServiceInstance.generateStudyMaterials(
           content: context,
           flashcardCount: count,
           quizCount: 0,
           difficulty: 'mixed',
         );
-        
+
         if (!enhancedResult.isSuccess) {
-          throw Exception('EnhancedAIService failed: ${enhancedResult.errorMessage}');
+          throw Exception(
+              'EnhancedAIService failed: ${enhancedResult.errorMessage}');
         }
-        
+
         return enhancedResult.flashcards;
       } catch (e) {
         if (kDebugMode) {
@@ -346,7 +352,8 @@ Make questions directly reference the video content, such as:
 
       // Try EnhancedAIService first
       try {
-        final enhancedResult = await _enhancedAIService.generateStudyMaterials(
+        final enhancedResult =
+            await _enhancedAIServiceInstance.generateStudyMaterials(
           content: useSubtitlesForQuestions
               ? questionsPrompt
               : segments.map((s) => s.text).join(' '),
@@ -354,11 +361,12 @@ Make questions directly reference the video content, such as:
           quizCount: count,
           difficulty: 'mixed',
         );
-        
+
         if (!enhancedResult.isSuccess) {
-          throw Exception('EnhancedAIService failed: ${enhancedResult.errorMessage}');
+          throw Exception(
+              'EnhancedAIService failed: ${enhancedResult.errorMessage}');
         }
-        
+
         return enhancedResult.quizQuestions;
       } catch (e) {
         if (kDebugMode) {

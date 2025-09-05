@@ -444,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => _EnhancedThemeSelectionDialog(),
+      builder: (context) => _FixedThemeSelectionDialog(),
     );
   }
 
@@ -1489,5 +1489,580 @@ class _ThemeSelectionDialogState extends State<_ThemeSelectionDialog>
         ),
       ),
     );
+  }
+}
+
+class _FixedThemeSelectionDialog extends StatefulWidget {
+  @override
+  State<_FixedThemeSelectionDialog> createState() =>
+      _FixedThemeSelectionDialogState();
+}
+
+class _FixedThemeSelectionDialogState extends State<_FixedThemeSelectionDialog>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  AppTheme _selectedTheme = ThemeManager.instance.currentTheme;
+  bool _isAnimatingSelection = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: screenSize.width > 600 ? 60 : 16,
+            vertical: 40,
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: screenSize.height * 0.85,
+            ),
+            decoration: BoxDecoration(
+              color: context.tokens.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        context.tokens.primary.withOpacity(0.1),
+                        Colors.transparent,
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Icon
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              context.tokens.primary,
+                              context.tokens.primary.withOpacity(0.7),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.palette_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Title
+                      Text(
+                        'Choose Your Theme',
+                        style: TextStyle(
+                          color: context.tokens.textPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Subtitle
+                      Text(
+                        'Select a theme that matches your style',
+                        style: TextStyle(
+                          color: context.tokens.textSecondary,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Current theme indicator
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: _getThemeGradient(_selectedTheme),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Current: ${_getThemeDisplayName(_selectedTheme)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Scrollable theme grid
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: screenSize.width > 600 ? 3 : 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 1.1,
+                      ),
+                      itemCount: AppTheme.values.length,
+                      itemBuilder: (context, index) {
+                        final theme = AppTheme.values[index];
+                        final isSelected = _selectedTheme == theme;
+
+                        return _buildThemeCard(theme, isSelected);
+                      },
+                    ),
+                  ),
+                ),
+
+                // Actions
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: context.tokens.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isAnimatingSelection
+                              ? null
+                              : () => _applyTheme(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.tokens.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _isAnimatingSelection
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Apply Theme',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeCard(AppTheme theme, bool isSelected) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _selectTheme(theme),
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: BoxDecoration(
+            gradient: _getThemeGradient(theme),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? Colors.white : Colors.transparent,
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _getThemeGradient(theme)
+                    .colors
+                    .first
+                    .withOpacity(isSelected ? 0.4 : 0.2),
+                blurRadius: isSelected ? 12 : 6,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Theme content
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Theme icon
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _getThemeIcon(theme),
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Theme name
+                      Text(
+                        _getThemeDisplayName(theme),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Selection indicator
+              if (isSelected)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.black,
+                      size: 16,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _selectTheme(AppTheme theme) {
+    if (_isAnimatingSelection) return;
+
+    setState(() {
+      _selectedTheme = theme;
+    });
+
+    // Haptic feedback
+    HapticFeedbackService().lightImpact();
+  }
+
+  void _applyTheme() async {
+    if (_isAnimatingSelection) return;
+
+    setState(() {
+      _isAnimatingSelection = true;
+    });
+
+    // Enhanced haptic feedback
+    HapticFeedbackService().success();
+
+    try {
+      await ThemeManager.instance.setTheme(_selectedTheme);
+
+      // Success animation delay
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        Navigator.pop(context);
+
+        // Enhanced success notification
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    gradient: _getThemeGradient(_selectedTheme),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _getThemeGradient(_selectedTheme)
+                            .colors
+                            .first
+                            .withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '✨ Theme Applied!',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        'Now using ${_getThemeDisplayName(_selectedTheme)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: context.tokens.success,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            margin: const EdgeInsets.all(20),
+            duration: const Duration(seconds: 3),
+            elevation: 8,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    color: Colors.white, size: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'Failed to apply theme: $e',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: context.tokens.error,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            margin: const EdgeInsets.all(20),
+          ),
+        );
+      }
+    }
+  }
+
+  IconData _getThemeIcon(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.classic:
+        return Icons.palette_rounded;
+      case AppTheme.darkMode:
+        return Icons.dark_mode_rounded;
+      case AppTheme.matrix:
+        return Icons.code_rounded;
+      case AppTheme.retro:
+        return Icons.music_note_rounded;
+      case AppTheme.cyberNeon:
+        return Icons.bolt_rounded;
+      case AppTheme.minimal:
+        return Icons.minimize_rounded;
+      case AppTheme.purpleNeon:
+        return Icons.electric_bolt_rounded;
+      case AppTheme.oceanDepths:
+        return Icons.water_drop_rounded;
+      case AppTheme.sunsetGlow:
+        return Icons.wb_sunny_rounded;
+      case AppTheme.forestNight:
+        return Icons.forest_rounded;
+    }
+  }
+
+  LinearGradient _getThemeGradient(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.classic:
+        return const LinearGradient(
+          colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.darkMode:
+        return const LinearGradient(
+          colors: [Color(0xFF424242), Color(0xFF212121)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.matrix:
+        return const LinearGradient(
+          colors: [Color(0xFF00FF00), Color(0xFF00C851)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.retro:
+        return const LinearGradient(
+          colors: [Color(0xFFFF6B6B), Color(0xFF4ECDC4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.cyberNeon:
+        return const LinearGradient(
+          colors: [Color(0xFF00FFFF), Color(0xFFFF00FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.minimal:
+        return const LinearGradient(
+          colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.purpleNeon:
+        return const LinearGradient(
+          colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.oceanDepths:
+        return const LinearGradient(
+          colors: [Color(0xFF006064), Color(0xFF00838F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.sunsetGlow:
+        return const LinearGradient(
+          colors: [Color(0xFFFF5722), Color(0xFFFF9800)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case AppTheme.forestNight:
+        return const LinearGradient(
+          colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+    }
+  }
+
+  String _getThemeDisplayName(AppTheme theme) {
+    switch (theme) {
+      case AppTheme.classic:
+        return 'Classic Blue';
+      case AppTheme.darkMode:
+        return 'Dark Mode';
+      case AppTheme.matrix:
+        return 'Matrix Green';
+      case AppTheme.retro:
+        return 'Retro Vibes';
+      case AppTheme.cyberNeon:
+        return 'Cyber Neon';
+      case AppTheme.minimal:
+        return 'Minimal';
+      case AppTheme.purpleNeon:
+        return 'Purple Neon';
+      case AppTheme.oceanDepths:
+        return 'Ocean Depths';
+      case AppTheme.sunsetGlow:
+        return 'Sunset Glow';
+      case AppTheme.forestNight:
+        return 'Forest Night';
+    }
   }
 }

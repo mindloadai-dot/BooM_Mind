@@ -1,10 +1,10 @@
 name: mindload
 description: "Mindload - AI Study Companion for focused learning with flashcards, quizzes, and ultra study mode with binaural beats"
 publish_to: "none"
-version: 1.0.0+21
+version: 1.0.0+22
 
 environment:
-  sdk: '>=3.6.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -16,7 +16,7 @@ dependencies:
   # State Management
   provider: ^6.1.2
   
-  # Firebase - Latest Compatible Versions
+  # Firebase - Latest Stable Versions
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.1
   cloud_firestore: ^6.0.0
@@ -41,7 +41,7 @@ dependencies:
   shared_preferences: ^2.3.3
   file_picker: ^10.3.1
   path_provider: ^2.1.4
-  syncfusion_flutter_pdf: ^30.2.7
+  syncfusion_flutter_pdf: ^31.1.17
   archive: ^4.0.7
   xml: ^6.5.0
   sqflite: ^2.4.1
@@ -81,7 +81,7 @@ dependencies:
   image_picker: ^1.2.0
   image: ^4.5.4
   share_plus: ^11.1.0
-  syncfusion_flutter_pdfviewer: ^30.2.7
+  syncfusion_flutter_pdfviewer: ^31.1.17
 
 dependency_overrides:
   # Work around Android build issues in latest sqflite_android by pinning to a compatible version

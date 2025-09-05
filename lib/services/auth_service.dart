@@ -100,8 +100,51 @@ class AuthService extends ChangeNotifier {
   String? get currentUserId => _currentUser?.uid;
   bool get isAuthenticated => _currentUser != null;
 
+  /// Safe initialization for iOS to prevent crashes
+  Future<void> initializeIOS() async {
+    if (!Platform.isIOS) return;
+
+    try {
+      if (kDebugMode) {
+        debugPrint('🍎 Initializing iOS-specific authentication...');
+      }
+
+      // Check if Apple Sign-In is available
+      bool isAppleSignInAvailable = false;
+      try {
+        isAppleSignInAvailable = await SignInWithApple.isAvailable();
+        if (kDebugMode) {
+          debugPrint('🍎 Apple Sign-In availability: $isAppleSignInAvailable');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Error checking Apple Sign-In availability: $e');
+        }
+        // Assume available on iOS 13+
+        isAppleSignInAvailable = true;
+      }
+
+      // Initialize Firebase Auth with iOS-specific settings
+      await _firebaseAuth.setSettings(
+        appVerificationDisabledForTesting: kDebugMode,
+      );
+
+      if (kDebugMode) {
+        debugPrint('✅ iOS authentication initialization completed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ iOS authentication initialization failed: $e');
+      }
+      // Don't throw - app should still work
+    }
+  }
+
   Future<void> initialize() async {
     try {
+      // Initialize iOS-specific authentication first
+      await initializeIOS();
+
       // Google Sign-In initialization not needed
       // We use Firebase Auth GoogleAuthProvider directly
 
@@ -217,6 +260,34 @@ class AuthService extends ChangeNotifier {
     final user = _firebaseAuth.currentUser;
     if (user != null && !user.emailVerified) {
       await user.sendEmailVerification();
+    }
+  }
+
+  /// Safe authentication method that prevents iOS crashes
+  Future<AuthUser?> signInWithGoogleSafe() async {
+    try {
+      return await signInWithGoogle();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Safe Google Sign-In failed: $e');
+      }
+
+      // Return null instead of throwing to prevent crashes
+      return null;
+    }
+  }
+
+  /// Safe Apple Sign-In method that prevents iOS crashes
+  Future<AuthUser?> signInWithAppleSafe() async {
+    try {
+      return await signInWithApple();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Safe Apple Sign-In failed: $e');
+      }
+
+      // Return null instead of throwing to prevent crashes
+      return null;
     }
   }
 
@@ -446,13 +517,14 @@ class AuthService extends ChangeNotifier {
       AuthorizationCredentialAppleID appleCredential;
 
       try {
+        // iOS-specific Apple Sign-In with enhanced error handling
         appleCredential = await SignInWithApple.getAppleIDCredential(
           scopes: [
             AppleIDAuthorizationScopes.email,
             AppleIDAuthorizationScopes.fullName,
           ],
           nonce: nonce,
-          // Only include webAuthenticationOptions for web builds with proper configuration
+          // iOS-specific configuration to prevent crashes
           webAuthenticationOptions: kIsWeb
               ? WebAuthenticationOptions(
                   clientId: _getAppleWebClientId(),
@@ -493,11 +565,39 @@ class AuthService extends ChangeNotifier {
           throw Exception('Apple Sign-In timed out. Please try again.');
         }
 
+        // Handle iOS-specific Apple Sign-In errors
+        if (e.toString().contains('cancelled') ||
+            e.toString().contains('canceled')) {
+          throw Exception('Apple Sign-In was cancelled.');
+        }
+
+        if (e.toString().contains('not_handled') ||
+            e.toString().contains('notHandled')) {
+          throw Exception(
+              'Apple Sign-In is not available on this device. Please ensure:\n'
+              '1. You are running iOS 13.0 or later\n'
+              '2. Sign In with Apple is enabled in Settings\n'
+              '3. You are signed in to iCloud');
+        }
+
+        if (e.toString().contains('invalid_response') ||
+            e.toString().contains('invalidResponse')) {
+          throw Exception(
+              'Invalid response from Apple Sign-In. Please try again.');
+        }
+
+        if (e.toString().contains('unknown') ||
+            e.toString().contains('Unknown')) {
+          throw Exception(
+              'Unknown error during Apple Sign-In. Please try again.');
+        }
+
         // Re-throw with more context
         throw Exception('Apple Sign-In failed. Please ensure:\n'
             '1. You are signed in to iCloud\n'
             '2. Sign In with Apple is enabled in Settings\n'
-            '3. Two-factor authentication is enabled for your Apple ID');
+            '3. Two-factor authentication is enabled for your Apple ID\n'
+            '4. You are running iOS 13.0 or later');
       }
 
       if (kDebugMode) {

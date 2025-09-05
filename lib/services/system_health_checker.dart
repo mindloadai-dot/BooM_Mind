@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mindload/services/mindload_notification_service.dart';
 import 'package:mindload/services/auth_service.dart';
 import 'package:mindload/services/firebase_client_service.dart';
-import 'package:mindload/services/ai_service_diagnostics.dart';
+import 'package:mindload/services/enhanced_ai_service.dart';
 
 /// Comprehensive system health checker for iOS and Android
 class SystemHealthChecker {
@@ -165,15 +165,28 @@ class SystemHealthChecker {
     try {
       debugPrint('🤖 Testing AI service...');
 
-      final aiStatus = await AIServiceDiagnostics.quickMobileTest();
+      // Test EnhancedAIService directly
+      const testContent = 'Artificial intelligence is transforming education.';
+      final result = await EnhancedAIService.instance.generateStudyMaterials(
+        content: testContent,
+        flashcardCount: 1,
+        quizCount: 1,
+        difficulty: 'easy',
+      );
+
+      final aiStatus = result.isSuccess
+          ? '✅ AI Service: Working (${result.method.name})'
+          : '⚠️ AI Service: Using fallback (${result.errorMessage})';
 
       return {
         'status': 'success',
         'aiServiceStatus': aiStatus,
         'supports500kChars': true,
         'localAIAvailable': true,
-        'cloudAIConfigured': aiStatus.contains('openai'),
+        'cloudAIConfigured': result.method == GenerationMethod.openai,
         'message': 'AI service working correctly',
+        'method': result.method.name,
+        'isFallback': result.isFallback,
       };
     } catch (e) {
       return {

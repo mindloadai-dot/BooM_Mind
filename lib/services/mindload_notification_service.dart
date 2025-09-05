@@ -57,7 +57,8 @@ class MindLoadNotificationService {
   static const String _channelName = 'MindLoad Local Notifications';
   static const String _channelDesc = 'Study reminders and notifications';
   static const String _firstRunFlag = 'hasFiredFirstStudySetNotification';
-  static const String _dailyPlanKey = 'ml_daily_plan_hhmm'; // e.g., ["09:00","13:00","19:00"]
+  static const String _dailyPlanKey =
+      'ml_daily_plan_hhmm'; // e.g., ["09:00","13:00","19:00"]
 
   /// Initialize the notification service (idempotent)
   static Future<void> initialize() async {
@@ -71,8 +72,10 @@ class MindLoadNotificationService {
 
       // Check if platform supports notifications
       if (!Platform.isIOS && !Platform.isAndroid) {
-        debugPrint('⚠️ Platform ${Platform.operatingSystem} does not support local notifications');
-        debugPrint('✅ MindLoadNotificationService initialized (no-op for unsupported platform)');
+        debugPrint(
+            '⚠️ Platform ${Platform.operatingSystem} does not support local notifications');
+        debugPrint(
+            '✅ MindLoadNotificationService initialized (no-op for unsupported platform)');
         _initialized = true;
         return;
       }
@@ -189,7 +192,8 @@ class MindLoadNotificationService {
 
     // Skip notification on unsupported platforms
     if (!Platform.isIOS && !Platform.isAndroid) {
-      debugPrint('⚠️ Skipping notification on unsupported platform: ${Platform.operatingSystem}');
+      debugPrint(
+          '⚠️ Skipping notification on unsupported platform: ${Platform.operatingSystem}');
       return;
     }
 
@@ -244,7 +248,8 @@ class MindLoadNotificationService {
 
     // Skip notification on unsupported platforms
     if (!Platform.isIOS && !Platform.isAndroid) {
-      debugPrint('⚠️ Skipping scheduled notification on unsupported platform: ${Platform.operatingSystem}');
+      debugPrint(
+          '⚠️ Skipping scheduled notification on unsupported platform: ${Platform.operatingSystem}');
       return;
     }
 
@@ -333,12 +338,14 @@ class MindLoadNotificationService {
   }
 
   /// Get all pending notifications (for debugging)
-  static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+  static Future<List<PendingNotificationRequest>>
+      getPendingNotifications() async {
     if (!_initialized) return [];
 
     try {
       final pendingNotifications = await _plugin.pendingNotificationRequests();
-      debugPrint('📋 Found ${pendingNotifications.length} pending notifications');
+      debugPrint(
+          '📋 Found ${pendingNotifications.length} pending notifications');
       return pendingNotifications;
     } catch (e) {
       debugPrint('❌ Failed to get pending notifications: $e');
@@ -475,14 +482,30 @@ class MindLoadNotificationService {
       } else if (Platform.isAndroid) {
         debugPrint('🤖 Requesting Android notification permissions...');
 
-        // Android permissions through permission_handler
-        final status = await Permission.notification.request();
-        debugPrint('🤖 Notification permission status: $status');
+        // Android permissions through permission_handler with error handling
+        PermissionStatus? status;
+        try {
+          status = await Permission.notification.request();
+          debugPrint('🤖 Notification permission status: $status');
+        } catch (e) {
+          debugPrint('❌ Permission request failed: $e');
+          debugPrint('❌ Stack trace: ${StackTrace.current}');
+          // Continue without permissions - user can grant them later
+          debugPrint('⚠️ Continuing without notification permissions');
+          status =
+              PermissionStatus.denied; // Default to denied if request fails
+        }
 
         // Also request exact alarm permission for Android 12+
         try {
           final alarmStatus = await Permission.scheduleExactAlarm.request();
           debugPrint('⏰ Exact alarm permission: $alarmStatus');
+
+          // If exact alarm permission is denied, we can still schedule but with less precision
+          if (alarmStatus == PermissionStatus.denied) {
+            debugPrint(
+                '⚠️ Exact alarm permission denied - notifications will use inexact scheduling');
+          }
         } catch (e) {
           // Exact alarm permission not available on older Android versions
           debugPrint('ℹ️ Exact alarm permission not available: $e');
@@ -786,7 +809,8 @@ class MindLoadNotificationService {
   /// Next instance of HH:mm in local tz
   static tz.TZDateTime _nextInstanceOf(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
@@ -794,7 +818,8 @@ class MindLoadNotificationService {
   }
 
   /// Stable ID for a daily slot
-  static int _stableIdForDaily(int hour, int minute) => 20000 + (hour * 100) + minute;
+  static int _stableIdForDaily(int hour, int minute) =>
+      20000 + (hour * 100) + minute;
 
   /// PUBLIC: single daily repeating slot
   static Future<void> scheduleDaily({
@@ -805,10 +830,11 @@ class MindLoadNotificationService {
     String? payload,
   }) async {
     if (!_initialized) await initialize();
-    
+
     // Skip notification on unsupported platforms
     if (!Platform.isIOS && !Platform.isAndroid) {
-      debugPrint('⚠️ Skipping daily notification on unsupported platform: ${Platform.operatingSystem}');
+      debugPrint(
+          '⚠️ Skipping daily notification on unsupported platform: ${Platform.operatingSystem}');
       return;
     }
 
@@ -822,21 +848,39 @@ class MindLoadNotificationService {
 
       final id = _stableIdForDaily(hour, minute);
       final scheduledTime = _nextInstanceOf(hour, minute);
-      
-      debugPrint('📅 Scheduling daily notification: $title at ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} (ID: $id)');
-      
+
+      debugPrint(
+          '📅 Scheduling daily notification: $title at ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} (ID: $id)');
+
+      // Check if we have exact alarm permission for precise scheduling
+      bool useExactScheduling = true;
+      if (Platform.isAndroid) {
+        try {
+          final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+          useExactScheduling = exactAlarmStatus == PermissionStatus.granted;
+          debugPrint(
+              '⏰ Exact alarm permission status: $exactAlarmStatus, using exact scheduling: $useExactScheduling');
+        } catch (e) {
+          debugPrint('⚠️ Could not check exact alarm permission: $e');
+          useExactScheduling = false;
+        }
+      }
+
       await _plugin.zonedSchedule(
         id,
         title,
         body,
         scheduledTime,
         _createNotificationDetails(),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: useExactScheduling
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexact,
         matchDateTimeComponents: DateTimeComponents.time, // <-- repeat daily
         payload: payload,
       );
-      
-      debugPrint('✅ Daily notification scheduled successfully for ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
+
+      debugPrint(
+          '✅ Daily notification scheduled successfully for ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
     } catch (e) {
       debugPrint('❌ Failed to schedule daily notification: $e');
     }
@@ -853,30 +897,37 @@ class MindLoadNotificationService {
 
     // Skip notification on unsupported platforms
     if (!Platform.isIOS && !Platform.isAndroid) {
-      debugPrint('⚠️ Skipping daily times on unsupported platform: ${Platform.operatingSystem}');
+      debugPrint(
+          '⚠️ Skipping daily times on unsupported platform: ${Platform.operatingSystem}');
       return;
     }
 
     try {
       // normalize + dedupe (e.g., "9:0" -> "09:00")
-      final norm = hhmmList.map((s) {
-        final p = s.split(':');
-        final h = int.parse(p[0]);
-        final m = int.parse(p[1]);
-        return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-      }).toSet().toList()..sort();
+      final norm = hhmmList
+          .map((s) {
+            final p = s.split(':');
+            final h = int.parse(p[0]);
+            final m = int.parse(p[1]);
+            return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+          })
+          .toSet()
+          .toList()
+        ..sort();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_dailyPlanKey, norm);
 
-      debugPrint('📅 Scheduling ${norm.length} daily notifications: ${norm.join(', ')}');
+      debugPrint(
+          '📅 Scheduling ${norm.length} daily notifications: ${norm.join(', ')}');
 
       for (final s in norm) {
         final h = int.parse(s.substring(0, 2));
         final m = int.parse(s.substring(3, 5));
-        await scheduleDaily(hour: h, minute: m, title: title, body: body, payload: payload);
+        await scheduleDaily(
+            hour: h, minute: m, title: title, body: body, payload: payload);
       }
-      
+
       debugPrint('✅ Daily notification plan saved and scheduled');
     } catch (e) {
       debugPrint('❌ Failed to schedule daily times: $e');
@@ -889,7 +940,7 @@ class MindLoadNotificationService {
     String defaultBody = '15 min today keeps your streak alive.',
   }) async {
     if (!_initialized) await initialize();
-    
+
     // Skip notification on unsupported platforms
     if (!Platform.isIOS && !Platform.isAndroid) {
       return;
@@ -902,15 +953,16 @@ class MindLoadNotificationService {
         debugPrint('📅 No daily notification plan found');
         return;
       }
-      
+
       debugPrint('📅 Re-applying daily notification plan: ${plan.join(', ')}');
-      
+
       for (final s in plan) {
         final h = int.parse(s.substring(0, 2));
         final m = int.parse(s.substring(3, 5));
-        await scheduleDaily(hour: h, minute: m, title: defaultTitle, body: defaultBody);
+        await scheduleDaily(
+            hour: h, minute: m, title: defaultTitle, body: defaultBody);
       }
-      
+
       debugPrint('✅ Daily notification plan re-applied successfully');
     } catch (e) {
       debugPrint('❌ Failed to reschedule daily plan: $e');
@@ -922,9 +974,9 @@ class MindLoadNotificationService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final plan = prefs.getStringList(_dailyPlanKey) ?? [];
-      
+
       debugPrint('📅 Clearing ${plan.length} daily notifications');
-      
+
       for (final s in plan) {
         final h = int.parse(s.substring(0, 2));
         final m = int.parse(s.substring(3, 5));
@@ -933,7 +985,7 @@ class MindLoadNotificationService {
         debugPrint('❌ Cancelled daily notification ID: $id ($s)');
       }
       await prefs.remove(_dailyPlanKey);
-      
+
       debugPrint('✅ Daily notification plan cleared');
     } catch (e) {
       debugPrint('❌ Failed to clear daily plan: $e');
@@ -948,8 +1000,101 @@ class MindLoadNotificationService {
   }) async {
     debugPrint('📅 Updating daily notification plan...');
     await clearDailyPlan();
-    await scheduleDailyTimes(hhmmList, title: title, body: body, payload: payload);
+    await scheduleDailyTimes(hhmmList,
+        title: title, body: body, payload: payload);
     debugPrint('✅ Daily notification plan updated successfully');
+  }
+
+  /// Test notification scheduling with detailed debugging
+  static Future<void> testNotificationScheduling() async {
+    debugPrint('🧪 Testing notification scheduling...');
+
+    if (!_initialized) {
+      await initialize();
+    }
+
+    try {
+      // Test 1: Check permissions
+      final hasPermission = await _hasPermissions();
+      debugPrint('🧪 Permission test: $hasPermission');
+
+      if (!hasPermission) {
+        debugPrint('❌ Cannot test - no notification permissions');
+        return;
+      }
+
+      // Test 2: Schedule a test notification for 30 seconds from now
+      final testTime = DateTime.now().add(const Duration(seconds: 30));
+      debugPrint('🧪 Scheduling test notification for: ${testTime.toString()}');
+
+      await scheduleAt(
+        testTime,
+        'MindLoad Test',
+        'This is a test notification to verify scheduling works!',
+        payload: 'test_notification',
+      );
+
+      debugPrint('✅ Test notification scheduled successfully');
+
+      // Test 3: Schedule a daily notification for testing
+      final now = DateTime.now();
+      final testDailyTime = DateTime(
+          now.year, now.month, now.day, now.hour, (now.minute + 1) % 60);
+
+      debugPrint(
+          '🧪 Scheduling test daily notification for: ${testDailyTime.toString()}');
+
+      await scheduleDaily(
+        hour: testDailyTime.hour,
+        minute: testDailyTime.minute,
+        title: 'MindLoad Daily Test',
+        body: 'This is a test daily notification!',
+        payload: 'test_daily',
+      );
+
+      debugPrint('✅ Test daily notification scheduled successfully');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Notification scheduling test failed: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  /// Set up default daily notifications if none are configured
+  static Future<void> setupDefaultDailyNotifications() async {
+    debugPrint('🔧 Setting up default daily notifications...');
+
+    if (!_initialized) {
+      await initialize();
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final existingPlan = prefs.getStringList(_dailyPlanKey) ?? [];
+
+      if (existingPlan.isNotEmpty) {
+        debugPrint(
+            '📅 Daily notification plan already exists: ${existingPlan.join(', ')}');
+        return;
+      }
+
+      // Set up default daily notifications (morning and evening)
+      final defaultTimes = ['09:00', '18:00'];
+
+      debugPrint(
+          '📅 Setting up default daily notifications: ${defaultTimes.join(', ')}');
+
+      await scheduleDailyTimes(
+        defaultTimes,
+        title: 'MindLoad',
+        body: '15 min today keeps your streak alive.',
+        payload: 'daily_reminder',
+      );
+
+      debugPrint('✅ Default daily notifications set up successfully');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Failed to set up default daily notifications: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
   }
 
   /// Test iOS notification permissions and functionality
@@ -986,8 +1131,8 @@ class MindLoadNotificationService {
         debugPrint('🔐 Requesting notification permissions...');
         final result = await Permission.notification.request();
         debugPrint('🍎 Permission request result: $result');
-        
-        if (result != PermissionStatus.granted && 
+
+        if (result != PermissionStatus.granted &&
             result != PermissionStatus.provisional) {
           debugPrint('❌ Permission request denied');
           return;
@@ -1000,7 +1145,7 @@ class MindLoadNotificationService {
         '🍎 iOS Test Notification',
         'This is a test notification from MindLoad!',
       );
-      
+
       debugPrint('✅ iOS notification test completed successfully');
     } catch (e, stackTrace) {
       debugPrint('❌ iOS notification test failed: $e');
@@ -1026,7 +1171,7 @@ class MindLoadNotificationService {
         debugPrint('🔐 Requesting notification permissions...');
         final result = await Permission.notification.request();
         debugPrint('🤖 Permission request result: $result');
-        
+
         if (result != PermissionStatus.granted) {
           debugPrint('❌ Permission request denied');
           return;
@@ -1039,7 +1184,7 @@ class MindLoadNotificationService {
         '🤖 Android Test Notification',
         'This is a test notification from MindLoad!',
       );
-      
+
       debugPrint('✅ Android notification test completed successfully');
     } catch (e, stackTrace) {
       debugPrint('❌ Android notification test failed: $e');
@@ -1064,8 +1209,10 @@ class MindLoadNotificationService {
       } else if (Platform.isAndroid) {
         await testAndroidPermissions();
       } else {
-        debugPrint('⚠️ Platform ${Platform.operatingSystem} not supported for notifications');
-        debugPrint('✅ Notification system is properly configured to skip unsupported platforms');
+        debugPrint(
+            '⚠️ Platform ${Platform.operatingSystem} not supported for notifications');
+        debugPrint(
+            '✅ Notification system is properly configured to skip unsupported platforms');
         return;
       }
 
@@ -1097,27 +1244,30 @@ class MindLoadNotificationService {
 
   /// Constants for first-time event tracking
   static const String _firstQuizCompletedKey = 'hasCompletedFirstQuiz';
-  static const String _firstFlashcardSetViewedKey = 'hasViewedFirstFlashcardSet';
+  static const String _firstFlashcardSetViewedKey =
+      'hasViewedFirstFlashcardSet';
   static const String _firstStudySetCreatedKey = 'hasCreatedFirstStudySet';
-  static const String _firstUltraModeSessionKey = 'hasCompletedFirstUltraModeSession';
+  static const String _firstUltraModeSessionKey =
+      'hasCompletedFirstUltraModeSession';
 
   /// Check and fire first quiz completion notification
   static Future<void> checkAndFireFirstQuizNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final hasCompletedFirstQuiz = prefs.getBool(_firstQuizCompletedKey) ?? false;
-      
+      final hasCompletedFirstQuiz =
+          prefs.getBool(_firstQuizCompletedKey) ?? false;
+
       if (!hasCompletedFirstQuiz) {
         // Mark as completed
         await prefs.setBool(_firstQuizCompletedKey, true);
-        
+
         // Fire micro notification
         await scheduleMicroNotification(
           '🎯 First Quiz Complete!',
           'Congratulations! You\'ve completed your first quiz. Keep up the great work!',
           category: 'mindload_achievements',
         );
-        
+
         debugPrint('🎉 First quiz completion notification fired');
       }
     } catch (e) {
@@ -1129,19 +1279,20 @@ class MindLoadNotificationService {
   static Future<void> checkAndFireFirstFlashcardSetNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final hasViewedFirstFlashcardSet = prefs.getBool(_firstFlashcardSetViewedKey) ?? false;
-      
+      final hasViewedFirstFlashcardSet =
+          prefs.getBool(_firstFlashcardSetViewedKey) ?? false;
+
       if (!hasViewedFirstFlashcardSet) {
         // Mark as viewed
         await prefs.setBool(_firstFlashcardSetViewedKey, true);
-        
+
         // Fire micro notification
         await scheduleMicroNotification(
           '📚 First Flashcard Set Viewed!',
           'Great start! You\'ve explored your first flashcard set. Ready to learn more?',
           category: 'mindload_achievements',
         );
-        
+
         debugPrint('🎉 First flashcard set viewing notification fired');
       }
     } catch (e) {
@@ -1153,19 +1304,20 @@ class MindLoadNotificationService {
   static Future<void> checkAndFireFirstStudySetNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final hasCreatedFirstStudySet = prefs.getBool(_firstStudySetCreatedKey) ?? false;
-      
+      final hasCreatedFirstStudySet =
+          prefs.getBool(_firstStudySetCreatedKey) ?? false;
+
       if (!hasCreatedFirstStudySet) {
         // Mark as created
         await prefs.setBool(_firstStudySetCreatedKey, true);
-        
+
         // Fire micro notification
         await scheduleMicroNotification(
           '🧠 First Study Set Created!',
           'Amazing! You\'ve created your first study set. Your learning journey begins now!',
           category: 'mindload_achievements',
         );
-        
+
         debugPrint('🎉 First study set creation notification fired');
       }
     } catch (e) {
@@ -1177,19 +1329,20 @@ class MindLoadNotificationService {
   static Future<void> checkAndFireFirstUltraModeNotification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final hasCompletedFirstUltraModeSession = prefs.getBool(_firstUltraModeSessionKey) ?? false;
-      
+      final hasCompletedFirstUltraModeSession =
+          prefs.getBool(_firstUltraModeSessionKey) ?? false;
+
       if (!hasCompletedFirstUltraModeSession) {
         // Mark as completed
         await prefs.setBool(_firstUltraModeSessionKey, true);
-        
+
         // Fire micro notification
         await scheduleMicroNotification(
           '⚡ First Ultra Mode Session!',
           'Incredible! You\'ve completed your first ultra mode session. You\'re unstoppable!',
           category: 'mindload_achievements',
         );
-        
+
         debugPrint('🎉 First ultra mode session notification fired');
       }
     } catch (e) {
@@ -1210,7 +1363,8 @@ class MindLoadNotificationService {
 
     // Skip notification on unsupported platforms
     if (!Platform.isIOS && !Platform.isAndroid) {
-      debugPrint('⚠️ Skipping micro notification on unsupported platform: ${Platform.operatingSystem}');
+      debugPrint(
+          '⚠️ Skipping micro notification on unsupported platform: ${Platform.operatingSystem}');
       return;
     }
 
@@ -1232,7 +1386,8 @@ class MindLoadNotificationService {
           _channelId,
           _channelName,
           channelDescription: _channelDesc,
-          importance: Importance.defaultImportance, // Lower priority than regular notifications
+          importance: Importance
+              .defaultImportance, // Lower priority than regular notifications
           priority: Priority.defaultPriority,
           playSound: true,
           enableVibration: false, // No vibration for micro notifications
@@ -1259,7 +1414,7 @@ class MindLoadNotificationService {
   /// Test daily notification system
   static Future<void> testDailyNotificationSystem() async {
     debugPrint('📅 Testing daily notification system...');
-    
+
     try {
       // Test setting up a 3x daily cadence
       await updateDailyPlan(
@@ -1271,25 +1426,29 @@ class MindLoadNotificationService {
       // Check pending notifications
       final pending = await getPendingNotifications();
       final dailyNotifications = pending.where((n) => n.id >= 20000).toList();
-      
-      debugPrint('📋 Found ${dailyNotifications.length} daily notifications scheduled');
+
+      debugPrint(
+          '📋 Found ${dailyNotifications.length} daily notifications scheduled');
       for (final notification in dailyNotifications) {
-        debugPrint('   - ID: ${notification.id}, Title: ${notification.title}, Body: ${notification.body}');
+        debugPrint(
+            '   - ID: ${notification.id}, Title: ${notification.title}, Body: ${notification.body}');
       }
 
       if (dailyNotifications.length == 3) {
-        debugPrint('✅ Daily notification system test passed - 3 notifications scheduled');
+        debugPrint(
+            '✅ Daily notification system test passed - 3 notifications scheduled');
       } else {
-        debugPrint('⚠️ Expected 3 daily notifications, found ${dailyNotifications.length}');
+        debugPrint(
+            '⚠️ Expected 3 daily notifications, found ${dailyNotifications.length}');
       }
-      
+
       // Test rescheduling
       debugPrint('🔄 Testing notification rescheduling...');
       await rescheduleDailyPlan(
         defaultTitle: 'MindLoad Reminder',
         defaultBody: 'Time for your daily learning session!',
       );
-      
+
       debugPrint('✅ Daily notification system test completed');
     } catch (e) {
       debugPrint('❌ Daily notification system test failed: $e');

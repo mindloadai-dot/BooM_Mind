@@ -112,6 +112,10 @@ void main() async {
   await MindLoadNotificationService.rescheduleDailyPlan();
   print('✅ Daily notification plan re-applied on startup');
 
+  // Set up default notifications if none exist
+  await MindLoadNotificationService.setupDefaultDailyNotifications();
+  print('✅ Default daily notifications checked/set up');
+
   // Keep plans fresh when returning to foreground
   _mlLifecycleRelay.start();
   print('✅ Lifecycle observer started for notification management');
@@ -137,9 +141,10 @@ Future<void> _initializeCoreServices() async {
         print('Theme Manager initialization failed: $e');
       }),
 
-      // Auth Service (critical for user state)
+      // Auth Service (critical for user state) with iOS-specific handling
       AuthService.instance.initialize().catchError((e) {
         print('Auth Service initialization failed: $e');
+        // Continue without throwing - app should still work
       }),
 
       // Enhanced Storage Service (critical for data)
