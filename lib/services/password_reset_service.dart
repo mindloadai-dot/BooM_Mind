@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:mindload/services/firebase_client_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mindload/services/auth_service.dart';
 
 /// Enhanced Password Reset Service
@@ -29,7 +29,8 @@ class PasswordResetService extends ChangeNotifier {
         debugPrint('📧 Sending password reset email to: $email');
       }
 
-      final success = await FirebaseClientService.instance.resetPassword(email);
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      final success = true;
 
       if (success) {
         _lastResetEmail = email;
@@ -80,16 +81,16 @@ class PasswordResetService extends ChangeNotifier {
       }
 
       // Re-authenticate with current password
-      final reAuthSuccess = await FirebaseClientService.instance
-          .reauthenticateWithPassword(currentPassword);
-
-      if (!reAuthSuccess) {
-        throw Exception('Current password is incorrect');
-      }
+      final credential = EmailAuthProvider.credential(
+        email: currentUser.email,
+        password: currentPassword,
+      );
+      
+      await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(credential);
 
       // Change password
-      final success =
-          await FirebaseClientService.instance.updatePassword(newPassword);
+      await FirebaseAuth.instance.currentUser!.updatePassword(newPassword);
+      final success = true;
 
       if (success) {
         if (kDebugMode) {

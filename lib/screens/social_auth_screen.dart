@@ -108,21 +108,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
       switch (provider) {
         case AuthProvider.google:
           print('🔍 Attempting Google Sign-In...');
-          // Try Firebase client first, fallback to existing auth service
-          if (firebaseClient.isInitialized) {
-            try {
-              final result = await firebaseClient.signInWithGoogle();
-              if (result.success) {
-                print('✅ Google Sign-In successful via Firebase client');
-                _navigateToHome();
-                return;
-              }
-            } catch (e) {
-              print(
-                  '⚠️ Firebase client Google Sign-In failed, trying auth service: $e');
-            }
-          }
-          user = await authService.signInWithGoogleSafe();
+          user = await authService.signInWithGoogle();
           break;
         case AuthProvider.apple:
           print('🍎 Attempting Apple Sign-In...');
@@ -131,20 +117,6 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
             throw Exception('Apple Sign-In is only available on iOS and macOS');
           }
 
-          // Try Firebase client first, fallback to existing auth service
-          if (firebaseClient.isInitialized) {
-            try {
-              final result = await firebaseClient.signInWithApple();
-              if (result.success) {
-                print('✅ Apple Sign-In successful via Firebase client');
-                _navigateToHome();
-                return;
-              }
-            } catch (e) {
-              print(
-                  '⚠️ Firebase client Apple Sign-In failed, trying auth service: $e');
-            }
-          }
           user = await authService.signInWithApple();
           break;
         case AuthProvider.microsoft:
@@ -156,20 +128,6 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
           break;
         case AuthProvider.local:
           print('🔧 Attempting local admin sign-in...');
-          // Try biometric authentication with Firebase client
-          if (firebaseClient.isInitialized) {
-            try {
-              final result = await firebaseClient.signInWithBiometrics();
-              if (result.success) {
-                print('✅ Biometric Sign-In successful via Firebase client');
-                _navigateToHome();
-                return;
-              }
-            } catch (e) {
-              print(
-                  '⚠️ Firebase client biometric Sign-In failed, trying auth service: $e');
-            }
-          }
           user = await authService.signInAsAdminTest();
           break;
       }
@@ -221,31 +179,7 @@ class _SocialAuthScreenState extends State<SocialAuthScreen>
       final firebaseClient = FirebaseClientService.instance;
       AuthUser? user;
 
-      // Try Firebase client first if available
-      if (firebaseClient.isInitialized) {
-        if (_isSignUp) {
-          final result = await firebaseClient.createUserWithEmailAndPassword(
-            _emailController.text.trim(),
-            _passwordController.text,
-            _nameController.text.trim(),
-          );
-          if (result.success) {
-            _navigateToHome();
-            return;
-          }
-        } else {
-          final result = await firebaseClient.signInWithEmailAndPassword(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
-          if (result.success) {
-            _navigateToHome();
-            return;
-          }
-        }
-      }
-
-      // Fallback to existing auth service
+      // Use AuthService for email authentication
       if (_isSignUp) {
         user = await authService.signUpWithEmail(
           _emailController.text.trim(),

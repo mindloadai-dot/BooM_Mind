@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,15 +9,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:mindload/services/document_processor.dart';
 import 'package:mindload/services/mindload_economy_service.dart';
 import 'package:mindload/models/mindload_economy_models.dart';
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
-import 'dart:math';
 import 'package:mindload/firebase_options.dart';
 import 'package:mindload/firestore/firestore_repository.dart';
 import 'package:mindload/firestore/firestore_data_schema.dart';
@@ -25,11 +22,13 @@ import 'package:mindload/models/study_data.dart';
 /// Comprehensive Firebase Client Service for Mindload App
 ///
 /// This service provides a unified interface for all Firebase operations including:
-/// - Authentication (Email, Google, Apple, Face ID)
 /// - Firestore database operations
 /// - Cloud Storage for document uploads
 /// - Firebase messaging for push notifications
 /// - Real-time data synchronization
+/// 
+/// Note: Authentication is now handled exclusively by AuthService
+/// following Firebase federated authentication documentation
 class FirebaseClientService extends ChangeNotifier {
   static FirebaseClientService? _instance;
   static FirebaseClientService get instance {
@@ -51,7 +50,6 @@ class FirebaseClientService extends ChangeNotifier {
   // Service instances
   late FirestoreRepository _repository;
   late LocalAuthentication _localAuth;
-  // GoogleSignIn not needed - using Firebase Auth GoogleAuthProvider directly
 
   // State management
   bool _isInitialized = false;
@@ -84,9 +82,6 @@ class FirebaseClientService extends ChangeNotifier {
       _messaging = FirebaseMessaging.instance;
       _remoteConfig = FirebaseRemoteConfig.instance;
       _analytics = FirebaseAnalytics.instance;
-
-      // Google Sign-In initialization not needed
-      // Using Firebase Auth GoogleAuthProvider directly
 
       // Initialize other services
       _repository = FirestoreRepository.instance;
@@ -230,411 +225,9 @@ class FirebaseClientService extends ChangeNotifier {
   }
 
   // MARK: - Authentication Methods
-
-  /// Sign in with email and password
-  Future<AuthResult> signInWithEmailAndPassword(
-      String email, String password) async {
-    try {
-      if (!_isInitialized) {
-        return AuthResult(success: false, error: 'Firebase not initialized');
-      }
-
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (credential.user != null) {
-        return AuthResult(success: true, user: credential.user);
-      } else {
-        return AuthResult(success: false, error: 'Sign in failed');
-      }
-    } on FirebaseAuthException catch (e) {
-      return AuthResult(success: false, error: _getAuthErrorMessage(e.code));
-    } catch (e) {
-      return AuthResult(success: false, error: 'An unexpected error occurred');
-    }
-  }
-
-  /// Create account with email and password
-  Future<AuthResult> createUserWithEmailAndPassword(
-      String email, String password, String displayName) async {
-    try {
-      if (!_isInitialized) {
-        return AuthResult(success: false, error: 'Firebase not initialized');
-      }
-
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (credential.user != null) {
-        // Update display name
-        await credential.user!.updateDisplayName(displayName);
-
-        // Create user profile in Firestore
-        final userProfile = UserProfileFirestore(
-          uid: credential.user!.uid,
-          email: email,
-          displayName: displayName,
-          provider: 'email',
-          createdAt: DateTime.now(),
-          lastLoginAt: DateTime.now(),
-          preferences: {},
-        );
-
-        await _repository.createOrUpdateUser(userProfile);
-
-        return AuthResult(success: true, user: credential.user);
-      } else {
-        return AuthResult(success: false, error: 'Account creation failed');
-      }
-    } on FirebaseAuthException catch (e) {
-      return AuthResult(success: false, error: _getAuthErrorMessage(e.code));
-    } catch (e) {
-      return AuthResult(success: false, error: 'An unexpected error occurred');
-    }
-  }
-
-  /// Sign in with Google (modernized and iOS-compatible)
-  Future<AuthResult> signInWithGoogle() async {
-    try {
-      if (!_isInitialized) {
-        return AuthResult(success: false, error: 'Firebase not initialized');
-      }
-
-      if (kIsWeb) {
-        final cred = await _auth.signInWithPopup(GoogleAuthProvider());
-        await _createOrUpdateUserProfile(cred.user!, 'google');
-        return AuthResult(success: true, user: cred.user);
-      }
-
-      // Firebase documentation-compliant Google Sign-In implementation
-      try {
-        debugPrint('🔐 Starting Firebase Auth Google Sign-In...');
-
-        // Create Google provider with proper scopes
-        final provider = GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-
-        // iOS-specific configuration to prevent crashes
-        if (Platform.isIOS) {
-          provider.setCustomParameters({
-            'prompt': 'select_account',
-            'access_type': 'offline',
-            'include_granted_scopes': 'true',
-          });
-        }
-
-        // Sign in with provider using timeout
-        final UserCredential userCredential =
-            await _auth.signInWithProvider(provider).timeout(
-          const Duration(seconds: 60),
-          onTimeout: () {
-            throw TimeoutException('Google Sign-In timed out');
-          },
-        );
-
-        if (userCredential.user == null) {
-          return AuthResult(
-              success: false, error: 'Failed to get user from Firebase');
-        }
-
-        await _createOrUpdateUserProfile(userCredential.user!, 'google');
-        return AuthResult(success: true, user: userCredential.user);
-      } catch (e) {
-        debugPrint('Firebase Auth Google sign-in error: $e');
-
-        if (e is TimeoutException) {
-          return AuthResult(
-              success: false,
-              error: 'Google sign-in timed out. Please try again.');
-        }
-
-        if (e.toString().contains('network') ||
-            e.toString().contains('connection')) {
-          return AuthResult(
-              success: false,
-              error: 'Network error. Please check your internet connection.');
-        }
-
-        if (e.toString().contains('cancelled')) {
-          return AuthResult(
-              success: false, error: 'Google Sign-In was cancelled');
-        }
-
-        return AuthResult(
-            success: false, error: 'Google sign-in failed: ${e.toString()}');
-      }
-    } on FirebaseAuthException catch (e) {
-      return AuthResult(success: false, error: _getAuthErrorMessage(e.code));
-    } catch (e) {
-      debugPrint('Unexpected Google sign-in error: $e');
-      return AuthResult(success: false, error: 'Google sign-in failed');
-    }
-  }
-
-  /// Sign in with Apple (enhanced with better error handling)
-  Future<AuthResult> signInWithApple() async {
-    try {
-      if (!_isInitialized) {
-        return AuthResult(success: false, error: 'Firebase not initialized');
-      }
-
-      // Check platform support
-      if (!Platform.isIOS && !Platform.isMacOS) {
-        return AuthResult(
-            success: false,
-            error: 'Apple Sign-In is only available on iOS and macOS');
-      }
-
-      // Check availability
-      bool isAvailable = false;
-      try {
-        isAvailable = await SignInWithApple.isAvailable();
-      } catch (e) {
-        debugPrint('Error checking Apple Sign-In availability: $e');
-        // Assume available on iOS 13+
-        if (Platform.isIOS) {
-          isAvailable = true;
-        }
-      }
-
-      if (!isAvailable) {
-        return AuthResult(
-            success: false,
-            error: 'Apple Sign-In is not available on this device');
-      }
-
-      // Generate a random nonce
-      final rawNonce = _generateNonce();
-      final nonce = sha256.convert(utf8.encode(rawNonce)).toString();
-
-      try {
-        final appleCredential = await SignInWithApple.getAppleIDCredential(
-          scopes: [
-            AppleIDAuthorizationScopes.email,
-            AppleIDAuthorizationScopes.fullName,
-          ],
-          nonce: nonce,
-        ).timeout(
-          const Duration(seconds: 60),
-          onTimeout: () {
-            throw TimeoutException('Apple Sign-In timed out');
-          },
-        );
-
-        // Validate we got the required token
-        if (appleCredential.identityToken == null) {
-          return AuthResult(
-              success: false, error: 'Failed to get Apple ID token');
-        }
-
-        final oauthCredential = OAuthProvider('apple.com').credential(
-          idToken: appleCredential.identityToken,
-          rawNonce: rawNonce,
-        );
-
-        final userCredential =
-            await _auth.signInWithCredential(oauthCredential).timeout(
-          const Duration(seconds: 30),
-          onTimeout: () {
-            throw TimeoutException('Firebase authentication timed out');
-          },
-        );
-
-        if (userCredential.user != null) {
-          // Handle display name from Apple if available
-          if (appleCredential.givenName != null ||
-              appleCredential.familyName != null) {
-            final displayName =
-                '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
-                    .trim();
-            if (displayName.isNotEmpty) {
-              await userCredential.user!.updateDisplayName(displayName);
-            }
-          }
-
-          // Create or update user profile
-          await _createOrUpdateUserProfile(userCredential.user!, 'apple');
-          return AuthResult(success: true, user: userCredential.user);
-        } else {
-          return AuthResult(
-              success: false, error: 'Failed to authenticate with Apple');
-        }
-      } on TimeoutException {
-        return AuthResult(
-            success: false,
-            error: 'Apple Sign-In timed out. Please try again.');
-      } on SignInWithAppleAuthorizationException catch (e) {
-        debugPrint('Apple Sign-In authorization error: ${e.code}');
-        switch (e.code) {
-          case AuthorizationErrorCode.canceled:
-            return AuthResult(
-                success: false, error: 'Apple Sign-In was cancelled');
-          case AuthorizationErrorCode.failed:
-            return AuthResult(
-                success: false,
-                error: 'Apple Sign-In failed. Please try again.');
-          case AuthorizationErrorCode.invalidResponse:
-            return AuthResult(
-                success: false, error: 'Invalid response from Apple Sign-In');
-          case AuthorizationErrorCode.notHandled:
-            return AuthResult(
-                success: false, error: 'Apple Sign-In request not handled');
-          case AuthorizationErrorCode.unknown:
-            return AuthResult(
-                success: false, error: 'Unknown error during Apple Sign-In');
-          default:
-            return AuthResult(
-                success: false, error: 'Apple Sign-In error: ${e.message}');
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      debugPrint('Firebase auth error during Apple Sign-In: ${e.code}');
-      return AuthResult(success: false, error: _getAuthErrorMessage(e.code));
-    } catch (e) {
-      debugPrint('Unexpected Apple Sign-In error: $e');
-      return AuthResult(
-          success: false,
-          error:
-              'Apple Sign-In failed. Please ensure you are signed in to iCloud.');
-    }
-  }
-
-  /// Sign in with Face ID/Touch ID (Biometric)
-  Future<AuthResult> signInWithBiometrics() async {
-    try {
-      // Check if biometric authentication is available
-      final isAvailable = await _localAuth.canCheckBiometrics;
-      if (!isAvailable) {
-        return AuthResult(
-            success: false, error: 'Biometric authentication not available');
-      }
-
-      // Get available biometrics
-      final availableBiometrics = await _localAuth.getAvailableBiometrics();
-      if (availableBiometrics.isEmpty) {
-        return AuthResult(
-            success: false, error: 'No biometric methods configured');
-      }
-
-      // Authenticate with biometrics
-      final isAuthenticated = await _localAuth.authenticate(
-        localizedReason: 'Use Face ID to sign in to Mindload',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
-      );
-
-      if (isAuthenticated) {
-        // If biometric auth succeeds, try to sign in the stored user
-        // This requires having a previously authenticated user
-        if (_currentUser != null) {
-          return AuthResult(success: true, user: _currentUser);
-        } else {
-          return AuthResult(
-              success: false,
-              error: 'No user account found. Please sign in first.');
-        }
-      } else {
-        return AuthResult(
-            success: false, error: 'Biometric authentication failed');
-      }
-    } catch (e) {
-      return AuthResult(
-          success: false, error: 'Biometric authentication error: $e');
-    }
-  }
-
-  /// Sign out
-  Future<void> signOut() async {
-    try {
-      // Remove device token from user profile
-      if (_currentUser != null && _deviceToken != null) {
-        await _repository.removeDeviceToken(_currentUser!.uid, _deviceToken!);
-      }
-
-      // Sign out from Firebase Auth
-      await _auth.signOut();
-
-      // Google Sign-In session clearing handled by Firebase Auth
-      debugPrint('✅ Google Sign-In session managed by Firebase Auth');
-
-      _currentUser = null;
-      notifyListeners();
-      debugPrint('✅ Sign out completed successfully');
-    } catch (e) {
-      debugPrint('❌ Sign out error: $e');
-      rethrow;
-    }
-  }
-
-  /// Reset password
-  Future<bool> resetPassword(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-      return true;
-    } catch (e) {
-      debugPrint('Password reset error: $e');
-      return false;
-    }
-  }
-
-  /// Re-authenticate user with password
-  Future<bool> reauthenticateWithPassword(String password) async {
-    try {
-      if (_currentUser == null) return false;
-
-      final credential = EmailAuthProvider.credential(
-        email: _currentUser!.email!,
-        password: password,
-      );
-
-      await _currentUser!.reauthenticateWithCredential(credential);
-      return true;
-    } catch (e) {
-      debugPrint('Re-authentication error: $e');
-      return false;
-    }
-  }
-
-  /// Update user password
-  Future<bool> updatePassword(String newPassword) async {
-    try {
-      if (_currentUser == null) return false;
-
-      await _currentUser!.updatePassword(newPassword);
-      return true;
-    } catch (e) {
-      debugPrint('Update password error: $e');
-      return false;
-    }
-  }
-
-  /// Delete user account
-  Future<bool> deleteAccount() async {
-    try {
-      if (_currentUser != null) {
-        // Delete user data from Firestore
-        await _repository.deleteUser(_currentUser!.uid);
-
-        // Delete Firebase Auth user
-        await _currentUser!.delete();
-
-        _currentUser = null;
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Delete account error: $e');
-      return false;
-    }
-  }
+  // Note: Authentication is now handled exclusively by AuthService
+  // following Firebase federated authentication documentation
+  // All authentication methods have been moved to AuthService
 
   // MARK: - Study Set Management
 
@@ -975,32 +568,6 @@ class FirebaseClientService extends ChangeNotifier {
     }
   }
 
-  /// Get user-friendly error messages for auth errors
-  String _getAuthErrorMessage(String errorCode) {
-    switch (errorCode) {
-      case 'user-not-found':
-        return 'No account found with this email address';
-      case 'wrong-password':
-        return 'Incorrect password';
-      case 'email-already-in-use':
-        return 'An account already exists with this email address';
-      case 'invalid-email':
-        return 'Invalid email address';
-      case 'weak-password':
-        return 'Password is too weak';
-      case 'network-request-failed':
-        return 'Network error. Please check your internet connection';
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later';
-      case 'user-disabled':
-        return 'This account has been disabled';
-      case 'requires-recent-login':
-        return 'Please sign in again to complete this action';
-      default:
-        return 'Authentication failed. Please try again';
-    }
-  }
-
   /// Initialize Remote Config
   Future<void> _initializeRemoteConfig() async {
     try {
@@ -1273,17 +840,4 @@ class FirebaseClientService extends ChangeNotifier {
     // Clean up resources
     super.dispose();
   }
-}
-
-/// Authentication result model
-class AuthResult {
-  final bool success;
-  final User? user;
-  final String? error;
-
-  AuthResult({
-    required this.success,
-    this.user,
-    this.error,
-  });
 }
