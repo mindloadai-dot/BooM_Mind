@@ -200,13 +200,13 @@ class SystemHealthChecker {
   /// Check version status
   Future<Map<String, dynamic>> _checkVersionStatus() async {
     try {
-      // We know from pubspec.yaml that version is 1.0.0+19
+      // We know from pubspec.yaml that version is 1.0.0+23
       return {
         'status': 'success',
-        'currentVersion': '1.0.0+19',
-        'versionNumber': 19,
+        'currentVersion': '1.0.0+23',
+        'versionNumber': 23,
         'isLatest': true,
-        'message': 'Version 19 is current',
+        'message': 'Version 23 is current',
       };
     } catch (e) {
       return {

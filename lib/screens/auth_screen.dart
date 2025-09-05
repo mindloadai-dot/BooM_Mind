@@ -500,7 +500,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
                   // Bottom version info
                   UnifiedText(
-                    'v1.0.0 • SECURE NEURAL NETWORK',
+                    'v1.0.0+23 • SECURE NEURAL NETWORK',
                     style: UnifiedTypography.bodySmall.copyWith(
                       color: context.tokens.textSecondary,
                       letterSpacing: 1,

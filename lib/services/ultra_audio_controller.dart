@@ -442,7 +442,7 @@ class UltraAudioController extends BaseAudioHandler with ChangeNotifier {
           'gamma_concentration',
           'theta_creativity'
         ],
-        version: '1.0.0',
+        version: '1.0.0+23',
         created: DateTime.now(),
         crossfadeSupported: true,
       );

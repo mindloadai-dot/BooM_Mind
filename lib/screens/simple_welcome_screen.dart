@@ -226,7 +226,7 @@ class _SimpleWelcomeScreenState extends State<SimpleWelcomeScreen>
                       child: Column(
                         children: [
                           UnifiedText(
-                            'v1.0.0 • SECURE NEURAL NETWORK',
+                            'v1.0.0+23 • SECURE NEURAL NETWORK',
                             style: UnifiedTypography.bodySmall.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
